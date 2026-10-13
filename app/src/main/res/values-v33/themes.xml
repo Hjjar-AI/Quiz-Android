@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Mukhtabir" parent="Theme.Mukhtabir.Base">
+        <item name="android:windowSplashScreenBackground">@color/startup_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/startup_wordmark_animated</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimationDuration">@integer/startup_reveal_duration</item>
+        <item name="android:windowSplashScreenBehavior">icon_preferred</item>
+    </style>
+</resources>

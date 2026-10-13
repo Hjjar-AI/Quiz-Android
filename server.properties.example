@@ -1,0 +1,7 @@
+# Copy to server.properties and replace YOUR_PC_ADDRESS with your PC's LAN IP or hostname.
+# This is only the initial value shown by Android's startup server screen.
+# The server selected on the phone is persisted separately in app preferences.
+api.base.url=https://YOUR_PC_ADDRESS:8443/api/v1/
+
+# HTTP development alternative (requires explicit confirmation in the app):
+# api.base.url=http://YOUR_PC_ADDRESS:8000/api/v1/

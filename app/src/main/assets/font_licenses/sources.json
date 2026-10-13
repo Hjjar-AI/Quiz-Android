@@ -1,0 +1,44 @@
+[
+  {
+    "resource": "inter",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter[opsz,wght].ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt",
+    "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031"
+  },
+  {
+    "resource": "noto_arabic",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/NotoSansArabic[wdth,wght].ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/OFL.txt",
+    "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e"
+  },
+  {
+    "resource": "outfit",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/outfit/Outfit[wght].ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/outfit/OFL.txt",
+    "sha256": "fc7287273e66929776e2ba54f144fe699080bec29f61bf649d70d871468aeade"
+  },
+  {
+    "resource": "cairo",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo[slnt,wght].ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/OFL.txt",
+    "sha256": "667c987182391c91f4e57a2f455b1794fb5e3ee6ca4ef3383e86bb690fa9c964"
+  },
+  {
+    "resource": "tajawal",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/OFL.txt",
+    "sha256": "6882892da3e03527d5db2bbab3b48bde6ef2e878a43f522d1a4eebda90010a19"
+  },
+  {
+    "resource": "ibm_plex_arabic",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexsansarabic/IBMPlexSansArabic-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexsansarabic/OFL.txt",
+    "sha256": "6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9"
+  },
+  {
+    "resource": "amiri",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/OFL.txt",
+    "sha256": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7"
+  }
+]

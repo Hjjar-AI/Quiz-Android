@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/startup_wordmark">
+    <target android:name="reveal" android:animation="@animator/startup_reveal" />
+    <target android:name="pen" android:animation="@animator/startup_pen_motion" />
+    <target android:name="penDot" android:animation="@animator/startup_pen_opacity" />
+</animated-vector>

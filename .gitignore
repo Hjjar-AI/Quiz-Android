@@ -1,0 +1,53 @@
+# ── Gradle ────────────────────────────────────────────────────────
+.gradle/
+build/
+*/build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ── Android Studio / IntelliJ ─────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ── Local configuration (machine-specific) ────────────────────────
+# local.properties contains the SDK path and the dev API base URL.
+# It must never be committed: the path is developer-specific and the
+# URL is environment-specific. Each developer copies the tracked
+# sample (once one exists) and edits it.
+local.properties
+server.properties
+GradleShare.md
+# ── Signing material ──────────────────────────────────────────────
+# Keystores, key properties, and any credential file for release
+# signing. Adding a new file of this kind? Add its pattern here in
+# the same commit.
+*.jks
+*.keystore
+keystore.properties
+release-keystore.properties
+
+# ── Secrets and environment files ─────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets.properties
+
+# ── Logs and crash dumps ──────────────────────────────────────────
+*.log
+*.hprof
+hs_err_pid*
+
+# ── OS noise ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Kotlin / KSP caches ───────────────────────────────────────────
+.kotlin/
+suggested themes.txt
