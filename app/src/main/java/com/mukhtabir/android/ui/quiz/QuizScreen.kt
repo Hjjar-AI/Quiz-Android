@@ -367,6 +367,10 @@ fun QuizRoute(
             when {
                 state.results != null -> ResultsContent(
                     results = requireNotNull(state.results),
+                    reviewLoading = state.reviewLoading,
+                    reviewFailed = state.reviewFailed,
+                    reviewError = state.reviewError,
+                    onRefreshReview = viewModel::refreshCompletedReview,
                     imageRepository = imageRepository,
                     onNewSession = viewModel::returnToSetup,
                     onDone = onBack,
@@ -878,6 +882,10 @@ private fun ReflectionButtons(viewModel: QuizViewModel, disabled: Boolean, selec
 @Composable
 private fun ResultsContent(
     results: SessionResultsDto,
+    reviewLoading: Boolean,
+    reviewFailed: Boolean,
+    reviewError: String?,
+    onRefreshReview: () -> Unit,
     imageRepository: ImageRepository,
     onNewSession: () -> Unit,
     onDone: () -> Unit,
@@ -885,40 +893,48 @@ private fun ResultsContent(
     var reviewFilter by rememberSaveable(results.sourceSessionId, results.historyId) { mutableStateOf(ResultReviewFilter.ALL) }
     AppPageHeading(stringResource(R.string.results))
     ResultsOverview(results)
-    com.mukhtabir.android.ui.components.AppSectionHeading(stringResource(R.string.review_details))
-    SelectionRow {
-        ResultReviewFilter.values().forEach { filter ->
-            SetupChoiceChip(selected = reviewFilter == filter, enabled = true,
-                onClick = { reviewFilter = filter }, text = stringResource(when (filter) {
-                    ResultReviewFilter.ALL -> R.string.quiz_review_all
-                    ResultReviewFilter.INCORRECT -> R.string.quiz_review_incorrect
-                    ResultReviewFilter.UNANSWERED -> R.string.unanswered
-                }))
+    if (results.reviewWithheld) {
+        Text(stringResource(R.string.quiz_review_withheld))
+        if (reviewFailed) Text(reviewError ?: stringResource(R.string.quiz_review_read_failed),
+            color = MaterialTheme.colorScheme.error)
+        OutlinedButton(onClick = onRefreshReview, enabled = !reviewLoading,
+            modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.quiz_refresh_review)) }
+    } else {
+        com.mukhtabir.android.ui.components.AppSectionHeading(stringResource(R.string.review_details))
+        SelectionRow {
+            ResultReviewFilter.values().forEach { filter ->
+                SetupChoiceChip(selected = reviewFilter == filter, enabled = true,
+                    onClick = { reviewFilter = filter }, text = stringResource(when (filter) {
+                        ResultReviewFilter.ALL -> R.string.quiz_review_all
+                        ResultReviewFilter.INCORRECT -> R.string.quiz_review_incorrect
+                        ResultReviewFilter.UNANSWERED -> R.string.unanswered
+                    }))
+            }
         }
-    }
-    val reviews = results.results.withIndex().filter { (_, result) ->
-        when (reviewFilter) {
-            ResultReviewFilter.ALL -> true
-            ResultReviewFilter.INCORRECT -> result.userAnswer != null && !result.isCorrect
-            ResultReviewFilter.UNANSWERED -> result.userAnswer == null
+        val reviews = results.results.withIndex().filter { (_, result) ->
+            when (reviewFilter) {
+                ResultReviewFilter.ALL -> true
+                ResultReviewFilter.INCORRECT -> result.userAnswer != null && !result.isCorrect
+                ResultReviewFilter.UNANSWERED -> result.userAnswer == null
+            }
         }
-    }
-    Text(stringResource(R.string.quiz_review_count, com.mukhtabir.android.util.formatNumber(reviews.size),
-        com.mukhtabir.android.util.formatNumber(results.results.size)), style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
-    if (reviews.isEmpty()) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.quiz_review_empty))
-    reviews.forEach { (index, result) ->
-        AppSection(title = if (result.userAnswer == null) stringResource(R.string.quiz_review_unanswered,
-            com.mukhtabir.android.util.formatNumber(index + 1)) else stringResource(
-                if (result.isCorrect) R.string.review_correct else R.string.review_wrong, index + 1),
-            subtitle = stringResource(R.string.your_answer,
-                result.userAnswer?.let { com.mukhtabir.android.util.formatNumber(it) } ?: stringResource(R.string.unanswered)),
-            composeCollapsedContent = false) {
-            SessionResultReview(index + 1, result, imageRepository, showHeading = false)
+        Text(stringResource(R.string.quiz_review_count, com.mukhtabir.android.util.formatNumber(reviews.size),
+            com.mukhtabir.android.util.formatNumber(results.results.size)), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (reviews.isEmpty()) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.quiz_review_empty))
+        reviews.forEach { (index, result) ->
+            AppSection(title = if (result.userAnswer == null) stringResource(R.string.quiz_review_unanswered,
+                com.mukhtabir.android.util.formatNumber(index + 1)) else stringResource(
+                    if (result.isCorrect) R.string.review_correct else R.string.review_wrong, index + 1),
+                subtitle = stringResource(R.string.your_answer,
+                    result.userAnswer?.let { com.mukhtabir.android.util.formatNumber(it) } ?: stringResource(R.string.unanswered)),
+                composeCollapsedContent = false) {
+                SessionResultReview(index + 1, result, imageRepository, showHeading = false)
+            }
         }
-    }
-    AppSection(stringResource(R.string.quiz_result_breakdowns), composeCollapsedContent = false) {
-        ResultBreakdowns(results.results)
+        AppSection(stringResource(R.string.quiz_result_breakdowns), composeCollapsedContent = false) {
+            ResultBreakdowns(results.results)
+        }
     }
 
     Button(onClick = onNewSession, modifier = Modifier.fillMaxWidth()) {

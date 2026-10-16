@@ -1571,4 +1571,7 @@
     <string name="theme_midnight">ليلي</string>
     <string name="theme_onyx">عقيقي</string>
     <string name="theme_contrast">تباين</string>
+    <string name="quiz_review_withheld">تم حفظ إكمال الجلسة وتقدم التعلم. مراجعة الأسئلة محجوبة حتى إنهاء الامتحانات المتداخلة.</string>
+    <string name="quiz_refresh_review">التحقق من مراجعة الأسئلة المحفوظة</string>
+    <string name="quiz_review_read_failed">تعذرت قراءة مراجعة الأسئلة. نتيجتك المكتملة ما زالت محفوظة.</string>
 </resources>

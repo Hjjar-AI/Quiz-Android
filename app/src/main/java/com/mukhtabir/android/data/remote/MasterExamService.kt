@@ -112,9 +112,12 @@ class MasterExamService(private val api: ApiClient) {
     suspend fun drafts(search: String, usage: String): QuestionBatchDto = api.decode(
         QuestionBatchDto.serializer(), api.get(ApiEndpoints.MasterExams.BASE + "drafts/", mapOf("search" to search, "usage" to usage)))
     suspend fun draft(id: Long): QuestionDto = api.decode(QuestionDto.serializer(), api.get(ApiEndpoints.MasterExams.BASE + "drafts/$id/"))
-    suspend fun updateDraft(id: Long, request: MasterExamDraftWrite): QuestionDto = api.decode(
-        QuestionDto.serializer(), api.put(ApiEndpoints.MasterExams.BASE + "drafts/$id/", api.encode(MasterExamDraftWrite.serializer(), request)))
-    suspend fun deleteDraft(id: Long) { api.delete(ApiEndpoints.MasterExams.BASE + "drafts/$id/") }
+    suspend fun updateDraft(id: Long, version: Int, request: MasterExamDraftWrite): QuestionDto {
+        val data = api.encode(MasterExamDraftWrite.serializer(), request) as JsonObject
+        return api.decode(QuestionDto.serializer(), api.put(ApiEndpoints.MasterExams.BASE + "drafts/$id/",
+            JsonObject(data + ("expected_version" to JsonPrimitive(version)))))
+    }
+    suspend fun deleteDraft(id: Long, version: Int) { api.delete(ApiEndpoints.MasterExams.BASE + "drafts/$id/?expected_version=$version") }
     suspend fun lifecycle(id: Long, action: String): MasterExamAuthorDto {
         require(action in setOf("publish", "cancel", "publish-to-bank"))
         return api.decode(MasterExamAuthorDto.serializer(), api.post(ApiEndpoints.MasterExams.action(id, action)))

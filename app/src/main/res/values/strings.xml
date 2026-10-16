@@ -1572,4 +1572,7 @@
     <string name="theme_midnight">Midnight</string>
     <string name="theme_onyx">Onyx</string>
     <string name="theme_contrast">Contrast</string>
+    <string name="quiz_review_withheld">Completion and learning progress are saved. Question review is withheld until overlapping exams are finished.</string>
+    <string name="quiz_refresh_review">Check saved question review</string>
+    <string name="quiz_review_read_failed">Could not read question review. Your completed result is still saved.</string>
 </resources>

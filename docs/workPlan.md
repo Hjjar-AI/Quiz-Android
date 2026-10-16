@@ -1,5 +1,13 @@
 # Android remaining work
 
+## 2026-10-17 draft/lifecycle verification
+
+- After matching backend rollout and an authorized rebuild, verify draft revision decoding/save/delete, change after preflight, restored encrypted baselines, conflicts/unknown outcomes and explicit retained-draft review. Verify overdue draft/cancelled bank publication is unavailable and completed publication works; snapshot-backed attempts survive live question removal. [Shared C1–C7 source closure](../../backend/docs/archive/reviews/2026-10-17-remainingLogicReview.md#extended-findings-and-source-corrections). No compilation/device/HTTP evidence.
+
+## 2026-10-17 completion/review verification
+
+- After backend rollout and an authorized rebuild, verify ordinary exam/study completion during overlapping master work, authoritative saved summary versus withheld question review, later explicit owner-result GET reveal, failed reads preserving completion, account/attempt switches and existing lost-finish/storage recovery. Check Arabic/English/RTL, large text and TalkBack. [Shared B1–B4 source closure](../../backend/docs/archive/reviews/2026-10-17-backendMajorReview.md#source-corrections). No build/device/HTTP evidence yet.
+
 ## Dashboard tips and theme-picker verification
 
 - After an authorized rebuild, verify Did you know is second after welcome and before mode selection, expanded/loading by default with manual collapse retained, successful/empty/error reads and tip rotation. Verify pending recovery cards remain visible below it.

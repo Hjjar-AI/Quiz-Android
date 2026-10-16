@@ -232,7 +232,7 @@ internal class MasterExamEditorViewModel(
         return when (action) {
             "publish" -> exam.storedStatus == "draft" && exam.questionIds.isNotEmpty()
             "cancel" -> exam.storedStatus !in setOf("cancelled", "published_to_bank")
-            "publish-to-bank" -> exam.storedStatus != "published_to_bank" &&
+            "publish-to-bank" -> exam.storedStatus in setOf("published", "completed") &&
                 runCatching { !OffsetDateTime.now().isBefore(OffsetDateTime.parse(exam.closesAt)) }.getOrDefault(false) && user.has("master_exams.publish_to_bank")
             else -> false
         }

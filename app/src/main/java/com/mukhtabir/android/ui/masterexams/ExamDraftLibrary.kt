@@ -109,7 +109,7 @@ internal class ExamDraftLibraryViewModel(private val user: UserDto, private val 
                 pendingRecovery.value = null
                 mutable.update { it.copy(busy = false, denied = false, selected = fresh, form = saved.form, categories = cats,
                     baseline = fresh.examDraftForm().payload(maxChoices), uncertain = saved.uncertain,
-                    latest = fresh, review = saved.selected.updatedAt != fresh.updatedAt || saved.baseline != fresh.examDraftForm().payload(maxChoices)) }
+                    latest = fresh, review = saved.selected.version != fresh.version || saved.selected.updatedAt != fresh.updatedAt || saved.baseline != fresh.examDraftForm().payload(maxChoices)) }
             } catch (cancel: CancellationException) { throw cancel }
             catch (failure: Exception) { ensureActive(); mutable.update { it.copy(busy = false, error = failure, denied = it.denied || (failure is ApiException && failure.statusCode in setOf(403, 404))) } }
         }
@@ -220,18 +220,18 @@ internal class ExamDraftLibraryViewModel(private val user: UserDto, private val 
                 val fresh = service.draft(row.id)
                 ensureActive()
                 if (!allowed(fresh)) throw ApiException(403, "")
-                if (fresh.updatedAt != row.updatedAt || fresh.examDraftForm().payload(maxChoices) != s.baseline) {
+                if (fresh.version != row.version || fresh.updatedAt != row.updatedAt || fresh.examDraftForm().payload(maxChoices) != s.baseline) {
                     mutable.update { it.copy(busy = false, latest = fresh, review = true, selected = fresh, baseline = fresh.examDraftForm().payload(maxChoices)) }
                     return@launch
                 }
-                // No server revision condition exists; this preflight cannot make the read/write gap atomic.
+                // The submitted revision also covers changes after this read.
                 if (!persist(s.copy(uncertain = if (delete) "delete" else "save"))) { mutable.update { it.copy(busy = false, error = storageFailure.value) }; return@launch }
                 posting = true
                 if (delete) {
-                    service.deleteDraft(row.id); ensureActive()
+                    service.deleteDraft(row.id, row.version); ensureActive()
                     mutable.update { it.copy(busy = false) }; close()
                 } else {
-                    val saved = service.updateDraft(row.id, requireNotNull(payload)); ensureActive()
+                    val saved = service.updateDraft(row.id, row.version, requireNotNull(payload)); ensureActive()
                     val form = saved.examDraftForm()
                     persist(DraftLibraryState())
                     mutable.update { it.copy(selected = saved, form = form, baseline = form.payload(maxChoices), busy = false, message = R.string.exam_draft_saved) }

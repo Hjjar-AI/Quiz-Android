@@ -128,6 +128,9 @@ data class QuizUiState(
     val timerSeconds: Int = 0,
     val timerOvertime: Boolean = false,
     val results: SessionResultsDto? = null,
+    val reviewLoading: Boolean = false,
+    val reviewFailed: Boolean = false,
+    val reviewError: String? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
     val hasUnknownError: Boolean = false,
@@ -979,6 +982,29 @@ class QuizViewModel(
         if(s.finishedSessionMissing) queueAvailableCount()
     }
 
+    fun refreshCompletedReview() {
+        val snapshot = _state.value
+        val result = snapshot.results ?: return
+        val identity = result.sourceSessionId ?: return
+        if (snapshot.reviewLoading || snapshot.isLoading || !result.reviewWithheld) return
+        val mode = TestMode.values().firstOrNull { it.path == result.mode } ?: return
+        _state.update { it.copy(reviewLoading = true, reviewFailed = false, reviewError = null) }
+        viewModelScope.launch {
+            fun owns(): Boolean = _state.value.results?.sourceSessionId == identity &&
+                _state.value.results?.historyId == result.historyId && _state.value.mode == snapshot.mode
+            try {
+                val fresh = sessionService.completedResult(mode, identity)
+                check(fresh.historyId == result.historyId)
+                if (owns()) _state.update { it.copy(results = fresh) }
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (failure: Exception) {
+                if (owns()) _state.update { it.copy(reviewFailed = true, reviewError = failure.message) }
+            } finally {
+                if (owns()) _state.update { it.copy(reviewLoading = false) }
+            }
+        }
+    }
+
     fun returnToSetup() {
         if (_state.value.syncing || _state.value.locallyFinished) return
         if (downloadedSession?.answers?.isNotEmpty() == true) return
@@ -991,6 +1017,9 @@ class QuizViewModel(
                 answeredIndices = emptySet(),
                 questionPage = null,
                 results = null,
+                reviewLoading = false,
+                reviewFailed = false,
+                reviewError = null,
                 selectedAnswer = null,
                 confidence = 3,
                 preAnswer = "",

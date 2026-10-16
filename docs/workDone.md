@@ -1,5 +1,17 @@
 # Current Android source status
 
+## 2026-10-17 draft revisions and bank lifecycle
+
+Draft save/delete now send selected Question revisions alongside existing preflight, encrypted recovery and explicit conflict review. Restore/preflight compare revisions as well as timestamps/content. Native editor bank-publication eligibility requires published/completed stored state and closure, matching the backend guard. [Shared C1–C7 closure](../../backend/docs/archive/reviews/2026-10-17-remainingLogicReview.md#extended-findings-and-source-corrections).
+
+Production service/DTO/import/caller source checks and whitespace only; no compilation/build, suites, migrations/schema/database/HTTP, versions or device evidence. Matching rollout and authorized rebuild/manual verification remain pending.
+
+## 2026-10-17 saved completion with withheld question review
+
+Added the default-false `review_withheld` result field and matching ordinary result presentation: retain the real confirmed summary, explain unavailable question review and explicitly GET the existing owned completion. Refresh has independent busy/error state and identity checks; failure preserves completion and never repeats finish/learning writes. Suppressed misleading empty-review filters/breakdowns while withheld; bilingual shared controls remain. Other native recovery/storage/session flows are unchanged. [Backend flow corrections and limits](../../backend/docs/archive/reviews/2026-10-17-backendMajorReview.md#source-corrections).
+
+Android XML/new resource keys, DTO/callback/ownership source tracing and whitespace checked. Kotlin source reviewed only; no compilation/build, suites, migrations/schema/database/HTTP, versions or device/accessibility evidence. Backend-first rollout and authorized rebuild/manual verification remain pending.
+
 ## 2026-10-13 dashboard tips and theme picker cues
 
 Moved Did you know immediately after the welcome heading (second dashboard element), before pending cards and study/exam mode selection. It starts expanded and loads through the existing guarded section read; manual collapse, retries, refresh and timed tip rotation remain. Failed/loading tip reads do not show a misleading empty-tip message. Drawer theme choices preview each canonical palette's background/surface/accent, keep selected semantics and use a separate check icon. The bounded scrolling list has a subtle persistent logical-end track/thumb only when overflow exists, with padding for the cue. All 18 English/Arabic display names are unique single words; stored/API/export theme keys and palettes remain.

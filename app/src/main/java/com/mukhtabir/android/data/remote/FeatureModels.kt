@@ -284,6 +284,7 @@ data class SessionResultsDto(
     @SerialName("source_session_id") val sourceSessionId: String? = null,
     @SerialName("history_id") val historyId: Long? = null,
     val mode: String? = null,
+    @SerialName("review_withheld") val reviewWithheld: Boolean = false,
 )
 
 @Serializable
