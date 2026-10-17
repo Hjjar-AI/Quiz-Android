@@ -35,12 +35,12 @@ internal fun <T> EditorRecoveryControls(recovery: EditorRecovery<T>, busy: Boole
         Text(stringResource(R.string.recovery_draft_available))
         AppActionRow() {
             AppButton({ recovery.restore(restore) }, enabled = ready && !busy && error == null) { Text(stringResource(R.string.recovery_restore)) }
-            AppDangerOutlinedButton({confirming=true}, enabled = !busy) { Text(stringResource(R.string.discard)) }
+            AppDangerOutlinedButton({confirming=true}, enabled = !busy) { Text(stringResource(R.string.ux_discard_local_recovery)) }
         }
     }
     if(confirming) AlertDialog(onDismissRequest={confirming=false},
-        title={Text(stringResource(R.string.discard))},text={Text(stringResource(R.string.recovery_discard_confirm))},
-        confirmButton={AppDangerTextButton({confirming=false;recovery.discard()},enabled=!busy) {Text(stringResource(R.string.discard))}},
+        title={Text(stringResource(R.string.ux_discard_local_recovery))},text={Text(stringResource(R.string.recovery_discard_confirm))},
+        confirmButton={AppDangerTextButton({confirming=false;recovery.discard()},enabled=!busy) {Text(stringResource(R.string.ux_discard_local_recovery))}},
         dismissButton={TextButton({confirming=false}) {Text(stringResource(R.string.cancel))}})
     error?.let { ErrorState(throwable = it, onRetry = if (busy) null else recovery::reload) }
 }

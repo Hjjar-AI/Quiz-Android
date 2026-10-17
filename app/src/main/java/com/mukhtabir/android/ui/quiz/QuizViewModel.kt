@@ -48,7 +48,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 enum class QuizSource {
     BOOK,
@@ -65,6 +64,10 @@ data class SavedSession(
 )
 
 data class QuizUiState(
+    val flaggedIndices: Set<Int> = emptySet(),
+    val flagError: Boolean = false,
+    val flagReadFailed: Boolean = false,
+    val launchPreset: QuizPreset? = null,
     val downloaded: Boolean = false,
     val queuedAnswers: Int = 0,
     val syncRequired: Boolean = false,
@@ -250,6 +253,7 @@ class QuizViewModel(
         val retained = downloadedSession ?: downloadedRead.getOrNull()
         if (retained != null && finish == null && _state.value.pendingDraft == null && retained.session.isActive) {
             downloadedSession = retained
+            loadFlags(retained.session.sessionId, retained.session.questionIds.size)
             _state.update { it.copy(mode = TestMode.values().first { mode -> mode.path == retained.session.mode },
                 session = retained.session, setupLoaded = true, downloaded = true,
                 queuedAnswers = retained.answers.size, syncRequired = retained.answers.isNotEmpty() || retained.locallyFinished,
@@ -411,6 +415,15 @@ class QuizViewModel(
             current.selectedBook == name || current.books.none { it.name == name }) return
         updateSetup { it.copy(selectedBook = name, bookFiltersFor = null, bookFiltersError = null) }
         refreshBookFilters()
+        queueAvailableCount()
+    }
+
+    fun clearActiveFilters() {
+        val current = _state.value
+        if (current.isLoading || current.recoveryRequired || current.session != null) return
+        bookFiltersJob?.cancel()
+        updateSetup { it.copy(selectedBook = null, selectedCategoryIds = emptySet(), selectedTags = emptySet(), additionalTags = "",
+            bookFiltersFor = null, bookFiltersLoading = false, bookFiltersError = null) }
         queueAvailableCount()
     }
 
@@ -606,10 +619,13 @@ class QuizViewModel(
     fun startPreset(preset: QuizPreset) {
         if (preset.questionIds.isEmpty()) return
         if (!_state.value.setupLoaded || _state.value.isLoading || _state.value.recoveryRequired || _state.value.session != null || _state.value.pendingDraft != null || _state.value.draftStorageFailed) return
+        _state.update { it.copy(launchPreset = preset) }
+        if (preset.questionIds.size > _state.value.maxQuizQuestions || preset.questionIds.any { it <= 0 } ||
+            preset.questionIds.distinct().size != preset.questionIds.size) return
         setBusy()
         viewModelScope.launch {
             runCatching {
-                val questionIds = preset.questionIds.take(_state.value.maxQuizQuestions)
+                val questionIds = preset.questionIds
                 val session = sessionService.start(
                     preset.mode,
                     StartSessionRequest(
@@ -627,6 +643,55 @@ class QuizViewModel(
                 )
             }.onFailure(::handleSessionFailure)
         }
+    }
+
+    fun discardLaunchPreset() { if (!_state.value.isLoading) _state.update { it.copy(launchPreset = null) } }
+
+    fun practiceResults(preset: QuizPreset) {
+        val result = _state.value.results ?: return
+        if (result.reviewWithheld || preset.questionIds.isEmpty() ||
+            preset.questionIds.any { id -> result.results.none { it.questionId == id } }) return
+        returnToSetup()
+        if (_state.value.results == null) startPreset(preset)
+    }
+
+    fun studyResultCategory(categoryId: Long) {
+        val current = _state.value
+        val result = current.results ?: return
+        if (result.reviewWithheld || result.results.none { it.categoryId == categoryId } ||
+            current.categories.none { it.id == categoryId }) return
+        returnToSetup()
+        if (_state.value.results != null) return
+        updateSetup { it.copy(mode = TestMode.STUDY, source = QuizSource.BOOK, selectedBook = null,
+            selectedCategoryIds = setOf(categoryId), selectedTags = emptySet(), additionalTags = "",
+            selectedBlueprintId = null, difficulty = null, verifiedOnly = false) }
+        queueAvailableCount()
+    }
+
+    private fun loadFlags(sessionId: String, total: Int) {
+        val read = draftStore.readFlags(userId, sessionId)
+        _state.update { it.copy(flaggedIndices = if (read.isSuccess) read.getOrThrow().filter { i -> i in 0 until total }.toSet()
+            else if (it.session?.sessionId == sessionId) it.flaggedIndices else emptySet(), flagError = read.isFailure, flagReadFailed = read.isFailure) }
+    }
+
+    fun toggleFlag() {
+        val current = _state.value
+        val session = current.session ?: return
+        val index = current.questionPage?.index ?: return
+        if (current.isLoading || current.results != null || current.flagReadFailed) return
+        val flags = if (index in current.flaggedIndices) current.flaggedIndices - index else current.flaggedIndices + index
+        _state.update { it.copy(flaggedIndices = flags) }
+        val saved = draftStore.writeFlags(userId, session.sessionId, flags)
+        _state.update { it.copy(flagError = saved.isFailure) }
+    }
+
+    fun retryFlags() {
+        val current = _state.value
+        val session = current.session ?: return
+        if (current.isLoading) return
+        if (current.flagReadFailed) { loadFlags(session.sessionId, session.questionIds.size); return }
+        val saved = draftStore.writeFlags(userId, session.sessionId, current.flaggedIndices)
+        _state.update { it.copy(flagError = saved.isFailure) }
     }
 
     fun resumeSaved() {
@@ -1517,9 +1582,11 @@ class QuizViewModel(
         timerDisabled: Boolean = false,
         restoredAnswers: JsonObject = JsonObject(emptyMap()),
     ) {
+        loadFlags(session.sessionId, session.questionIds.size)
         _state.update {
             it.copy(
                 mode = mode,
+                launchPreset = null,
                 session = session,
                 answeredIndices = restoredAnswers.entries.mapNotNull { (index, slot) ->
                     val value = if (slot is JsonObject) slot["answer"] else slot

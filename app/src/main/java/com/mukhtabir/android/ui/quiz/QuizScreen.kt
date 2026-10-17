@@ -1,16 +1,15 @@
 package com.mukhtabir.android.ui.quiz
 
+import com.mukhtabir.android.ui.components.ReviewFilter
+import com.mukhtabir.android.ui.components.ResultReviewFilters
+
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 
-import com.mukhtabir.android.ui.components.ExplanationCard
 
 import com.mukhtabir.android.ui.theme.AppTheme
-import androidx.compose.foundation.layout.width
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ProvideTextStyle
 
 import com.mukhtabir.android.ui.components.AppSection
 
@@ -74,7 +73,6 @@ import com.mukhtabir.android.data.remote.BookmarkService
 import com.mukhtabir.android.data.remote.CategoryService
 import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.QuestionService
-import com.mukhtabir.android.data.remote.SessionQuestionDto
 import com.mukhtabir.android.data.remote.SessionResultItemDto
 import com.mukhtabir.android.data.remote.SessionResultsDto
 import com.mukhtabir.android.data.remote.TestMode
@@ -129,7 +127,7 @@ fun QuizRoute(
     if(confirmDiscardFinishStorage) AlertDialog(onDismissRequest={confirmDiscardFinishStorage=false},
         title={Text(stringResource(R.string.quiz_finish_recovery_title))},
         text={Text(stringResource(R.string.quiz_finish_storage_discard))},
-        confirmButton={AppDangerTextButton({confirmDiscardFinishStorage=false;viewModel.discardUnreadableFinishRecovery()},enabled=!state.isLoading) { Text(stringResource(R.string.discard)) }},
+        confirmButton={AppDangerTextButton({confirmDiscardFinishStorage=false;viewModel.discardUnreadableFinishRecovery()},enabled=!state.isLoading) { Text(stringResource(R.string.ux_discard_finish_recovery)) }},
         dismissButton={TextButton({confirmDiscardFinishStorage=false}) { Text(stringResource(R.string.cancel)) }})
     if(confirmFinishRecovery) AlertDialog(onDismissRequest={confirmFinishRecovery=false},
         title={Text(stringResource(R.string.quiz_finish_recovery_title))},
@@ -215,6 +213,14 @@ fun QuizRoute(
     // slot, the flow emits null, and the effect ends. That handles
     // the case where this composable is restored (rather than
     // re-created) by the tab-navigation save/restore pattern.
+    var retryLaunch by remember { mutableStateOf(false) }
+    if (retryLaunch) state.launchPreset?.let { pending ->
+        com.mukhtabir.android.ui.components.PracticeLauncher(pending.sessionLabel, pending.questionIds, state.maxQuizQuestions,
+            enabled = !state.isLoading && !state.recoveryRequired && state.resumable == null && state.session == null,
+            initialMode = pending.mode, onDismiss = { retryLaunch = false }, onStart = { mode, ids, title ->
+                retryLaunch = false; viewModel.startPreset(com.mukhtabir.android.core.QuizPreset(mode, ids, title))
+            })
+    }
     val pendingSetupMode by quizPresetHolder.setupMode.collectAsState()
     LaunchedEffect(pendingSetupMode, state.setupLoaded, state.isLoading, state.recoveryRequired, state.session, state.results, state.pendingDraft, state.draftStorageFailed) {
         if (pendingSetupMode != null && state.setupLoaded && !state.isLoading && !state.recoveryRequired &&
@@ -299,7 +305,7 @@ fun QuizRoute(
                     message=stringResource(R.string.quiz_finish_storage_error),
                     onRetry=viewModel::retryFinishStorage,retryEnabled=!state.isLoading)
                 if(state.finishRecovery==null) AppDangerOutlinedButton({confirmDiscardFinishStorage=true},enabled=!state.isLoading) {
-                    Text(stringResource(R.string.discard))
+                    Text(stringResource(R.string.ux_discard_finish_recovery))
                 }
             }
             if(state.finishPending) {
@@ -326,13 +332,13 @@ fun QuizRoute(
                     // remove its encrypted value without interpreting it.
                     var confirmUnreadableDiscard by rememberSaveable(userId) { mutableStateOf(false) }
                     AppDangerOutlinedButton({ confirmUnreadableDiscard = true }, enabled = !state.isLoading) {
-                        Text(stringResource(R.string.discard))
+                        Text(stringResource(R.string.ux_discard_answer_draft))
                     }
                     if (confirmUnreadableDiscard) AlertDialog(
                         onDismissRequest = { confirmUnreadableDiscard = false },
                         title = { Text(stringResource(R.string.session_draft_discard_title)) },
                         text = { Text(stringResource(R.string.session_draft_discard_message)) },
-                        confirmButton = { AppDangerTextButton({ confirmUnreadableDiscard = false; viewModel.discardLocalDraft() }, enabled = !state.isLoading) { Text(stringResource(R.string.discard)) } },
+                        confirmButton = { AppDangerTextButton({ confirmUnreadableDiscard = false; viewModel.discardLocalDraft() }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_answer_draft)) } },
                         dismissButton = { TextButton({ confirmUnreadableDiscard = false }) { Text(stringResource(R.string.cancel)) } },
                     )
                 }
@@ -353,17 +359,24 @@ fun QuizRoute(
                         if (draft.preAnswer.isNotBlank()) Text(draft.preAnswer)
                         if (state.draftCanRetry) Button(viewModel::retryPendingDraft,
                             enabled = !state.isLoading && !state.recoveryRequired && !state.draftStorageFailed) { Text(stringResource(R.string.retry)) }
-                        AppDangerOutlinedButton({ confirmDiscard = true }, enabled = !state.isLoading) { Text(stringResource(R.string.discard)) }
+                        AppDangerOutlinedButton({ confirmDiscard = true }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_answer_draft)) }
                     }
                 }
                 if (confirmDiscard) AlertDialog(onDismissRequest = { confirmDiscard = false },
                     title = { Text(stringResource(R.string.session_draft_discard_title)) },
                     text = { Text(stringResource(R.string.session_draft_discard_message)) },
-                    confirmButton = { AppDangerTextButton({ confirmDiscard = false; viewModel.discardLocalDraft() }, enabled = !state.isLoading) { Text(stringResource(R.string.discard)) } },
+                    confirmButton = { AppDangerTextButton({ confirmDiscard = false; viewModel.discardLocalDraft() }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_answer_draft)) } },
                     dismissButton = { TextButton({ confirmDiscard = false }) { Text(stringResource(R.string.cancel)) } },
                 )
             }
 
+            if (state.launchPreset != null && state.session == null && state.results == null) {
+                Text(stringResource(R.string.flow_target_retained))
+                SelectionRow {
+                    OutlinedButton({ retryLaunch = true }, enabled = !state.isLoading && !state.recoveryRequired && state.resumable == null) { Text(stringResource(R.string.flow_practice)) }
+                    TextButton(viewModel::discardLaunchPreset, enabled = !state.isLoading) { Text(stringResource(R.string.ux_clear_practice_selection)) }
+                }
+            }
             when {
                 state.results != null -> ResultsContent(
                     results = requireNotNull(state.results),
@@ -373,6 +386,11 @@ fun QuizRoute(
                     onRefreshReview = viewModel::refreshCompletedReview,
                     imageRepository = imageRepository,
                     onNewSession = viewModel::returnToSetup,
+                    maximum = state.maxQuizQuestions,
+                    canPractice = !state.isLoading && !state.recoveryRequired && !state.finishStorageFailed && !state.syncing,
+                    categories = state.categories.map { it.id }.toSet(),
+                    onPractice = { mode, ids, label -> viewModel.practiceResults(com.mukhtabir.android.core.QuizPreset(mode, ids, label)) },
+                    onCategory = viewModel::studyResultCategory,
                     onDone = onBack,
                 )
                 state.questionPage != null -> QuestionContent(state.copy(isLoading = state.isLoading || state.locallyFinished || state.recoveryRequired || state.pendingDraft != null || state.draftStorageFailed ||
@@ -392,12 +410,14 @@ private fun SetupContent(
     canUseBlueprint: Boolean,
     viewModel: QuizViewModel,
 ) {
+    var bookContents by rememberSaveable { mutableStateOf(false) }
+    if (bookContents) BookContentsDialog(state, viewModel, onDismiss = { bookContents = false })
     var confirmDiscard by rememberSaveable(state.resumable?.progress?.sessionId) { mutableStateOf(false) }
     if (confirmDiscard) AlertDialog(
         onDismissRequest = { confirmDiscard = false },
         title = { Text(stringResource(R.string.discard_saved_session_title)) },
         text = { Text(stringResource(R.string.discard_saved_session_message)) },
-        confirmButton = { AppDangerTextButton({ confirmDiscard = false; viewModel.discardSaved() }, enabled = !state.isLoading) { Text(stringResource(R.string.discard)) } },
+        confirmButton = { AppDangerTextButton({ confirmDiscard = false; viewModel.discardSaved() }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_saved_session)) } },
         dismissButton = { TextButton({ confirmDiscard = false }) { Text(stringResource(R.string.cancel)) } },
     )
     state.resumable?.let { saved ->
@@ -431,7 +451,7 @@ private fun SetupContent(
                         Text(stringResource(R.string.quiz_continue_session))
                     }
                     AppDangerTextButton(onClick = { confirmDiscard = true }, enabled = !state.isLoading) {
-                        Text(stringResource(R.string.discard))
+                        Text(stringResource(R.string.ux_discard_saved_session))
                     }
                 }
             }
@@ -484,6 +504,7 @@ private fun SetupContent(
         }
     }
     if (bankPool) {
+        OutlinedButton({ bookContents = true }, enabled = !state.isLoading) { Text(stringResource(R.string.flow_book_contents)) }
         AppSection(title = stringResource(R.string.quiz_optional_book),
             subtitle = selectedBook ?: stringResource(R.string.quiz_no_book_restriction), initiallyExpanded = false) {
             Text(stringResource(R.string.quiz_book_hint), style = MaterialTheme.typography.bodySmall)
@@ -519,7 +540,7 @@ private fun SetupContent(
             SetupPicker(title = stringResource(R.string.select_categories), options = categories.map { it.id to it.name },
                 selected = state.selectedCategoryIds, onToggle = viewModel::toggleCategory, enabled = !state.isLoading)
             if (selectedBook != null && tags.isEmpty()) Text(stringResource(R.string.quiz_book_no_tags))
-            SetupPicker(title = stringResource(R.string.select_tags), options = tags.map { it.name to it.name },
+            SetupPicker(title = stringResource(R.string.ux_tags_any), options = tags.map { it.name to it.name },
                 selected = state.selectedTags, onToggle = viewModel::toggleTag, enabled = !state.isLoading)
         }
         // Preserve legacy free-text filters visibly, including after pool/book changes.
@@ -753,6 +774,13 @@ private fun QuestionContent(
         { readingLocale = it }, hasCase = page.question.case?.stem?.isNotBlank() == true, caseTranslations = page.question.case?.translations ?: kotlinx.serialization.json.JsonObject(emptyMap()),
         explanationAvailable = showExplanation && (!state.explanation.isNullOrBlank() || !page.question.explanation.isNullOrBlank()),
         explanationTranslated = !localized.explanation.isNullOrBlank(), action = { QuestionBookmark(state,viewModel) })
+    TextButton(viewModel::toggleFlag, enabled = !state.isLoading) {
+        Text(stringResource(if (page.index in state.flaggedIndices) R.string.flow_unflag else R.string.flow_flag))
+    }
+    if (state.flagError) {
+        Text(stringResource(R.string.flow_flag_error), color = MaterialTheme.colorScheme.error)
+        TextButton(viewModel::retryFlags) { Text(stringResource(R.string.retry)) }
+    }
     ClinicalCaseContext(localized.case)
     com.mukhtabir.android.ui.components.QuestionTextCard(localized.text, Modifier.fillMaxWidth(),
         textStyle = MaterialTheme.typography.titleMedium)
@@ -808,6 +836,13 @@ private fun QuestionContent(
             )
         }
     }
+
+    if (state.mode.isLearningMode()) com.mukhtabir.android.ui.components.BilingualQuestionComparison(
+        com.mukhtabir.android.data.remote.QuestionDto(id = page.question.id, question = page.question.text,
+            choices = page.question.choices, translations = page.question.translations, case = page.question.case,
+            explanation = state.explanation ?: page.question.explanation),
+        choicesVisible = state.mode != TestMode.RECALL || state.choicesRevealed,
+        explanationVisible = showExplanation, feedbackTranslations = state.feedbackTranslations)
 
     if (showExplanation) {
         localized.explanation?.takeIf { it.isNotBlank() }?.let {
@@ -888,9 +923,18 @@ private fun ResultsContent(
     onRefreshReview: () -> Unit,
     imageRepository: ImageRepository,
     onNewSession: () -> Unit,
+    maximum: Int,
+    canPractice: Boolean,
+    categories: Set<Long>,
+    onPractice: (TestMode, List<Long>, String) -> Unit,
+    onCategory: (Long) -> Unit,
     onDone: () -> Unit,
 ) {
-    var reviewFilter by rememberSaveable(results.sourceSessionId, results.historyId) { mutableStateOf(ResultReviewFilter.ALL) }
+    var practiceIds by remember { mutableStateOf<List<Long>?>(null) }
+    practiceIds?.let { ids -> com.mukhtabir.android.ui.components.PracticeLauncher(stringResource(R.string.results), ids,
+        maximum, enabled = canPractice, onDismiss = { practiceIds = null },
+        onStart = { mode, selected, label -> practiceIds = null; onPractice(mode, selected, label) }) }
+    var reviewFilter by rememberSaveable(results.sourceSessionId, results.historyId) { mutableStateOf(ReviewFilter.ALL) }
     AppPageHeading(stringResource(R.string.results))
     ResultsOverview(results)
     if (results.reviewWithheld) {
@@ -900,28 +944,24 @@ private fun ResultsContent(
         OutlinedButton(onClick = onRefreshReview, enabled = !reviewLoading,
             modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.quiz_refresh_review)) }
     } else {
-        com.mukhtabir.android.ui.components.AppSectionHeading(stringResource(R.string.review_details))
+        val incorrect = results.results.filter { it.userAnswer != null && !it.isCorrect }.map { it.questionId }.filter { it > 0 }.distinct()
+        val unanswered = results.results.filter { it.userAnswer == null }.map { it.questionId }.filter { it > 0 }.distinct()
         SelectionRow {
-            ResultReviewFilter.values().forEach { filter ->
-                SetupChoiceChip(selected = reviewFilter == filter, enabled = true,
-                    onClick = { reviewFilter = filter }, text = stringResource(when (filter) {
-                        ResultReviewFilter.ALL -> R.string.quiz_review_all
-                        ResultReviewFilter.INCORRECT -> R.string.quiz_review_incorrect
-                        ResultReviewFilter.UNANSWERED -> R.string.unanswered
-                    }))
+            if (incorrect.isNotEmpty()) Button({ practiceIds = incorrect }, enabled = canPractice) { Text(stringResource(R.string.flow_incorrect)) }
+            if (unanswered.isNotEmpty()) OutlinedButton({ practiceIds = unanswered }, enabled = canPractice) { Text(stringResource(R.string.flow_unanswered)) }
+        }
+        AppSection(stringResource(R.string.flow_category)) {
+            results.results.filter { it.categoryId != null }.distinctBy { it.categoryId }.forEach { row ->
+                OutlinedButton({ row.categoryId?.let(onCategory) }, enabled = canPractice && row.categoryId?.let { it in categories } == true) {
+                    Text(row.categoryName ?: com.mukhtabir.android.util.formatNumber(requireNotNull(row.categoryId)))
+                }
             }
         }
+        com.mukhtabir.android.ui.components.AppSectionHeading(stringResource(R.string.review_details))
         val reviews = results.results.withIndex().filter { (_, result) ->
-            when (reviewFilter) {
-                ResultReviewFilter.ALL -> true
-                ResultReviewFilter.INCORRECT -> result.userAnswer != null && !result.isCorrect
-                ResultReviewFilter.UNANSWERED -> result.userAnswer == null
-            }
+            reviewFilter.includes(result.userAnswer != null, result.isCorrect)
         }
-        Text(stringResource(R.string.quiz_review_count, com.mukhtabir.android.util.formatNumber(reviews.size),
-            com.mukhtabir.android.util.formatNumber(results.results.size)), style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (reviews.isEmpty()) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.quiz_review_empty))
+        ResultReviewFilters(reviewFilter, { reviewFilter = it }, reviews.size, results.results.size)
         reviews.forEach { (index, result) ->
             AppSection(title = if (result.userAnswer == null) stringResource(R.string.quiz_review_unanswered,
                 com.mukhtabir.android.util.formatNumber(index + 1)) else stringResource(
@@ -945,7 +985,6 @@ private fun ResultsContent(
     }
 }
 
-private enum class ResultReviewFilter { ALL, INCORRECT, UNANSWERED }
 
 @Composable
 private fun ResultBreakdowns(results: List<SessionResultItemDto>) {

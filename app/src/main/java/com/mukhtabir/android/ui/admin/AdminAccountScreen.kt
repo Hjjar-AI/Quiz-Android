@@ -68,7 +68,7 @@ fun AdminAccountRoute(id: Long,actingUserId: Long,service: AdminService,canManag
         s.generatedPassword==null && !s.generatedUncertain
     if(leaving) AlertDialog(onDismissRequest={leaving=false},title={Text(stringResource(R.string.account_leave_title))},
         text={Text(stringResource(if(s.generatedPassword!=null || s.generatedUncertain) R.string.account_generated_leave else R.string.account_leave_message))},
-        confirmButton={AppDangerTextButton({vm.clearSecrets();leaving=false;onBack()},enabled=!s.busy){Text(stringResource(R.string.discard))}},
+        confirmButton={AppDangerTextButton({vm.clearSecrets();leaving=false;onBack()},enabled=!s.busy){Text(stringResource(R.string.ux_discard_account_changes))}},
         dismissButton={TextButton({leaving=false}){Text(stringResource(R.string.keep_editing))}})
     if(action!=null) AlertDialog(onDismissRequest={action=null},
         title={Text(stringResource(when(action) {
@@ -88,7 +88,7 @@ fun AdminAccountRoute(id: Long,actingUserId: Long,service: AdminService,canManag
             "generate" -> vm.generatePassword()
             "delete" -> vm.deleteUser()
             else -> vm.toggle()
-        };action=null},enabled=enabled){Text(stringResource(R.string.confirm))}},
+        };action=null},enabled=enabled){Text(stringResource(if (action == "delete") R.string.account_delete else R.string.confirm))}},
         dismissButton={TextButton({action=null}){Text(stringResource(R.string.cancel))}})
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(AppLayoutTokens.pageInsets),verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         AppPageHeading(stringResource(R.string.account_tools_title))

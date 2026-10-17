@@ -14,12 +14,9 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 
 import com.mukhtabir.android.ui.components.AppActionRow
 
-import com.mukhtabir.android.data.remote.localizedForDisplay
-import com.mukhtabir.android.ui.components.ClinicalCaseContext
 
 import com.mukhtabir.android.ui.components.RefreshOnResume
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,21 +25,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
-import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -57,8 +50,6 @@ import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
-import com.mukhtabir.android.ui.components.MarkdownText
-import com.mukhtabir.android.ui.components.QuestionImage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
@@ -185,9 +176,10 @@ fun MistakesRoute(
     service: QuestionService,
     imageRepository: ImageRepository,
     canStartSessions: Boolean,
+    maxQuestions: Int,
     pageSize: Int,
     userId: Long,
-    onPractiseIds: (List<Long>) -> Unit,
+    onStartQuestions: (com.mukhtabir.android.data.remote.TestMode, List<Long>, String) -> Unit,
     onOpenQuestion: (Long) -> Unit,
 ) {
     val viewModel: MistakesViewModel = viewModel(
@@ -197,6 +189,16 @@ fun MistakesRoute(
     val state by viewModel.state.collectAsState()
     LaunchedEffect(pageSize) { viewModel.applyPageSize(pageSize) }
     RefreshOnResume(viewModel::retry)
+    var showPractice by androidx.compose.runtime.remember(userId) { androidx.compose.runtime.mutableStateOf(false) }
+    if (showPractice && canStartSessions) {
+        val ids = androidx.compose.runtime.remember { state.items.map { it.id } }
+        com.mukhtabir.android.ui.components.PracticeLauncher(stringResource(R.string.session_label_mistakes), ids, maxQuestions,
+            enabled = !state.isLoading && state.error == null && !state.hasUnknownError,
+            onDismiss = { showPractice = false }, onStart = { mode, selected, title ->
+                showPractice = false; onStartQuestions(mode, selected, title)
+            })
+    }
+
 
     Column(
         modifier = Modifier
@@ -207,7 +209,7 @@ fun MistakesRoute(
         AppPageHeading(stringResource(R.string.mistakes_title), action = {
                 AppActionRow(fillWidth = false) {
                     Button(
-                onClick = { onPractiseIds(state.items.map { it.id }) },
+                onClick = { showPractice = true },
                 enabled = canStartSessions && state.items.isNotEmpty() && !state.isLoading &&
                     state.error == null && !state.hasUnknownError,
             ) {
@@ -237,31 +239,8 @@ fun MistakesRoute(
                 verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
             ) {
                 items(state.items, key = { it.id }) { question ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenQuestion(question.id) },
-                    ) {
-                        com.mukhtabir.android.ui.components.AppCardBody() {
-                            ClinicalCaseContext(question.localizedForDisplay().case)
-                            MarkdownText(
-                                question.localizedForDisplay().question,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            QuestionImage(question.imageUrl, imageRepository)
-                            val meta = buildList {
-                                question.categoryName?.let(::add)
-                                question.difficulty.takeIf { it.isNotBlank() }?.let(::add)
-                            }.joinToString(" · ")
-                            if (meta.isNotBlank()) {
-                                Text(
-                                    text = meta,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
+                    com.mukhtabir.android.ui.components.QuestionListCard(question, imageRepository,
+                        onOpen = { onOpenQuestion(question.id) })
                 }
                 if (state.totalPages > 1) {
                     item {

@@ -41,6 +41,7 @@ fun LoginScreen(
     onPrivacy: () -> Unit = {},
     onChangeServer: (() -> Unit)? = null,
     onOffline: (() -> Unit)? = null,
+    onDemo: (() -> Unit)? = null,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
         val viewportHeight = maxHeight
@@ -57,6 +58,7 @@ fun LoginScreen(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
             )
+            onDemo?.let { open -> com.mukhtabir.android.ui.demo.DemoInvitation(onOpen = open, enabled = !state.isLoading) }
             Text(
                 text = stringResource(R.string.login_title),
                 style = MaterialTheme.typography.titleMedium,

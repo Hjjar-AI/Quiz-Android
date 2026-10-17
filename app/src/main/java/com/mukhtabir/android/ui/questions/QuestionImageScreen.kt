@@ -81,7 +81,7 @@ fun QuestionImageRoute(questionId: Long, userId: Long, questions: QuestionServic
     if (recovery != null && s.question != null) AlertDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
         text = { Text(stringResource(R.string.author_recover_body)) },
         confirmButton = { TextButton(vm::restoreDraft, enabled = !s.busy && !s.denied) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.discard)) } })
+        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
     var action by rememberSaveable { mutableStateOf<String?>(null) }
     var leave by rememberSaveable { mutableStateOf(false) }
     val back={ if(s.selected!=null) leave=true else onBack() }
@@ -99,7 +99,7 @@ fun QuestionImageRoute(questionId: Long, userId: Long, questions: QuestionServic
         text={Text(stringResource(R.string.question_image_leave))},
         confirmButton={Column {
             TextButton({leave=false;vm.keepDraft(onBack)},enabled=!s.busy){Text(stringResource(R.string.author_save_later))}
-            AppDangerTextButton({leave=false;discarding=true;vm.clearSelection()},enabled=!s.busy){Text(stringResource(R.string.discard))}
+            AppDangerTextButton({leave=false;discarding=true;vm.clearSelection()},enabled=!s.busy){Text(stringResource(R.string.ux_discard_image_changes))}
         }},
         dismissButton={TextButton({leave=false}){Text(stringResource(R.string.keep_editing))}},
     )

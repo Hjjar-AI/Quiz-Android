@@ -263,7 +263,7 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
     if (recovery != null) AlertDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
         text = { Text(stringResource(R.string.author_recover_body)) },
         confirmButton = { TextButton(vm::restoreDraft, enabled = !s.busy) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.discard)) } })
+        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
     var query by remember { mutableStateOf("") }
     var leave by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -275,11 +275,11 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
     if (leave) AlertDialog(onDismissRequest = { leave = false }, title = { Text(stringResource(R.string.unsaved_question_title)) },
         text = { Text(stringResource(if (s.uncertain != null) R.string.author_leave_unknown else R.string.unsaved_question_message)) }, confirmButton = { Column {
             TextButton({ leave = false; vm.keepDraft(onBack) }) { Text(stringResource(R.string.author_save_later)) }
-            if (s.uncertain == null) AppDangerTextButton({ leave = false; discarding = true; vm.close() }) { Text(stringResource(R.string.discard)) }
+            if (s.uncertain == null) AppDangerTextButton({ leave = false; discarding = true; vm.close() }) { Text(stringResource(R.string.ux_discard_question_changes)) }
         } },
         dismissButton = { TextButton({ leave = false }) { Text(stringResource(R.string.keep_editing)) } })
-    if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text(stringResource(R.string.delete)) },
-        text = { Text(stringResource(R.string.exam_library_delete_warning)) }, confirmButton = { AppDangerTextButton({ deleting = false; vm.delete() }) { Text(stringResource(R.string.confirm)) } },
+    if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text(stringResource(R.string.ux_delete_private_question)) },
+        text = { Text(stringResource(R.string.exam_library_delete_warning)) }, confirmButton = { AppDangerTextButton({ deleting = false; vm.delete() }) { Text(stringResource(R.string.ux_delete_private_question)) } },
         dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } })
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
@@ -308,7 +308,7 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
                 s.form?.let { form -> ExamDraftFields(form, !s.denied && !s.busy && !s.review && s.uncertain == null, maxChoices, s.categories,
                     !s.selected?.case?.stem.isNullOrBlank() && form.caseKey == s.selected?.case?.key, vm::edit) }
                 AppButton(vm::save, enabled = !s.denied && !s.busy && !s.review && s.uncertain == null && s.form?.payload(maxChoices) != s.baseline) { Text(stringResource(R.string.save)) }
-                AppDangerOutlinedButton({ deleting = true }, enabled = !s.denied && !s.busy && !s.review && s.uncertain == null) { Text(stringResource(R.string.delete)) }
+                AppDangerOutlinedButton({ deleting = true }, enabled = !s.denied && !s.busy && !s.review && s.uncertain == null) { Text(stringResource(R.string.ux_delete_private_question)) }
             }
         } else {
             item {

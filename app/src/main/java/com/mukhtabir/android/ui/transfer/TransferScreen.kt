@@ -6,8 +6,6 @@ import com.mukhtabir.android.ui.theme.AppTheme
 
 import com.mukhtabir.android.ui.components.AppPageHeading
 
-import com.mukhtabir.android.ui.components.AppCard
-import com.mukhtabir.android.ui.components.AppCardBody
 import com.mukhtabir.android.ui.components.AppSection
 
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
@@ -142,7 +140,7 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
     }
     if (leaving) AlertDialog(onDismissRequest = { leaving = false }, title = { Text(stringResource(R.string.transfer_leave)) },
         text = { Text(stringResource(R.string.transfer_leave_body)) },
-        confirmButton = { AppDangerTextButton({ leaving = false; onBack() }, enabled = !s.busy) { Text(stringResource(R.string.discard)) } },
+        confirmButton = { AppDangerTextButton({ leaving = false; onBack() }, enabled = !s.busy) { Text(stringResource(R.string.ux_leave_transfer)) } },
         dismissButton = { TextButton({ leaving = false }) { Text(stringResource(R.string.cancel)) } })
     DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
     DisposableEffect(Unit) { onDispose { searchJob?.cancel() } }
@@ -169,7 +167,7 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
         item {
             AppPageHeading(stringResource(R.string.transfer_title))
             if (s.busy) { AppLoadingIndicator(); Text(stringResource(R.string.transfer_working)) }
-            s.error?.let { ErrorState(throwable = it) }
+            s.error?.takeUnless { error -> s.queue.any { it.error === error } }?.let { ErrorState(throwable = it) }
             s.message?.let { Text(stringResource(it)) }
             if (validation) Text(stringResource(R.string.transfer_invalid))
             if (shareError) Text(stringResource(R.string.transfer_share_error))
@@ -188,12 +186,16 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             }
             if (s.file == null && s.queue.isEmpty()) Choice(kind, listOf("simple" to R.string.transfer_simple, "telegram" to R.string.transfer_telegram, "state" to R.string.transfer_state), !s.busy && !s.uncertain) { kind = it; vm.invalidateAnalysis() }
             Text(stringResource(R.string.transfer_formats))
-            Text(s.name)
-            if (s.file != null || s.queue.isNotEmpty()) TextButton(vm::clearFile, enabled = !s.busy && !s.uncertain) { Text(stringResource(R.string.cancel)) }
+            if (s.file != null || s.queue.isNotEmpty()) TextButton(vm::clearFile, enabled = !s.busy && !s.uncertain) {
+                Text(stringResource(if (s.queue.isNotEmpty()) R.string.ux_clear_import_queue else R.string.ux_remove_import_file))
+            }
             if (kind == "simple") Text(stringResource(R.string.transfer_multiple_hint))
             OutlinedButton({
                 if (kind == "simple") multiPicker.launch(arrayOf("*/*")) else picker.launch(arrayOf("*/*"))
             }, enabled = !s.busy && !s.uncertain) { Text(stringResource(if (kind == "simple") R.string.transfer_choose_multiple else R.string.transfer_choose)) }
+            if (s.queue.isNotEmpty()) Text(stringResource(R.string.ux_import_queue_summary,
+                formatNumber(s.queue.size), formatNumber(s.queue.count { it.status == ImportStatus.Imported }),
+                formatNumber(s.queue.count { it.status in setOf(ImportStatus.Failed, ImportStatus.Uncertain, ImportStatus.Limited) })))
             if (s.queue.any { it.status == ImportStatus.Limited }) Text(stringResource(R.string.transfer_unlock_limited))
             if (kind == "simple" && s.queue.any { it.status == ImportStatus.Failed || it.status == ImportStatus.Uncertain }) {
                 Text(stringResource(R.string.transfer_batch_stopped))
@@ -205,34 +207,56 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             }
             if (s.uncertain) {
                 Text(stringResource(R.string.transfer_uncertain))
-                if (kind != "state") {
+                if (kind != "state" && s.queue.isEmpty()) {
                     Text(stringResource(R.string.transfer_simple_review))
                     OutlinedButton(vm::reviewSimple, enabled = !s.busy) { Text(stringResource(R.string.transfer_review)) }
                     s.reviewQuestions.forEach { MarkdownText(it.question) }
                 }
-                OutlinedButton(vm::acknowledgeReview, enabled = !s.busy && s.reviewed) { Text(stringResource(R.string.transfer_reviewed)) }
+                if (s.queue.isEmpty()) OutlinedButton(vm::acknowledgeReview, enabled = !s.busy && s.reviewed) { Text(stringResource(R.string.transfer_reviewed)) }
             }
-            TransferReport(s.analysis)
-            TransferReport(s.result)
+            if (s.queue.isEmpty() && s.name.isNotBlank() && (s.file != null || s.analysis != null || s.result != null)) {
+                AppSection(s.name, subtitle = stringResource(when {
+                    s.uncertain -> R.string.ux_import_uncertain_status
+                    s.result != null -> R.string.transfer_queue_imported
+                    s.analysis != null -> R.string.ux_import_preview_ready
+                    else -> R.string.ux_import_selected
+                }), initiallyExpanded = false, composeCollapsedContent = false) {
+                    TransferReport(s.analysis)
+                    TransferReport(s.result)
+                }
+            }
         }
         s.queue.forEach { entry -> item(key = "import-${entry.uri}") {
-            AppCard(Modifier.fillMaxWidth()) {
-                AppCardBody {
-                    Text(entry.name)
-                    Text(stringResource(when (entry.status) {
+            AppSection(title = entry.name, modifier = Modifier.fillMaxWidth(),
+                initiallyExpanded = false, composeCollapsedContent = false,
+                subtitle = stringResource(when (entry.status) {
                         ImportStatus.Pending -> R.string.transfer_queue_pending
                         ImportStatus.Limited -> R.string.transfer_queue_limited
                         ImportStatus.Uploading -> R.string.transfer_queue_uploading
                         ImportStatus.Imported -> R.string.transfer_queue_imported
                         ImportStatus.Failed -> R.string.transfer_queue_failed
-                        ImportStatus.Uncertain -> R.string.transfer_uncertain
-                    }))
+                        ImportStatus.Uncertain -> R.string.ux_import_uncertain_status
+                    })) {
                     TransferReport(entry.result)
-                    entry.error?.let { ErrorState(throwable = it) }
+                    entry.error?.let { error ->
+                        AppSection(stringResource(R.string.ux_import_error_details), composeCollapsedContent = false) {
+                            ErrorState(throwable = error)
+                        }
+                    }
+                    if (entry.status == ImportStatus.Failed) Text(stringResource(R.string.ux_import_failed_next))
+                    if (entry.status == ImportStatus.Uncertain) {
+                        Text(stringResource(R.string.transfer_uncertain))
+                        Text(stringResource(R.string.transfer_simple_review))
+                        OutlinedButton(vm::reviewSimple, enabled = !s.busy) { Text(stringResource(R.string.ux_review_import_outcome)) }
+                        s.reviewQuestions.forEach { MarkdownText(it.question) }
+                        OutlinedButton(vm::acknowledgeReview, enabled = !s.busy && s.reviewed) {
+                            Text(stringResource(R.string.transfer_reviewed))
+                        }
+                    }
+                    Text(stringResource(R.string.ux_import_remove_hint), style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                     TextButton({ vm.removeQueued(entry.uri) }, enabled = !s.busy && !s.uncertain) {
                         Text(stringResource(R.string.transfer_remove_file, entry.name))
                     }
-                }
             }
         } }
         unknown.forEach { author -> item(key = "author-${author.jsonObject["name"]}") {
@@ -280,7 +304,8 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                         enabled = !s.busy && ids != null, label = { Text(category.name) })
                 }
                 OutlinedTextField(categoryIds, { categoryIds = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_categories)) })
-                OutlinedTextField(tags, { tags = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_tags)) })
+                OutlinedTextField(tags, { tags = it }, enabled = !s.busy, label = { Text(stringResource(R.string.ux_tags_any)) })
+                Text(stringResource(R.string.quiz_filter_matching), style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 FlowRow { listOf("easy" to R.string.difficulty_easy, "medium" to R.string.difficulty_medium, "hard" to R.string.difficulty_hard).forEach { (d, label) ->
                     FilterChip(d in difficulty, { difficulty = if (d in difficulty) difficulty - d else difficulty + d }, enabled = !s.busy, label = { Text(stringResource(label)) })
                 } }

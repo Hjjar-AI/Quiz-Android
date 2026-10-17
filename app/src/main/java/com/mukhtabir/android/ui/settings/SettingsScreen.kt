@@ -18,9 +18,7 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 
 import com.mukhtabir.android.ui.components.AppActionRow
 
-import androidx.activity.compose.BackHandler
 import android.app.Activity
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,7 +31,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.mukhtabir.android.ui.components.AppButton as Button
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import com.mukhtabir.android.ui.components.AppCard as Card
 import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -43,25 +40,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.AppPreferences
-import com.mukhtabir.android.core.ThemePreference
 import com.mukhtabir.android.data.remote.AdminService
-import com.mukhtabir.android.data.remote.RuntimeSettingsUpdateRequest
 import com.mukhtabir.android.ui.components.ErrorState
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -74,7 +62,9 @@ fun SettingsRoute(preferences: AppPreferences, serverUrl: String, serverAddressH
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(com.mukhtabir.android.ui.components.AppLayoutTokens.pageInsets),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         AppPageHeading(stringResource(R.string.nav_settings), stringResource(R.string.preferences_local))
-        AppSection(stringResource(R.string.settings_study)) {
+        ReadingComfortSettings(preferences, display)
+        AppSection(stringResource(R.string.settings_study), subtitle = stringResource(R.string.preferences_page) + ": " +
+            (if (display.perPage == 0) stringResource(R.string.system_default) else com.mukhtabir.android.util.formatNumber(display.perPage))) {
             Text(stringResource(R.string.preferences_page), style = MaterialTheme.typography.titleSmall)
             AppActionRow() {
                 listOf(0, 10, 20, 50, 100).forEach { size ->
@@ -94,31 +84,15 @@ fun SettingsRoute(preferences: AppPreferences, serverUrl: String, serverAddressH
             Text(stringResource(R.string.preferences_haptics_hint), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        AppSection(stringResource(R.string.settings_appearance)) {
+        AppSection(stringResource(R.string.settings_appearance), subtitle = listOf(
+            com.mukhtabir.android.ui.theme.themeLabel(theme),
+            stringResource(if (display.compact) R.string.preferences_compact else R.string.ui_spacing_standard)).joinToString(" · ")) {
             SettingSwitch(stringResource(R.string.preferences_compact), display.compact) { preferences.setDisplay(display.copy(compact = it)) }
             Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleSmall)
-            AppActionRow() {
-                ThemePreference.values().forEach { option ->
-                    FilterChip(theme == option, { preferences.setTheme(option) }, label = {
-                        Text(com.mukhtabir.android.ui.theme.themeLabel(option))
-                    })
-                }
-            }
-            Text(stringResource(R.string.preferences_font), style = MaterialTheme.typography.titleSmall)
-            AppActionRow() {
-                listOf("default", "system", "noto-arabic", "inter", "outfit", "tajawal", "cairo", "ibm-plex-arabic", "amiri").forEach { font ->
-                    FilterChip(display.font == font, { preferences.setDisplay(display.copy(font = font)) }, label = { Text(when (font) {
-                        "default" -> stringResource(R.string.font_default)
-                        "system" -> stringResource(R.string.font_system)
-                        "noto-arabic" -> "Noto Sans Arabic"
-                        "ibm-plex-arabic" -> "IBM Plex Sans Arabic"
-                        else -> font.replaceFirstChar { it.uppercase() }
-                    }) })
-                }
-            }
-            Text(stringResource(R.string.settings_font_sample), style = MaterialTheme.typography.bodyLarge)
+            com.mukhtabir.android.ui.components.AppThemePicker(preferences)
+
         }
-        AppSection(stringResource(R.string.language)) {
+        AppSection(stringResource(R.string.language), subtitle = when (language) { "ar" -> "العربية"; "en" -> "English"; else -> stringResource(R.string.system_default) }) {
             AppActionRow() {
                 listOf(AppPreferences.LANGUAGE_SYSTEM, "en", "ar").forEach { code ->
                     FilterChip(language == code, {
@@ -128,7 +102,7 @@ fun SettingsRoute(preferences: AppPreferences, serverUrl: String, serverAddressH
                 }
             }
         }
-        AppSection(stringResource(R.string.server_address)) {
+        AppSection(stringResource(R.string.server_address), subtitle = stringResource(if (serverAddressHidden) R.string.server_file_selected else R.string.ui_manual_connection)) {
             if (serverAddressHidden) Text(stringResource(R.string.server_file_selected), style = MaterialTheme.typography.bodyMedium)
             else androidx.compose.foundation.text.selection.SelectionContainer { Text(serverUrl, style = MaterialTheme.typography.bodyMedium) }
             Text(stringResource(R.string.server_saved_files_hint))

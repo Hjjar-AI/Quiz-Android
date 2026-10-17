@@ -144,7 +144,7 @@ fun MasterExamEditorRoute(id: Long?, user: UserDto, service: MasterExamService, 
     if (recovery != null && s.loaded) AlertDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
         text = { Text(stringResource(R.string.author_recover_body)) },
         confirmButton = { TextButton(vm::restoreDraft, enabled = !s.busy && !s.denied) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.discard)) } })
+        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
     RefreshOnResume(vm::refresh)
     var leave by rememberSaveable { mutableStateOf(false) }
     var removeId by remember { mutableStateOf<Long?>(null) }
@@ -161,7 +161,7 @@ fun MasterExamEditorRoute(id: Long?, user: UserDto, service: MasterExamService, 
         text = { Text(stringResource(if (s.needsSync || s.embedded?.uncertain == true) R.string.author_leave_unknown else R.string.exam_author_leave)) },
         confirmButton = { Column {
             TextButton({ leave = false; vm.keepDraft(onBack) }, enabled = !s.busy) { Text(stringResource(R.string.author_save_later)) }
-            AppDangerTextButton({ leave = false; vm.discardDraft(onBack) }, enabled = !s.busy) { Text(stringResource(R.string.discard)) }
+            AppDangerTextButton({ leave = false; vm.discardDraft(onBack) }, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_exam_changes)) }
         } },
         dismissButton = { TextButton({ leave = false }) { Text(stringResource(R.string.keep_editing)) } })
     transition?.let { action -> AlertDialog(onDismissRequest = { transition = null },
@@ -180,12 +180,12 @@ fun MasterExamEditorRoute(id: Long?, user: UserDto, service: MasterExamService, 
                 }
             }
         } }, confirmButton = { AppDangerTextButton({ deleting = false; vm.delete(deleteMode) }, enabled = vm.mayDelete(s)) {
-            Text(stringResource(R.string.confirm))
+            Text(stringResource(R.string.exam_author_delete))
         } }, dismissButton = { TextButton({ deleting = false }, enabled = !s.busy) { Text(stringResource(R.string.cancel)) } })
     removeId?.let { questionId -> AlertDialog(onDismissRequest = { removeId = null },
         title = { Text(stringResource(R.string.exam_author_remove)) },
         text = { Text(stringResource(R.string.exam_author_remove_warning)) },
-        confirmButton = { TextButton({ removeId = null; vm.removeQuestion(questionId) }, enabled = enabled && !s.dirty) { Text(stringResource(R.string.confirm)) } },
+        confirmButton = { TextButton({ removeId = null; vm.removeQuestion(questionId) }, enabled = enabled && !s.dirty) { Text(stringResource(R.string.exam_author_remove)) } },
         dismissButton = { TextButton({ removeId = null }) { Text(stringResource(R.string.cancel)) } }) }
 
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {

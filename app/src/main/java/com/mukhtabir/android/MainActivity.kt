@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity() {
             val display by preferences.display.collectAsState()
             val language by preferences.language.collectAsState()
             var editingServer by rememberSaveable { mutableStateOf(app.serverSettings.read()==null) }
+            var demoActive by rememberSaveable { mutableStateOf(false) }
             var requestedFileSlot by rememberSaveable { mutableStateOf<Int?>(null) }
             val darkTheme = when (theme) {
                 ThemePreference.SYSTEM -> isSystemInDarkTheme()
@@ -66,7 +67,11 @@ class MainActivity : ComponentActivity() {
                         navigationBarStyle = if (darkTheme) SystemBarStyle.dark(barColor) else SystemBarStyle.light(barColor, barColor),
                     )
                 }
-                if(editingServer || app.serverSettings.read()==null) Surface(Modifier.fillMaxSize()) {
+                if (demoActive) Surface(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                        com.mukhtabir.android.ui.demo.DemoScreen(onExit = { demoActive = false })
+                    }
+                } else if(editingServer || app.serverSettings.read()==null) Surface(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                         ServerSetupScreen(app.serverSettings,app.serverSettings.read().orEmpty(),
                             onSaved={changed ->
@@ -81,9 +86,11 @@ class MainActivity : ComponentActivity() {
                                 finish()
                             },onCancel=if(app.serverSettings.read()!=null) ({editingServer=false;requestedFileSlot=null}) else null,
                             initialFileSlot=requestedFileSlot, language=language,
+                            onDemo={demoActive=true},
                             onLanguageChange={code -> preferences.setLanguage(code); recreate()})
                     }
                 } else MukhtabirApp(container = app.container,
+                    onDemo={demoActive=true},
                     onChangeServer={requestedFileSlot=null;editingServer=true},
                     onSelectServerFile={slot -> requestedFileSlot=slot;editingServer=true}, pendingLink=pendingLink,
                     onConsumeLink={pendingLink=null; intent.data=null})

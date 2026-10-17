@@ -20,7 +20,6 @@ import com.mukhtabir.android.ui.components.AppDangerTextButton
 import com.mukhtabir.android.ui.components.AppActionRow
 
 import android.os.Bundle
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -37,7 +36,6 @@ import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.material3.Checkbox
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
 import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,7 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
@@ -173,6 +170,16 @@ class QuestionLibraryViewModel(
             customPageSize = size, page = 1, items = emptyList(), total = 0, totalPages = 1,
             selectedIds = emptySet(), selectionLimitReached = false) }
         load(1)
+    }
+
+    fun removeFilter(key: String) {
+        val s = _state.value
+        if (s.isLoading) return
+        setFilters(if (key == "category") null else s.categoryId,
+            if (key == "difficulty") null else s.difficulty,
+            if (key == "tag") null else s.tag,
+            if (key == "verified") false else s.verifiedOnly,
+            if (key == "page") null else s.customPageSize)
     }
 
     fun resetFilters() {
@@ -436,6 +443,8 @@ fun QuestionLibraryRoute(
     val sessionIds = if (state.selectedIds.isNotEmpty()) state.selectedIds.toList() else state.items.map { it.id }
     val canLaunch = !state.isLoading && state.error == null && sessionIds.size in 1..maxQuestions
 
+    Column(Modifier.fillMaxSize()) {
+    Box(Modifier.weight(1f)) {
     com.mukhtabir.android.ui.components.PullToRefresh(state.isLoading, viewModel::retry) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(AppLayoutTokens.libraryPadding),
             verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.libraryGap)) {
@@ -458,10 +467,23 @@ fun QuestionLibraryRoute(
                                     state.verifiedOnly, state.customPageSize != null).count { it })) }
                             TextButton(viewModel::resetFilters) { Text(stringResource(R.string.library_reset)) }
                         }
+                        if (canStartSessions && state.items.isNotEmpty()) TextButton(viewModel::selectPage, enabled = !state.isLoading) {
+                            Text(stringResource(if (state.items.all { it.id in state.selectedIds }) R.string.deselect_page else R.string.select_page))
+                        }
                         if (canStartSessions && (state.items.isNotEmpty() || state.selectedIds.isNotEmpty())) {
                             Button({ showPractice = true }) { Text(stringResource(R.string.library_practice, sessionIds.size)) }
                         }
                     }
+                    if (state.mode == LibraryMode.ALL) com.mukhtabir.android.ui.components.ActiveFilterSummary(
+                        buildList {
+                            state.categoryId?.let { id -> add(com.mukhtabir.android.ui.components.ActiveFilter("category",
+                                stringResource(R.string.quiz_filter_category, state.categories.firstOrNull { it.id == id }?.name ?: com.mukhtabir.android.util.formatNumber(id)),
+                                { viewModel.removeFilter("category") })) }
+                            state.tag?.let { tag -> add(com.mukhtabir.android.ui.components.ActiveFilter("tag", stringResource(R.string.quiz_filter_tag, tag), { viewModel.removeFilter("tag") })) }
+                            state.difficulty?.let { value -> add(com.mukhtabir.android.ui.components.ActiveFilter("difficulty", com.mukhtabir.android.ui.components.difficultyLabel(value), { viewModel.removeFilter("difficulty") })) }
+                            if (state.verifiedOnly) add(com.mukhtabir.android.ui.components.ActiveFilter("verified", stringResource(R.string.verified), { viewModel.removeFilter("verified") }))
+                            state.customPageSize?.let { size -> add(com.mukhtabir.android.ui.components.ActiveFilter("page", stringResource(R.string.preferences_page) + ": " + com.mukhtabir.android.util.formatNumber(size), { viewModel.removeFilter("page") })) }
+                        }, onClear = viewModel::resetFilters, enabled = !state.isLoading)
                     state.mutationError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     if (state.selectionLimitReached || sessionIds.size > maxQuestions) {
                         Text(stringResource(R.string.selection_limit, maxQuestions), color = MaterialTheme.colorScheme.error)
@@ -499,36 +521,27 @@ fun QuestionLibraryRoute(
             }
         }
     }
-    if (showPractice && canStartSessions) AlertDialog(
-        onDismissRequest = { showPractice = false },
-        title = { Text(stringResource(R.string.library_practice_title)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
-                Text(if (state.selectedIds.isEmpty()) stringResource(R.string.selection_page_fallback)
-                    else stringResource(R.string.selected_question_count, state.selectedIds.size))
-                AppActionRow() {
-                    TextButton(viewModel::selectPage, enabled = !state.isLoading && state.items.isNotEmpty()) {
-                        Text(stringResource(if (state.items.isNotEmpty() && state.items.all { it.id in state.selectedIds }) R.string.deselect_page else R.string.select_page))
-                    }
-                    TextButton(viewModel::clearSelection, enabled = state.selectedIds.isNotEmpty() && !state.isLoading) { Text(stringResource(R.string.clear_selection)) }
-                }
-                if (state.selectionLimitReached || sessionIds.size > maxQuestions) Text(stringResource(R.string.selection_limit, maxQuestions), color = MaterialTheme.colorScheme.error)
-                Button({
-                    showPractice = false
-                    onStartQuestions(TestMode.STUDY, sessionIds, state.query.ifBlank { defaultSessionLabel })
-                }, enabled = canLaunch, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.start_study)) }
-                OutlinedButton({
-                    showPractice = false
-                    onStartQuestions(TestMode.EXAM, sessionIds, state.query.ifBlank { defaultSessionLabel })
-                }, enabled = canLaunch, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.start_exam)) }
-                onDownloadOffline?.let { download ->
-                    OutlinedButton({ showPractice = false; download(sessionIds) }, enabled = canLaunch,
-                        modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.offline_download)) }
-                }
+    }
+    if (canStartSessions && state.selectedIds.isNotEmpty()) androidx.compose.material3.Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant) {
+        Column(Modifier.fillMaxWidth().padding(AppLayoutTokens.cardInsets)) {
+            Text(stringResource(R.string.ui_selected_count, com.mukhtabir.android.util.formatNumber(state.selectedIds.size)),
+                style = MaterialTheme.typography.labelLarge)
+            AppActionRow {
+                TextButton(viewModel::clearSelection, enabled = !state.isLoading) { Text(stringResource(R.string.clear_selection)) }
+                Button({ showPractice = true }, enabled = canLaunch) { Text(stringResource(R.string.library_practice, sessionIds.size)) }
             }
-        },
-        confirmButton = { TextButton({ showPractice = false }) { Text(stringResource(R.string.close)) } },
-    )
+        }
+    }
+    }
+    if (showPractice && canStartSessions) {
+        val ids = remember { sessionIds.toList() }
+        val label = remember { state.query.ifBlank { defaultSessionLabel } }
+        com.mukhtabir.android.ui.components.PracticeLauncher(label, ids, maxQuestions,
+            enabled = !state.isLoading && state.error == null, onDismiss = { showPractice = false },
+            onStart = { mode, selected, name -> showPractice = false; onStartQuestions(mode, selected, name) },
+            onDownload = onDownloadOffline?.let { download -> ({ selected -> showPractice = false; download(selected) }) })
+    }
     ratingQuestionId?.let { id -> LibraryRatingDialog(id, ratings, ratingsVm) { ratingQuestionId = null } }
     if (showFilters && state.mode == LibraryMode.ALL) LibraryFiltersDialog(
         state = state.copy(categories=state.categories.sortedBy {recent.categories.indexOf(it.id).takeIf {index->index>=0} ?: Int.MAX_VALUE},
@@ -577,6 +590,7 @@ private fun LibraryFiltersDialog(
                     "hard" to stringResource(R.string.difficulty_hard))) { difficulty = it }
                 LibraryFilterChoice(stringResource(R.string.source_tags), tag,
                     listOf("" to any) + state.tags.map { it to it }) { tag = it }
+                Text(stringResource(R.string.ux_filter_single_tag), style = MaterialTheme.typography.bodySmall)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(verified, { verified = it })
                     Text(stringResource(R.string.verified_only), Modifier.weight(1f))
@@ -624,24 +638,8 @@ private fun QuestionLibraryCard(
     ratingLoading: Boolean = false,
     onRating: (() -> Unit)? = null,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Column(Modifier.padding(AppLayoutTokens.libraryCardPadding), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            onSelect?.let { select ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = selected, onCheckedChange = { select() }, enabled = selectionEnabled)
-                    Text(stringResource(R.string.select_question_number, question.id))
-                }
-            }
-            ClinicalCaseContext(question.localizedForDisplay().case)
-            MarkdownText(question.localizedForDisplay().question, Modifier.fillMaxWidth())
-            QuestionContext(question)
-            QuestionImage(question.imageUrl, imageRepository)
-            val metadata = listOfNotNull(
-                question.categoryName,
-                question.difficulty.takeIf(String::isNotBlank),
-                stringResource(if (question.verified) R.string.verified else R.string.unverified),
-            )
-            com.mukhtabir.android.ui.components.AppMetadataRow(metadata)
+    com.mukhtabir.android.ui.components.QuestionListCard(question, imageRepository, onOpen = onClick,
+        selected = selected, onSelect = onSelect, selectionEnabled = selectionEnabled) {
             question.authoredByUsername?.takeIf(String::isNotBlank)?.let { author ->
                 Row(horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.library_question_author, author), modifier = Modifier.weight(1f),
@@ -661,7 +659,6 @@ private fun QuestionLibraryCard(
                 TextButton(open, enabled = !ratingLoading) { Text(stringResource(R.string.your_rating)) }
             }
             onVerify?.let { Button(it, enabled = verifyEnabled) { Text(stringResource(R.string.verify_question)) } }
-        }
     }
 }
 
@@ -870,7 +867,7 @@ fun QuestionDetailRoute(
                 if (confirmDelete) deleteVersion?.let(viewModel::delete) else viewModel.duplicate()
                 confirmDelete = false; confirmDuplicate = false
             }, enabled = !recoveryBlocked && !state.mutationBusy && !state.bookmarkBusy && !state.isLoading) {
-                Text(stringResource(if (confirmDelete) R.string.delete else R.string.duplicate_question))
+                Text(stringResource(if (confirmDelete) R.string.delete_question else R.string.duplicate_question))
             }
         },
         dismissButton = { TextButton({ confirmDelete = false; confirmDuplicate = false }) { Text(stringResource(R.string.cancel)) } },
@@ -916,6 +913,8 @@ fun QuestionDetailRoute(
                     }
                 }
                 item { QuestionContext(question) }
+                item { com.mukhtabir.android.ui.components.BilingualQuestionComparison(question, choicesVisible = true,
+                    explanationVisible = !question.answersHidden && canReviewQuestion) }
                 if(!question.answersHidden) {
                     question.knowledgeObject?.let { id -> item {
                         OutlinedButton({onOpenKnowledge(id)},enabled=!state.isLoading && !state.mutationBusy && !state.bookmarkBusy) { Text(stringResource(R.string.explore_knowledge_detail)) }

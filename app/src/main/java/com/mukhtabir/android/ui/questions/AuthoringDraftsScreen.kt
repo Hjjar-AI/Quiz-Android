@@ -73,7 +73,7 @@ fun AuthoringDraftsRoute(user: UserDto, store: SessionDraftStore, onOpen: (Strin
                 catch (failure: Exception) { ensureActive(); error = failure }
                 finally { busy = false }
             } }
-        }) { Text(stringResource(R.string.discard)) } }, dismissButton = { TextButton({ deleting = null }) { Text(stringResource(R.string.cancel)) } }) }
+        }) { Text(stringResource(R.string.ux_discard_saved_authoring_draft)) } }, dismissButton = { TextButton({ deleting = null }) { Text(stringResource(R.string.cancel)) } }) }
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(R.string.author_drafts_title))
@@ -90,7 +90,7 @@ fun AuthoringDraftsRoute(user: UserDto, store: SessionDraftStore, onOpen: (Strin
             }
             Text(stringResource(label) + " · " + if (key.endsWith("-new")) stringResource(R.string.author_new_draft) else key.substringAfter('-'))
             AppOutlinedButton({ onOpen(key) }, enabled = !busy && permitted(key)) { Text(stringResource(R.string.author_restore)) }
-            AppDangerOutlinedButton({ deleting = key }, enabled = !busy) { Text(stringResource(R.string.discard)) }
+            AppDangerOutlinedButton({ deleting = key }, enabled = !busy) { Text(stringResource(R.string.ux_discard_saved_authoring_draft)) }
         } } }
     }
 }

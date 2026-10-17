@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -331,6 +330,9 @@ fun HomeRoute(
     var masterRecovery by remember(user.id) { mutableStateOf(draftStore.readMaster(user.id)) }
     var finishRecovery by remember(user.id) { mutableStateOf(draftStore.readFinish(user.id)) }
     val scope = rememberCoroutineScope()
+    var answerRecovery by remember(user.id) { mutableStateOf(draftStore.read(user.id)) }
+    var hasLocalSession by remember(user.id, draftStore) { mutableStateOf(false) }
+    var collectionsCount by remember(user.id, draftStore) { mutableStateOf(0) }
     var pendingStudy by remember(user.id, draftStore) { mutableStateOf(false) }
     var pendingPacks by remember(user.id, draftStore) { mutableStateOf(0) }
     var completionReadError by remember(user.id, draftStore) { mutableStateOf<Throwable?>(null) }
@@ -339,20 +341,20 @@ fun HomeRoute(
         completionReadJob?.cancel()
         completionReadJob = scope.launch {
             val (session, packs) = withContext(Dispatchers.IO) {
-                val session = draftStore.readDownloadedSession(user.id).map {
-                    it != null && it.locallyFinished && it.session.mode == TestMode.STUDY.path
-                }
-                val packs = draftStore.readOffline(user.id, localOnly = false).map { rows ->
-                    rows.count { row ->
-                        row.summary?.let { it.finished && !it.synced }
-                            ?: (row.frozenTime != null && row.result == null)
-                    }
-                }
+                val session = draftStore.readDownloadedSession(user.id)
+                val packs = draftStore.readOffline(user.id, localOnly = false)
                 session to packs
             }
             ensureActive()
-            session.onSuccess { pendingStudy = it }
-            packs.onSuccess { pendingPacks = it }
+            session.onSuccess { saved ->
+                hasLocalSession = saved != null && saved.session.isActive
+                pendingStudy = saved != null && saved.locallyFinished && saved.session.mode == TestMode.STUDY.path
+            }
+            packs.onSuccess { rows ->
+                collectionsCount = rows.size
+                pendingPacks = rows.count { row -> row.summary?.let { it.finished && !it.synced }
+                    ?: (row.frozenTime != null && row.result == null) }
+            }
             completionReadError = session.exceptionOrNull() ?: packs.exceptionOrNull()
         }
     }
@@ -360,6 +362,7 @@ fun HomeRoute(
         viewModel.refresh()
         masterRecovery=draftStore.readMaster(user.id)
         finishRecovery=draftStore.readFinish(user.id)
+        answerRecovery=draftStore.read(user.id)
         refreshCompletions()
     }
     androidx.compose.runtime.LaunchedEffect(viewModel) { viewModel.load(DashboardSection.TIPS) }
@@ -397,25 +400,30 @@ fun HomeRoute(
                         DashboardSection.TIPS !in state.errors && state.currentTip == null) Text(stringResource(R.string.home_no_tips))
                 }
             }
-            if (pendingStudy || pendingPacks > 0 || completionReadError != null) item {
-                com.mukhtabir.android.ui.components.AppPendingSessionCard(
-                    stringResource(R.string.home_pending_completion_title)) {
-                    if (pendingStudy || pendingPacks > 0) {
-                        Text(stringResource(R.string.home_pending_completion_hint), style = MaterialTheme.typography.bodyMedium)
-                        AppActionRow {
-                            if (pendingStudy) OutlinedButton(onOpenQuizzes, enabled = canStartTests) {
-                                Text(stringResource(R.string.home_pending_completion_session))
-                            }
-                            if (pendingPacks > 0) OutlinedButton(onOpenOfflineStudy) {
-                                Text(stringResource(R.string.home_pending_completion_packs, formatNumber(pendingPacks)))
-                            }
+            item {
+                com.mukhtabir.android.ui.components.AppPendingSessionCard(stringResource(R.string.flow_continue)) {
+                    val sessionNeedsReview = answerRecovery.isFailure || answerRecovery.getOrNull() != null ||
+                        finishRecovery.isFailure || finishRecovery.getOrNull() != null
+                    AppActionRow {
+                        if (canStartTests) Button(onOpenQuizzes) { Text(stringResource(when {
+                            sessionNeedsReview -> R.string.flow_resolve
+                            pendingStudy -> R.string.flow_review_sync
+                            hasLocalSession -> R.string.flow_resume
+                            else -> R.string.flow_check_sessions
+                        })) }
+                        if (collectionsCount > 0 || completionReadError != null) OutlinedButton(onOpenOfflineStudy) { Text(stringResource(R.string.flow_review_sync)) }
+                        if (masterRecovery.getOrNull() != null || masterRecovery.isFailure) OutlinedButton(onOpenAssignedExam) {
+                            Text(stringResource(R.string.master_reopen_home))
                         }
                     }
-                    completionReadError?.let {
-                        com.mukhtabir.android.ui.components.AppRecoveryPanel(
-                            message=stringResource(R.string.home_pending_completion_read_error),
-                            throwable=it,onRetry=refreshCompletions)
-                    }
+                    if (collectionsCount > 0) Text(stringResource(R.string.flow_downloaded_count, formatNumber(collectionsCount)))
+                    if (pendingPacks > 0) Text(stringResource(R.string.flow_ready_count, formatNumber(pendingPacks)))
+                    if (sessionNeedsReview) Text(stringResource(if (finishRecovery.isFailure || answerRecovery.isFailure)
+                        R.string.quiz_finish_storage_error else R.string.quiz_finish_home_hint))
+                    if (masterRecovery.getOrNull() != null || masterRecovery.isFailure) Text(stringResource(
+                        if (masterRecovery.isFailure) R.string.master_recovery_storage else R.string.master_reopen_hint))
+                    completionReadError?.let { com.mukhtabir.android.ui.components.AppRecoveryPanel(
+                        message = stringResource(R.string.home_pending_completion_read_error), throwable = it, onRetry = refreshCompletions) }
                 }
             }
             if (canStartTests) item {
@@ -424,13 +432,31 @@ fun HomeRoute(
                     androidx.compose.material3.Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
                         color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
                         Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
+                            val needsReview = answerRecovery.isFailure || answerRecovery.getOrNull() != null || finishRecovery.isFailure || finishRecovery.getOrNull() != null
+                            val continuing = needsReview || pendingStudy || hasLocalSession || pendingPacks > 0 || completionReadError != null
                             Text(stringResource(R.string.home_next_action), style = MaterialTheme.typography.labelMedium)
-                            Text(stringResource(R.string.study_now_title), style = MaterialTheme.typography.titleLarge)
-                            Text(stringResource(R.string.study_now_description), style = MaterialTheme.typography.bodyMedium)
-                            Button({ scope.launch {
+                            Text(stringResource(if (continuing) R.string.flow_continue else R.string.study_now_title), style = MaterialTheme.typography.titleLarge)
+                            Text(stringResource(if (continuing) R.string.flow_continue_hint else R.string.study_now_description), style = MaterialTheme.typography.bodyMedium)
+                            val todayFresh = DashboardSection.TODAY in state.loaded && DashboardSection.TODAY !in state.loading &&
+                                DashboardSection.TODAY !in state.errors && DashboardSection.TODAY !in state.stale
+                            val targetDone = todayFresh && state.planner?.let { (it.dailyProgress[it.today] ?: 0) >= it.targetQuestionsPerDay && it.targetQuestionsPerDay > 0 } == true
+                            if (targetDone) Text(stringResource(R.string.flow_daily_optional))
+                            Button({ when {
+                                completionReadError != null -> refreshCompletions()
+                                needsReview || pendingStudy || hasLocalSession -> onOpenQuizzes()
+                                pendingPacks > 0 -> onOpenOfflineStudy()
+                                else -> scope.launch {
                                     val ids = viewModel.fetchStudyNow(minOf(20, maxQuizQuestions), canStartTests)
                                     if (!ids.isNullOrEmpty()) onStartStudyNow(ids)
-                                } }, Modifier.fillMaxWidth(), enabled = !state.studyLoading) { Text(stringResource(R.string.study_now_start)) }
+                                }
+                            } }, Modifier.fillMaxWidth(), enabled = !state.studyLoading) { Text(stringResource(when {
+                                completionReadError != null -> R.string.retry
+                                needsReview -> R.string.flow_resolve
+                                pendingStudy -> R.string.flow_review_sync
+                                hasLocalSession -> R.string.flow_resume
+                                pendingPacks > 0 -> R.string.flow_review_sync
+                                else -> R.string.study_now_start
+                            })) }
                             if (state.studyLoading) AppLoadingIndicator(Modifier.fillMaxWidth())
                             state.studyError?.let { ErrorState(throwable = it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
                             if (state.studyEmpty) Text(stringResource(R.string.study_now_empty), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
@@ -438,25 +464,20 @@ fun HomeRoute(
                                 state.todayAttempts.wrongOpen, state.todayAttempts.fragileCorrect), style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    state.planner?.let { plan ->
+                    if (DashboardSection.TODAY in state.errors || DashboardSection.TODAY in state.stale)
+                        Text(stringResource(R.string.ui_summary_unavailable), style = MaterialTheme.typography.bodySmall)
+                    state.planner?.takeIf { DashboardSection.TODAY in state.loaded && DashboardSection.TODAY !in state.loading &&
+                        DashboardSection.TODAY !in state.errors && DashboardSection.TODAY !in state.stale }?.let { plan ->
                         val done = plan.dailyProgress[plan.today] ?: 0
-                        Text(stringResource(R.string.today_progress, done, plan.targetQuestionsPerDay), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.flow_daily), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.flow_daily_counts, formatNumber(done.coerceAtLeast(0)),
+                            formatNumber(plan.targetQuestionsPerDay.coerceAtLeast(0)), formatNumber((plan.targetQuestionsPerDay - done).coerceAtLeast(0))))
+                        if (plan.targetQuestionsPerDay > 0 && done >= plan.targetQuestionsPerDay) Text(stringResource(R.string.flow_daily_done))
+                        Text(stringResource(R.string.flow_due_separate), style = MaterialTheme.typography.bodySmall)
                         LinearProgressIndicator((done.toFloat() / plan.targetQuestionsPerDay.coerceAtLeast(1)).coerceIn(0f, 1f), Modifier.fillMaxWidth())
                     }
                     state.currentStreak?.let { Text(stringResource(R.string.home_streak, formatNumber(it)), style = MaterialTheme.typography.bodyMedium) }
                     AppTextButton(onOpenPlanner) { Text(stringResource(R.string.nav_planner)) }
-                }
-            }
-            if (canStartTests && (finishRecovery.getOrNull() != null || finishRecovery.isFailure)) item {
-                com.mukhtabir.android.ui.components.AppPendingSessionCard(stringResource(R.string.quiz_finish_recovery_title)) {
-                    Text(stringResource(if (finishRecovery.isFailure) R.string.quiz_finish_storage_error else R.string.quiz_finish_home_hint))
-                    OutlinedButton(onOpenQuizzes) { Text(stringResource(R.string.quiz_finish_reopen)) }
-                }
-            }
-            if (masterRecovery.getOrNull() != null || masterRecovery.isFailure) item {
-                com.mukhtabir.android.ui.components.AppPendingSessionCard(stringResource(R.string.master_reopen_home)) {
-                    Text(stringResource(if (masterRecovery.isFailure) R.string.master_recovery_storage else R.string.master_reopen_hint))
-                    OutlinedButton(onOpenAssignedExam) { Text(stringResource(R.string.master_reopen_home)) }
                 }
             }
             item {
@@ -546,7 +567,22 @@ private fun DashboardCard(
 ) {
     val expanded = section in state.expanded
     androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()) {
-        AppSection(title, subtitle = subtitle, expandedOverride = expanded,
+        val summary = when {
+            section in state.loading -> stringResource(R.string.loading)
+            section in state.errors || section in state.stale -> stringResource(R.string.ui_summary_unavailable)
+            !section.requiresData -> listOf(stringResource(R.string.study), stringResource(R.string.exam), stringResource(R.string.recall)).joinToString(" · ")
+            section !in state.loaded -> stringResource(R.string.ui_loading_summary)
+            section == DashboardSection.TODAY -> stringResource(R.string.smart_review_counts,
+                state.srsDueCount, state.todayAttempts.wrongOpen, state.todayAttempts.fragileCorrect)
+            section == DashboardSection.OVERVIEW -> state.bankTotal?.let { stringResource(R.string.ui_summary_count, formatNumber(it)) }
+            section == DashboardSection.ACTIVITY -> state.activity?.let { stringResource(R.string.activity_summary,
+                formatNumber(it.currentStreak), formatNumber(it.longestStreak), formatNumber(it.activeDays), formatNumber(it.totalQuestions)) }
+            section == DashboardSection.RECENT -> state.bank?.items?.size?.let { stringResource(R.string.ui_summary_count, formatNumber(it)) }
+            section == DashboardSection.EXAMS -> state.notices?.size?.let { stringResource(R.string.ui_summary_count, formatNumber(it)) }
+            section == DashboardSection.TIPS -> stringResource(R.string.ui_summary_count, formatNumber(state.tips.size))
+            else -> subtitle
+        }
+        AppSection(title, subtitle = if (expanded) subtitle else summary, expandedOverride = expanded,
             onExpandedChange = { viewModel.setExpanded(section, it) }, composeCollapsedContent = false) {
             if (section in state.loading) AppLoadingIndicator(Modifier.fillMaxWidth())
             state.errors[section]?.let { error ->

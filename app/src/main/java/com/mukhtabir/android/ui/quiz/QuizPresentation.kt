@@ -2,25 +2,18 @@ package com.mukhtabir.android.ui.quiz
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Sync
 import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuDefaults
@@ -44,22 +37,17 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.SessionResultsDto
 import com.mukhtabir.android.core.AppPreferences
-import com.mukhtabir.android.ui.components.AppActionRow
-import com.mukhtabir.android.ui.components.AppCard
 import com.mukhtabir.android.ui.components.AppIconButton
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ExplanationCard
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.util.formatDecimal
 import com.mukhtabir.android.util.formatNumber
 
 /** Short status at rest; the tools menu retains deadline/synchronization guidance. */
@@ -67,6 +55,7 @@ import com.mukhtabir.android.util.formatNumber
 internal fun SessionSyncStatus(state: QuizUiState, viewModel: QuizViewModel) {
     val status = when {
         state.draftStorageFailed -> R.string.quiz_save_unconfirmed
+        state.syncConflict != null || state.recoveryRequired -> R.string.ui_needs_review
         state.syncing -> R.string.quiz_syncing
         state.syncError != null -> R.string.quiz_sync_failed
         state.queuedAnswers > 0 -> R.string.quiz_saved_pending
@@ -74,8 +63,13 @@ internal fun SessionSyncStatus(state: QuizUiState, viewModel: QuizViewModel) {
         state.answeredIndices.isNotEmpty() -> R.string.quiz_synced
         else -> R.string.quiz_download_ready
     }
-    com.mukhtabir.android.ui.components.AppSaveStatus(
-        stringResource(status,formatNumber(state.queuedAnswers)),failed=state.draftStorageFailed || state.syncError!=null) {
+    com.mukhtabir.android.ui.components.LearningSaveStatus(when {
+        state.draftStorageFailed || state.syncError != null || state.syncConflict != null || state.recoveryRequired -> com.mukhtabir.android.ui.components.LearningSaveState.REVIEW
+        state.syncing -> com.mukhtabir.android.ui.components.LearningSaveState.SYNCING
+        state.queuedAnswers > 0 || state.syncRequired -> com.mukhtabir.android.ui.components.LearningSaveState.WAITING
+        state.answeredIndices.isNotEmpty() -> com.mukhtabir.android.ui.components.LearningSaveState.SERVER
+        else -> com.mukhtabir.android.ui.components.LearningSaveState.DEVICE
+    }, detail = stringResource(status,formatNumber(state.queuedAnswers))) {
         if (state.syncRequired || state.queuedAnswers > 0) AppTextButton(
             onClick = viewModel::syncDownloadedAnswers,
             enabled = !state.isLoading && !state.syncing && !state.draftStorageFailed && state.syncConflict == null) {
@@ -199,56 +193,24 @@ internal fun StudyExplanation(text: String, questionId: Long, alreadyRevealed: B
 @Composable
 internal fun ActiveFilterSummary(state: QuizUiState, viewModel: QuizViewModel, selectedBook: String?) {
     val tags = (state.selectedTags + state.additionalTags.split(',').map(String::trim).filter(String::isNotEmpty)).distinct()
-    if (selectedBook == null && state.selectedCategoryIds.isEmpty() && tags.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.tight)) {
-        Text(stringResource(R.string.quiz_active_filters), style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-        AppActionRow {
-            selectedBook?.let { book ->
-                RemovableFilter(stringResource(R.string.quiz_filter_book, book), !state.isLoading, viewModel::useWholeBank)
-            }
-            state.selectedCategoryIds.forEach { id ->
-                val name = (state.categories + state.bookCategories).firstOrNull { it.id == id }?.name ?: formatNumber(id)
-                RemovableFilter(stringResource(R.string.quiz_filter_category, name), !state.isLoading,
-                    onRemove = { viewModel.removeCategoryFilter(id) })
-            }
-            tags.forEach { name ->
-                RemovableFilter(stringResource(R.string.quiz_filter_tag, name), !state.isLoading,
-                    onRemove = { viewModel.removeTagFilter(name) })
-            }
+    val filters = buildList {
+        selectedBook?.let { book -> add(com.mukhtabir.android.ui.components.ActiveFilter("book", stringResource(R.string.quiz_filter_book, book), viewModel::useWholeBank)) }
+        state.selectedCategoryIds.forEach { id ->
+            val name = (state.categories + state.bookCategories).firstOrNull { it.id == id }?.name ?: formatNumber(id)
+            add(com.mukhtabir.android.ui.components.ActiveFilter("category-$id", stringResource(R.string.quiz_filter_category, name), { viewModel.removeCategoryFilter(id) }))
         }
+        tags.forEach { name -> add(com.mukhtabir.android.ui.components.ActiveFilter("tag-$name", stringResource(R.string.quiz_filter_tag, name), { viewModel.removeTagFilter(name) })) }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RemovableFilter(label: String, enabled: Boolean, onRemove: () -> Unit) {
-    val removeLabel = stringResource(R.string.quiz_remove_filter, label)
-    FilterChip(selected = true, onClick = onRemove, enabled = enabled,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.semantics { contentDescription = removeLabel },
-        label = { Text(label) }, trailingIcon = { Icon(Icons.Filled.Close, contentDescription = null) })
+    com.mukhtabir.android.ui.components.ActiveFilterSummary(filters, onClear = viewModel::clearActiveFilters, enabled = !state.isLoading)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ResultsOverview(results: SessionResultsDto) {
-    AppCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.content)) {
-            val values=listOf(
-                com.mukhtabir.android.util.bidi("${formatNumber(results.correctCount)} / ${formatNumber(results.totalQuestions)}"),
-                com.mukhtabir.android.util.bidi("${formatDecimal(results.accuracy)}%"),
-                formatNumber(results.answeredCount),
-                formatNumber((results.totalQuestions-results.answeredCount).coerceAtLeast(0)))
-            val labels=listOf(stringResource(R.string.quiz_metric_score),stringResource(R.string.quiz_metric_accuracy),
-                stringResource(R.string.quiz_metric_answered),stringResource(R.string.unanswered))
-            com.mukhtabir.android.ui.components.AppTileGrid(values.size) { index,tileModifier ->
-                com.mukhtabir.android.ui.components.AppMetricTile(values[index],labels[index],tileModifier)
-            }
-            com.mukhtabir.android.ui.components.AppMetadataRow(listOf(
-                stringResource(R.string.total_time,formatDuration(results.totalTime))))
-            if (results.confidenceFragile > 0) Text(stringResource(R.string.fragile_result_count, results.confidenceFragile),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+    com.mukhtabir.android.ui.components.LearningResultsSummary(results.correctCount, results.totalQuestions,
+        results.answeredCount, results.accuracy) {
+        com.mukhtabir.android.ui.components.AppMetadataRow(listOf(stringResource(R.string.total_time, formatDuration(results.totalTime))))
+        if (results.confidenceFragile > 0) Text(stringResource(R.string.fragile_result_count, results.confidenceFragile),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

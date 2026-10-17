@@ -503,7 +503,7 @@ fun PlannerRoute(service: PlannerService, categoryService: CategoryService, ques
         if (state.endDate.isNotBlank()) TextButton({ vm.update("end", "") }, enabled = enabled) { Text(stringResource(R.string.planner_clear_end)) }
         Row(horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
             Button(vm::save, enabled = canWrite) { Text(stringResource(R.string.save)) }
-            AppDangerOutlinedButton({ confirmDelete = true }, enabled = state.planner != null && canWrite) { Text(stringResource(R.string.delete)) }
+            AppDangerOutlinedButton({ confirmDelete = true }, enabled = state.planner != null && canWrite) { Text(stringResource(R.string.ux_delete_plan)) }
         }
         state.planner?.let { plan ->
             parseDate(plan.today)?.let { today ->
@@ -538,12 +538,12 @@ fun PlannerRoute(service: PlannerService, categoryService: CategoryService, ques
     if (confirmDiscard) AlertDialog(onDismissRequest={confirmDiscard=false},
         title={Text(stringResource(R.string.planner_draft_discard))},
         text={Text(stringResource(R.string.planner_draft_discard_confirm))},
-        confirmButton={AppDangerTextButton({confirmDiscard=false;vm.discardStoredDraft()},enabled=state.loaded && !state.loading){Text(stringResource(R.string.discard))}},
+        confirmButton={AppDangerTextButton({confirmDiscard=false;vm.discardStoredDraft()},enabled=state.loaded && !state.loading){Text(stringResource(R.string.planner_draft_discard))}},
         dismissButton={TextButton({confirmDiscard=false}){Text(stringResource(R.string.cancel))}})
     if (confirmDelete) AlertDialog(
-        onDismissRequest = { confirmDelete = false }, title = { Text(stringResource(R.string.delete)) },
+        onDismissRequest = { confirmDelete = false }, title = { Text(stringResource(R.string.ux_delete_plan)) },
         text = { Text(stringResource(R.string.planner_delete_confirmation)) },
-        confirmButton = { AppDangerTextButton({ confirmDelete = false; vm.delete() }, enabled = canWrite) { Text(stringResource(R.string.delete)) } },
+        confirmButton = { AppDangerTextButton({ confirmDelete = false; vm.delete() }, enabled = canWrite) { Text(stringResource(R.string.ux_delete_plan)) } },
         dismissButton = { TextButton({ confirmDelete = false }) { Text(stringResource(R.string.cancel)) } },
     )
 }

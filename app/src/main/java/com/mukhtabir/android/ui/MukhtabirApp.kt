@@ -177,7 +177,7 @@ private val tabs = listOf(
 @Composable
 fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
     onSelectServerFile: ((Int) -> Unit)? = null,
-    pendingLink: com.mukhtabir.android.core.AppLink? = null,onConsumeLink: () -> Unit = {}) {
+    pendingLink: com.mukhtabir.android.core.AppLink? = null,onConsumeLink: () -> Unit = {}, onDemo: (() -> Unit)? = null) {
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.Factory(container.authRepository),
     )
@@ -260,6 +260,7 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
                         onLogin = authViewModel::login,
                         onHelp = { publicInformation="help" },
                         onPrivacy = { publicInformation="privacy" },
+                        onDemo = onDemo,
                         onChangeServer = onChangeServer,
                         onOffline = cachedOwner?.let {owner -> ({localOfflineOwner=owner})},
                     )
@@ -373,8 +374,6 @@ private fun AuthenticatedApp(
         while (true) { value=user.remainingDays(); delay(60_000) }
     }
     val studyNowLabel = stringResource(R.string.study_now_title)
-    val mistakesLabel = stringResource(R.string.session_label_mistakes)
-    val fragileLabel = stringResource(R.string.session_label_fragile)
     val startQuestions: (TestMode, List<Long>, String) -> Unit = { mode, ids, label ->
         if (user.has("tests.start") && ids.isNotEmpty()) {
             container.quizPresetHolder.set(QuizPreset(mode, ids, label))
@@ -521,6 +520,7 @@ private fun AuthenticatedApp(
                     service = container.bookmarkService,
                     imageRepository = container.imageRepository,
                     canStartSessions = user.has("tests.start"),
+                    maxQuestions = publicConfig.maxQuizQuestions,
                     pageSize = displayPreferences.perPage.takeIf { it > 0 } ?: publicConfig.itemsPerPage,
                     onOpenQuestion = { id -> navController.navigateContent("more/questions/$id") },
                     onStartQuestions = startQuestions,
@@ -774,19 +774,9 @@ private fun AuthenticatedApp(
                     service = container.questionService,
                     imageRepository = container.imageRepository,
                     canStartSessions = user.has("tests.start"),
+                    maxQuestions = publicConfig.maxQuizQuestions,
                     pageSize = displayPreferences.perPage.takeIf { it > 0 } ?: publicConfig.itemsPerPage,
-                    onPractiseIds = { ids ->
-                        if (ids.isNotEmpty()) {
-                            container.quizPresetHolder.set(
-                                QuizPreset(
-                                    mode = TestMode.STUDY,
-                                    questionIds = ids,
-                                    sessionLabel = mistakesLabel,
-                                ),
-                            )
-                            navController.navigateTopLevel(Routes.QUIZZES)
-                        }
-                    },
+                    onStartQuestions = startQuestions,
                     onOpenQuestion = { id -> navController.navigateContent("more/questions/$id") },
                 )
             }
@@ -796,19 +786,9 @@ private fun AuthenticatedApp(
                     service = container.questionService,
                     imageRepository = container.imageRepository,
                     canStartSessions = user.has("tests.start"),
+                    maxQuestions = publicConfig.maxQuizQuestions,
                     pageSize = displayPreferences.perPage.takeIf { it > 0 } ?: publicConfig.itemsPerPage,
-                    onPractiseIds = { ids ->
-                        if (ids.isNotEmpty()) {
-                            container.quizPresetHolder.set(
-                                QuizPreset(
-                                    mode = TestMode.STUDY,
-                                    questionIds = ids,
-                                    sessionLabel = fragileLabel,
-                                ),
-                            )
-                            navController.navigateTopLevel(Routes.QUIZZES)
-                        }
-                    },
+                    onStartQuestions = startQuestions,
                     onOpenQuestion = { id -> navController.navigateContent("more/questions/$id") },
                 )
             }

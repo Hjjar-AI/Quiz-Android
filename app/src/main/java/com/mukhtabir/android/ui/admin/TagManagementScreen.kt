@@ -168,7 +168,7 @@ fun TagManagementRoute(service: ContentManagementService, questions: QuestionSer
         text = { Text(stringResource(R.string.manage_leave_confirm)) }, confirmButton = { TextButton({ leave = false; onBack() }) { Text(stringResource(R.string.confirm)) } },
         dismissButton = { TextButton({ leave = false }) { Text(stringResource(R.string.cancel)) } })
     if (s.action != null && !s.uncertain && !recoveryBlocked) AlertDialog(onDismissRequest = { if (!busy) vm.close() },
-        title = { Text(stringResource(when (s.action) { "rename" -> R.string.taxonomy_rename; "delete" -> R.string.delete; else -> R.string.taxonomy_merge })) },
+        title = { Text(stringResource(when (s.action) { "rename" -> R.string.taxonomy_rename; "delete" -> R.string.ux_delete_tag; else -> R.string.taxonomy_merge })) },
         text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
             val nodes = tagNodes(s.tree)
             val sources = if (s.action == "merge") nodes.filter { it.id in s.selected } else nodes.filter { it.id == s.source }
@@ -184,7 +184,12 @@ fun TagManagementRoute(service: ContentManagementService, questions: QuestionSer
             }
             s.validation?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
             s.actionError?.let { ErrorState(throwable = it) }
-        } }, confirmButton = { TextButton(vm::submit, enabled = enabled) { Text(stringResource(R.string.confirm)) } },
+        } }, confirmButton = { TextButton(vm::submit, enabled = enabled) { Text(stringResource(when (s.action) {
+            "delete" -> R.string.ux_delete_tag
+            "merge" -> R.string.taxonomy_merge
+            "rename" -> R.string.taxonomy_rename
+            else -> R.string.confirm
+        })) } },
         dismissButton = { TextButton(vm::close, enabled = enabled) { Text(stringResource(R.string.cancel)) } })
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item { EditorRecoveryControls(vm.recovery,busy,vm::restore) }
@@ -237,7 +242,7 @@ private fun TagRow(node: TagTreeNode, parents: List<TagTreeNode>, s: TagManageme
                 Text(if(count==null) stringResource(R.string.taxonomy_counts_unavailable) else stringResource(R.string.taxonomy_visible_links,count))
                 AppOutlinedButton({vm.open("rename",node.id)},enabled=enabled) {Text(stringResource(R.string.taxonomy_rename))}
                 AppOutlinedButton({vm.open("merge",node.id)},enabled=enabled) {Text(stringResource(R.string.taxonomy_merge_one))}
-                AppDangerOutlinedButton({vm.open("delete",node.id)},enabled=enabled) {Text(stringResource(R.string.delete))}
+                AppDangerOutlinedButton({vm.open("delete",node.id)},enabled=enabled) {Text(stringResource(R.string.ux_delete_tag))}
             }
         }
     }

@@ -106,7 +106,7 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
     if (confirmClose) AlertDialog(onDismissRequest = { confirmClose = false },
         title = { Text(stringResource(R.string.exam_author_leave_title)) },
         text = { Text(stringResource(if (draft.uncertain) R.string.exam_draft_close_uncertain else R.string.exam_draft_discard)) },
-        confirmButton = { AppDangerTextButton({ confirmClose = false; vm.closeEmbeddedDraft() }, enabled = canClose) { Text(stringResource(R.string.discard)) } },
+        confirmButton = { AppDangerTextButton({ confirmClose = false; vm.closeEmbeddedDraft() }, enabled = canClose) { Text(stringResource(R.string.ux_discard_question_draft)) } },
         dismissButton = { TextButton({ confirmClose = false }) { Text(stringResource(R.string.keep_editing)) } })
     AlertDialog(onDismissRequest = close,
         title = { Text(stringResource(R.string.exam_draft_create)) },

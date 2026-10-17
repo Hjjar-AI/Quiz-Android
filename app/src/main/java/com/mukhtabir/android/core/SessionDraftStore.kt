@@ -19,6 +19,9 @@ enum class SessionDraftKind { RECALL_TEXT, REVEAL, ANSWER, REFLECTION }
 @Serializable
 data class PendingSessionFinish(val sessionId: String, val mode: String)
 
+@Serializable
+private data class SessionFlags(val sessionId: String, val indices: Set<Int>)
+
 /** Downloaded ordinary session and ordered, unconfirmed answer changes. */
 @Serializable
 data class DownloadedSession(
@@ -230,6 +233,23 @@ class SessionDraftStore(context: Context) {
         }
         check(editor.commit())
         downloadedImages = session?.images
+    }
+
+    @Synchronized
+    fun readFlags(userId: Long, sessionId: String): Result<Set<Int>> = runCatching {
+        check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
+        check(serverSettings.profile() == serverProfile && serverSettings.read() == serverAddress)
+        val stored = preferences.getString("session_flags_$sessionId", null)?.let { json.decodeFromString(SessionFlags.serializer(), it) }
+        if (stored?.sessionId == sessionId) stored.indices.filter { it >= 0 }.toSet() else emptySet()
+    }
+
+    @Synchronized
+    fun writeFlags(userId: Long, sessionId: String, indices: Set<Int>): Result<Unit> = runCatching {
+        check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
+        check(serverSettings.profile() == serverProfile && serverSettings.read() == serverAddress)
+        check(sessionId.isNotBlank() && indices.all { it >= 0 })
+        check(preferences.edit().putString("session_flags_$sessionId", json.encodeToString(SessionFlags.serializer(),
+            SessionFlags(sessionId, indices))).commit())
     }
 
     @Synchronized

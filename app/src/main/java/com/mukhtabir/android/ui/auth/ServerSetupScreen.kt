@@ -11,7 +11,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.mukhtabir.android.core.ServerConnectionFile
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,7 +40,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.ServerSettings
 import kotlinx.coroutines.CancellationException
@@ -54,7 +52,7 @@ import kotlinx.coroutines.withContext
     androidx.compose.material3.ExperimentalMaterial3Api::class,
 )
 @Composable
-fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Boolean) -> Unit, onCancel: (() -> Unit)?, initialFileSlot: Int? = null, language: String = com.mukhtabir.android.core.AppPreferences.LANGUAGE_ARABIC, onLanguageChange: (String) -> Unit = {}) {
+fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Boolean) -> Unit, onCancel: (() -> Unit)?, initialFileSlot: Int? = null, language: String = com.mukhtabir.android.core.AppPreferences.LANGUAGE_ARABIC, onLanguageChange: (String) -> Unit = {}, onDemo: (() -> Unit)? = null) {
     // Invalid pasted URLs may contain credentials; keep the editable input memory-only.
     var savedFiles by remember { mutableStateOf(settings.importedFiles()) }
     val initialFile = savedFiles.firstOrNull { it.slot == initialFileSlot }
@@ -142,6 +140,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
                     }) })
             }
         }
+        onDemo?.let { open -> com.mukhtabir.android.ui.demo.DemoInvitation(onOpen = open, enabled = !busy) }
         Text(stringResource(R.string.server_setup_title),style=MaterialTheme.typography.headlineMedium,
             modifier=Modifier.semantics { heading() })
         Text(stringResource(R.string.server_setup_hint))

@@ -90,7 +90,7 @@ internal fun QuestionKnowledgeCreator(s: QuestionEditorState,vm: QuestionEditorV
         onDismissRequest={discard=false},
         title={Text(stringResource(R.string.knowledge_create_discard_title))},
         text={Text(stringResource(R.string.knowledge_create_discard_message))},
-        confirmButton={AppDangerTextButton({discard=false;vm.closeKnowledgeCreator()},enabled=!s.loading){Text(stringResource(R.string.discard))}},
+        confirmButton={AppDangerTextButton({discard=false;vm.closeKnowledgeCreator()},enabled=!s.loading){Text(stringResource(R.string.ux_discard_knowledge_draft))}},
         dismissButton={TextButton({discard=false}){Text(stringResource(R.string.keep_editing))}},
     )
 }

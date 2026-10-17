@@ -21,7 +21,8 @@ data class OfflineMaterial(val pack: OfflinePack,val completionId: String? = nul
     val answers: List<OfflineAnswer> = emptyList(),val index: Int = 0,val startedAtMillis: Long = 0,
     val frozenTime: Int? = null,val result: SessionResultsDto? = null,
     val summary: OfflinePackSummary? = null, val clockOffsetMillis: Long = 0,
-    val completedAt: String? = null)
+    val completedAt: String? = null,
+    val displayTitle: String? = null, val lastStudiedAt: String? = null, val sourceLabels: List<String> = emptyList(), val flaggedIndices: Set<Int> = emptySet())
 
 fun OfflinePack.newMaterial(): OfflineMaterial {
     val serverTime = issuedAt?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
@@ -30,13 +31,19 @@ fun OfflinePack.newMaterial(): OfflineMaterial {
 
 @Serializable
 data class OfflinePackSummary(val id: String, val title: String, val questionCount: Int,
-    val answeredCount: Int, val finished: Boolean, val synced: Boolean)
+    val answeredCount: Int, val finished: Boolean, val synced: Boolean,
+    val sources: List<String> = emptyList(), val lastStudiedAt: String? = null)
 
 fun OfflineMaterial.summaryOnly(): OfflineMaterial {
     if (summary != null) return this
     return OfflineMaterial(OfflinePack(pack.id, "", emptyList()), summary = OfflinePackSummary(
-        pack.id, pack.questions.firstOrNull()?.localizedForDisplay()?.question.orEmpty().take(160),
-        pack.questions.size, answers.size, frozenTime != null, result != null))
+        pack.id, displayTitle?.takeIf(String::isNotBlank)
+            ?: sourceLabels.joinToString(" · ").take(160).takeIf(String::isNotBlank)
+            ?: pack.questions.mapNotNull { it.sourceDocument?.takeIf(String::isNotBlank) }.distinct().joinToString(" · ").take(160).takeIf(String::isNotBlank)
+            ?: pack.questions.mapNotNull { it.categoryName?.takeIf(String::isNotBlank) }.distinct().joinToString(" · ").take(160),
+        pack.questions.size, answers.size, frozenTime != null, result != null,
+        sources = (sourceLabels + pack.questions.flatMap { listOfNotNull(it.sourceDocument?.takeIf(String::isNotBlank), it.source?.takeIf(String::isNotBlank), it.categoryName?.takeIf(String::isNotBlank)) }).distinct().take(5),
+        lastStudiedAt = lastStudiedAt))
 }
 
 @Serializable

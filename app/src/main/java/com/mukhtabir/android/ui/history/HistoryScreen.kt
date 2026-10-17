@@ -22,13 +22,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import com.mukhtabir.android.ui.components.AppButton as Button
 import com.mukhtabir.android.ui.components.AppCard as Card
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -36,7 +36,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -313,14 +312,11 @@ fun HistoryRoute(
                     Text(stringResource(R.string.search))
                 }
             }
-            if (state.userFilter.isNotBlank()) {
-                OutlinedButton(
-                    onClick = viewModel::clearUserFilter,
-                    enabled = !state.isLoading,
-                ) {
-                    Text(stringResource(R.string.clear_user_filter))
-                }
-            }
+            com.mukhtabir.android.ui.components.ActiveFilterSummary(
+                if (state.appliedUserFilter.isBlank()) emptyList() else listOf(com.mukhtabir.android.ui.components.ActiveFilter(
+                    "user", stringResource(R.string.history_filter_user, state.appliedUserFilter), viewModel::clearUserFilter)),
+                onClear = viewModel::clearUserFilter, enabled = !state.isLoading)
+
         }
 
         if (showAllUsers) {
@@ -395,8 +391,16 @@ fun HistoryRoute(
                                         onRetry = if (state.detailLoading || state.isLoading) null else viewModel::retryDetails,
                                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                                 }
-                                state.detail?.results?.forEachIndexed { index, result ->
-                                    SessionResultReview(index + 1, result, imageRepository)
+                                state.detail?.let { detail ->
+                                    com.mukhtabir.android.ui.components.LearningResultsSummary(detail.correctCount, detail.totalQuestions,
+                                        detail.answeredCount, detail.accuracy)
+                                    val rows = detail.results
+                                    var reviewFilter by androidx.compose.runtime.saveable.rememberSaveable(item.id) {
+                                        androidx.compose.runtime.mutableStateOf(com.mukhtabir.android.ui.components.ReviewFilter.ALL)
+                                    }
+                                    val visible = rows.withIndex().filter { (_, result) -> reviewFilter.includes(result.userAnswer != null, result.isCorrect) }
+                                    com.mukhtabir.android.ui.components.ResultReviewFilters(reviewFilter, { reviewFilter = it }, visible.size, rows.size)
+                                    visible.forEach { (index, result) -> SessionResultReview(index + 1, result, imageRepository) }
                                 }
                             } else {
                                 Text(

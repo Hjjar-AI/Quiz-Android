@@ -63,7 +63,7 @@ fun CaseStemRoute(key: String,userId: Long,service: QuestionService,canEditAny: 
     val enabled=!recoveryBlocked && permitted && !s.busy && !s.loading
     if(leaving) AlertDialog(onDismissRequest={leaving=false},
         title={Text(stringResource(R.string.unsaved_question_title))},text={Text(stringResource(R.string.case_stem_leave))},
-        confirmButton={AppDangerTextButton({leaving=false;onBack()},enabled=!s.busy){Text(stringResource(R.string.discard))}},
+        confirmButton={AppDangerTextButton({leaving=false;onBack()},enabled=!s.busy){Text(stringResource(R.string.ux_discard_case_changes))}},
         dismissButton={TextButton({leaving=false}){Text(stringResource(R.string.keep_editing))}})
     if(confirming) AlertDialog(onDismissRequest={confirming=false},
         title={Text(stringResource(R.string.case_stem_save_title))},

@@ -34,7 +34,8 @@ fun AnswerChoice(number: Int, text: String, modifier: Modifier = Modifier,
             style = MaterialTheme.typography.bodyLarge)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
             ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
-                if (markdown) MarkdownText(text, interactive = interactiveText) else Text(text)
+                if (markdown) MarkdownText(text, interactive = interactiveText)
+                else Text(text, style = com.mukhtabir.android.ui.theme.readingTextStyle(MaterialTheme.typography.bodyLarge))
             }
             if (answerCorrect == true) Text(stringResource(R.string.correct_answer),
                 style = MaterialTheme.typography.labelMedium,

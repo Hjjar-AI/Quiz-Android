@@ -61,7 +61,9 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
     val editable = !recoveryBlocked && !busy && !s.uncertain && !s.conflict &&
         if (knowledge) vm.mayWriteKnowledge(s.selectedKnowledge) else vm.mayWriteCase(s.selectedCase)
     if (confirmation != null) AlertDialog(onDismissRequest = { if (!busy) confirmation = null },
-        title = { Text(stringResource(R.string.confirm)) },
+        title = { Text(stringResource(if (confirmation == "delete") {
+            if (knowledge) R.string.ux_delete_knowledge else R.string.ux_delete_case
+        } else R.string.confirm)) },
         text = { Text(stringResource(when (confirmation) {
             "delete" -> if (knowledge) R.string.content_delete_knowledge else R.string.content_delete_case
             else -> R.string.manage_leave_confirm
@@ -69,7 +71,9 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
             if (knowledge) s.selectedKnowledge?.questionCount ?: 0 else s.selectedCase?.questionCount ?: 0) else "") },
         confirmButton = { TextButton({ val action = confirmation; confirmation = null
             if (action == "delete") vm.delete() else if (s.uncertain) onBack() else vm.close()
-        }, enabled = !busy) { Text(stringResource(R.string.confirm)) } },
+        }, enabled = !busy) { Text(stringResource(if (confirmation == "delete") {
+            if (knowledge) R.string.ux_delete_knowledge else R.string.ux_delete_case
+        } else R.string.confirm)) } },
         dismissButton = { TextButton({ confirmation = null }, enabled = !busy) { Text(stringResource(R.string.cancel)) } })
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item { EditorRecoveryControls(vm.recovery,busy,vm::restore) }
@@ -150,7 +154,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
             item { AppActionRow() {
                 AppButton(vm::save, enabled = editable && (s.dirty || s.selectedKnowledge == null && knowledge)) { Text(stringResource(R.string.save)) }
                 if (s.selectedKnowledge != null || s.selectedCase != null) AppDangerOutlinedButton({ confirmation = "delete" },
-                    enabled = editable && (knowledge || user.has("questions.edit_case_stem_any"))) { Text(stringResource(R.string.delete)) }
+                    enabled = editable && (knowledge || user.has("questions.edit_case_stem_any"))) { Text(stringResource(if (knowledge) R.string.ux_delete_knowledge else R.string.ux_delete_case)) }
             } }
             item { AppSection(stringResource(R.string.content_linked_questions), initiallyExpanded = true) {
                 if (knowledge) {
@@ -202,7 +206,7 @@ private fun KnowledgeFields(s: ContentManagementState, vm: ContentManagementView
         if(f.category != null && s.categories.none { it.id == f.category }) Text(stringResource(R.string.planner_category_unavailable, f.category))
     }
     AppSection(stringResource(R.string.content_tags)) {
-        f.tags.forEach { tag -> AppDangerOutlinedButton({ vm.tag(false, tag) }, enabled = enabled) { Text(tag + " · " + stringResource(R.string.delete)) } }
+        f.tags.forEach { tag -> AppDangerOutlinedButton({ vm.tag(false, tag) }, enabled = enabled) { Text(tag + " · " + stringResource(R.string.ux_remove_tag_link)) } }
         OutlinedTextField(f.tagInput, { vm.field("tagInput", it) }, enabled = enabled, label = { Text(stringResource(R.string.content_tags)) }, modifier = Modifier.fillMaxWidth())
         AppOutlinedButton({ vm.tag(true, f.tagInput) }, enabled = enabled) { Text(stringResource(R.string.content_add)) }
     }

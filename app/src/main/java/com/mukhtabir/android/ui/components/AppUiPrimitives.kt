@@ -37,6 +37,7 @@ object AppLayoutTokens {
     val controlGap: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.content
     val authPadding = 16.dp
     val authInsets = PaddingValues(horizontal = authPadding, vertical = 6.dp)
+    val comparisonBreakpoint = 600.dp
     val headingBreakpoint = 360.dp
     val sessionHeaderBreakpoint = 300.dp
     val imageMaxHeight = 360.dp

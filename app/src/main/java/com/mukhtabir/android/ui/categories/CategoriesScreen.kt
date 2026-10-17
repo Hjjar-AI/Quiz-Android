@@ -226,7 +226,7 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
             };item.description?.let {Text(it)}
                 if(canManage) Column {AppOutlinedButton({if(dirty) {nextEditor=item;discardEditor=true} else vm.edit(item)},enabled=editable) {Text(stringResource(R.string.edit))}
                     AppOutlinedButton({mergeSource=item;mergeTarget=null},enabled=editable && !dirty && currentEditor==null && s.items.size > 1) {Text(stringResource(R.string.category_merge))}
-                    AppDangerOutlinedButton({vm.requestDelete(item)},enabled=editable) {Text(stringResource(R.string.delete))} }
+                    AppDangerOutlinedButton({vm.requestDelete(item)},enabled=editable) {Text(stringResource(R.string.ux_delete_category))} }
             } }
         } }
     }
@@ -242,12 +242,12 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
                 }
             } }
         }},
-        confirmButton={AppButton({val target=mergeTarget;mergeSource=null;mergeTarget=null;vm.merge(source,target)},enabled=editable && mergeTarget!=null) {Text(stringResource(R.string.confirm))}},
+        confirmButton={AppButton({val target=mergeTarget;mergeSource=null;mergeTarget=null;vm.merge(source,target)},enabled=editable && mergeTarget!=null) {Text(stringResource(R.string.category_merge))}},
         dismissButton={TextButton({mergeSource=null;mergeTarget=null},enabled=!s.busy) {Text(stringResource(R.string.cancel))}})
     }
     if(discardEditor) AlertDialog(onDismissRequest={discardEditor=false;nextEditor=null},
-        title={Text(stringResource(R.string.discard))},text={Text(stringResource(R.string.manage_leave_confirm))},
-        confirmButton={AppDangerTextButton({val target=nextEditor;discardEditor=false;nextEditor=null;vm.cancelEdit();target?.let(vm::edit)},enabled=!s.busy && !blocked) {Text(stringResource(R.string.discard))}},
+        title={Text(stringResource(R.string.ux_discard_category_changes))},text={Text(stringResource(R.string.manage_leave_confirm))},
+        confirmButton={AppDangerTextButton({val target=nextEditor;discardEditor=false;nextEditor=null;vm.cancelEdit();target?.let(vm::edit)},enabled=!s.busy && !blocked) {Text(stringResource(R.string.ux_discard_category_changes))}},
         dismissButton={TextButton({discardEditor=false;nextEditor=null}) {Text(stringResource(R.string.cancel))}})
     if(iconPicker) AlertDialog(onDismissRequest={iconPicker=false},title={Text(stringResource(R.string.category_icon))}, text={
         LazyColumn { items(categoryIconOptions,key={it.value}) { option ->
@@ -258,7 +258,7 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
         }
         if(categoryIconOptions.none {it.value==s.draft.icon}) item {Text(stringResource(R.string.category_icon_selected,s.draft.icon))} }
     },confirmButton={TextButton({iconPicker=false}) {Text(stringResource(R.string.close))}})
-    s.confirmDelete?.let { item -> AlertDialog(onDismissRequest=vm::dismissDelete,title={Text(stringResource(R.string.delete))},
-        text={Text(stringResource(R.string.category_delete_confirmation,item.name))},confirmButton={AppButton(vm::confirmDelete,enabled=editable){Text(stringResource(R.string.delete))}},
+    s.confirmDelete?.let { item -> AlertDialog(onDismissRequest=vm::dismissDelete,title={Text(stringResource(R.string.ux_delete_category))},
+        text={Text(stringResource(R.string.category_delete_confirmation,item.name))},confirmButton={AppButton(vm::confirmDelete,enabled=editable){Text(stringResource(R.string.ux_delete_category))}},
         dismissButton={AppOutlinedButton(vm::dismissDelete){Text(stringResource(R.string.cancel))}}) }
 }

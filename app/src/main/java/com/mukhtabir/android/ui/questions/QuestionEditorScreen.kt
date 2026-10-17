@@ -703,7 +703,7 @@ fun QuestionEditorRoute(
     if (recovery != null && s.loaded) AlertDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
         text = { Text(stringResource(R.string.author_recover_body)) },
         confirmButton = { TextButton(vm::restoreDraft, enabled = !s.loading && !s.accessDenied) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.loading) { Text(stringResource(R.string.discard)) } })
+        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.loading) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
     LaunchedEffect(maxChoices) { vm.applyMaxChoices(maxChoices) }
     LaunchedEffect(s.loaded) { if(s.loaded) vm.refreshTags() }
     LaunchedEffect(s.savedId) { s.savedId?.let(onSaved) }
@@ -717,7 +717,7 @@ fun QuestionEditorRoute(
         text = { Text(stringResource(if (s.needsReview) R.string.author_leave_unknown else R.string.unsaved_question_message)) },
         confirmButton = { Column {
             TextButton({ showLeave = false; vm.keepDraft(onBack) }, enabled = !s.loading) { Text(stringResource(R.string.author_save_later)) }
-            AppDangerTextButton({ showLeave = false; vm.discardDraft(onBack) }, enabled = !s.loading) { Text(stringResource(R.string.discard)) }
+            AppDangerTextButton({ showLeave = false; vm.discardDraft(onBack) }, enabled = !s.loading) { Text(stringResource(R.string.ux_discard_question_draft)) }
         } },
         dismissButton = { TextButton({ showLeave = false }) { Text(stringResource(R.string.keep_editing)) } },
     )

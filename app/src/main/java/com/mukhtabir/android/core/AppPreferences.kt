@@ -13,7 +13,9 @@ enum class ThemePreference { SYSTEM, LIGHT, DARK, IRIS, BLOSSOM, LAGOON, SLATE, 
 
 data class DisplayPreferences(val perPage: Int = 0, val difficulty: String = "", val compact: Boolean = false,
     val font: String = "default", val autoAdvance: Boolean = false, val sound: Boolean = true,
-    val haptics: Boolean = false, val activityHeatmap: Boolean = false)
+    val haptics: Boolean = false, val activityHeatmap: Boolean = false,
+    val readingSize: Int = 100, val readingLeading: Int = 100,
+    val readingParagraphs: Int = 100, val readingWidth: String = "full")
 
 class AppPreferences(context: Context) {
     private val preferences = context.getSharedPreferences("mukhtabir_preferences", Context.MODE_PRIVATE)
@@ -30,17 +32,27 @@ class AppPreferences(context: Context) {
         compact = preferences.getBoolean("compact", false), font = preferences.getString("font", "default").takeIf { it in SUPPORTED_FONTS } ?: "default",
         autoAdvance = preferences.getBoolean("auto_advance", false), sound = preferences.getBoolean("sound", true),
         haptics = preferences.getBoolean("haptics", false),
-        activityHeatmap = preferences.getBoolean("activity_heatmap", false)))
+        activityHeatmap = preferences.getBoolean("activity_heatmap", false),
+        readingSize = preferences.getInt("reading_size", 100).coerceIn(90, 160),
+        readingLeading = preferences.getInt("reading_leading", 100).coerceIn(100, 160),
+        readingParagraphs = preferences.getInt("reading_paragraphs", 100).takeIf { it in setOf(100, 150, 200) } ?: 100,
+        readingWidth = preferences.getString("reading_width", "full").takeIf { it in setOf("full", "comfortable", "focused") } ?: "full"))
     val display = _display.asStateFlow()
     fun setDisplay(value: DisplayPreferences) {
         require(value.perPage in setOf(0, 10, 20, 50, 100) && value.difficulty in setOf("", "easy", "medium", "hard") && value.font in SUPPORTED_FONTS)
+        require(value.readingSize in 90..160 && value.readingLeading in 100..160 &&
+            value.readingParagraphs in setOf(100, 150, 200) && value.readingWidth in setOf("full", "comfortable", "focused"))
         preferences.edit().putInt("per_page", value.perPage).putString("difficulty", value.difficulty)
             .putBoolean("compact", value.compact).putString("font", value.font)
             .putBoolean("auto_advance", value.autoAdvance).putBoolean("sound", value.sound)
-            .putBoolean("haptics", value.haptics).putBoolean("activity_heatmap", value.activityHeatmap).apply()
+            .putBoolean("haptics", value.haptics).putBoolean("activity_heatmap", value.activityHeatmap)
+            .putInt("reading_size", value.readingSize).putInt("reading_leading", value.readingLeading)
+            .putInt("reading_paragraphs", value.readingParagraphs).putString("reading_width", value.readingWidth).apply()
         _display.value = value
     }
     fun resetDisplay() = setDisplay(_display.value.copy(perPage = 0, difficulty = "", compact = false))
+    fun resetReading() = setDisplay(_display.value.copy(font = "default", readingSize = 100,
+        readingLeading = 100, readingParagraphs = 100, readingWidth = "full"))
 
     fun setTheme(value: ThemePreference) {
         preferences.edit().putString(KEY_THEME, value.name).apply()

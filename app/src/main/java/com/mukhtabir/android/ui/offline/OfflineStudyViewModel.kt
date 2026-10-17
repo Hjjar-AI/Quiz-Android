@@ -245,7 +245,7 @@ internal class OfflineStudyViewModel(private val service: OfflineStudyService,pr
         }
         val p=requireNotNull(_state.value.bank)
         check(p.pendingIds.take(ids.size)==ids)
-        return persist(_state.value.materials+pack.newMaterial(),downloading=true,
+        return persist(_state.value.materials+pack.newMaterial().copy(sourceLabels=listOfNotNull(p.selection.book)),downloading=true,
             progress=p.copy(pendingIds=p.pendingIds.drop(ids.size),downloaded=p.downloaded+ids.size))
     }
     fun pauseBank() { if(_state.value.bankDownloading) bankJob?.cancel() }
@@ -277,7 +277,7 @@ internal class OfflineStudyViewModel(private val service: OfflineStudyService,pr
                     row.pack.contentRevision != fresh.contentRevision || row.pack.images != fresh.images
                 else row.pack.questions != fresh.questions || row.pack.images != fresh.images
                 if (!changed) _state.update { it.copy(message = R.string.offline_up_to_date) }
-                else if (persist(_state.value.materials + fresh.newMaterial(), downloading = true))
+                else if (persist(_state.value.materials + fresh.newMaterial().copy(displayTitle = row.displayTitle, sourceLabels = row.sourceLabels), downloading = true))
                     _state.update { it.copy(message = R.string.offline_updated_copy) }
             } catch (cancel: CancellationException) { throw cancel }
             catch (failure: Exception) { _state.update { it.copy(error = failure) } }
@@ -294,23 +294,39 @@ internal class OfflineStudyViewModel(private val service: OfflineStudyService,pr
             finally {_state.update {it.copy(busy=false)}}
         }
     }
+    fun toggleFlag(index: Int) {
+        val s = _state.value
+        val row = s.current ?: return
+        if (s.busy || s.storageFailed || s.pendingStorage || row.completionId == null || row.frozenTime != null || index !in row.pack.questions.indices) return
+        replace(row.copy(flaggedIndices = if (index in row.flaggedIndices) row.flaggedIndices - index else row.flaggedIndices + index))
+    }
+
+    fun rename(title: String): Boolean {
+        val s = _state.value
+        val row = s.current ?: return false
+        val normalized = title.trim()
+        if (s.busy || s.storageFailed || s.pendingStorage || row.summary != null || row.pack.id in s.syncingIds || normalized.length !in 1..120) return false
+        replace(row.copy(displayTitle = normalized))
+        return true
+    }
+
     fun start() {
         val s=_state.value;val row=s.current ?: return
         if(s.busy || s.storageFailed || row.summary!=null || row.completionId!=null) return
-        replace(row.copy(completionId=UUID.randomUUID().toString(),startedAtMillis=System.currentTimeMillis()))
+        replace(row.copy(completionId=UUID.randomUUID().toString(),startedAtMillis=System.currentTimeMillis(),lastStudiedAt=Instant.now().toString()))
     }
     fun answer(choice: Int,confidence: Int) {
         val s=_state.value;val row=s.current ?: return
         val q=row.pack.questions.getOrNull(row.index) ?: return
         if(s.busy || s.storageFailed || row.completionId==null || row.frozenTime!=null || row.answers.any {it.questionId==q.id} || choice !in 1..q.choices.size || confidence !in 1..3) return
         val answeredAt = row.pack.issuedAt?.let { Instant.ofEpochMilli(System.currentTimeMillis()+row.clockOffsetMillis).toString() }
-        replace(row.copy(answers=row.answers+OfflineAnswer(q.id,choice,confidence,answeredAt)))
+        replace(row.copy(answers=row.answers+OfflineAnswer(q.id,choice,confidence,answeredAt),lastStudiedAt=Instant.now().toString()))
     }
     fun go(offset: Int) {
         val s=_state.value;val row=s.current ?: return
         val next=row.index+offset
         if(s.busy || s.storageFailed || next !in row.pack.questions.indices) return
-        replace(row.copy(index=next))
+        replace(row.copy(index=next,lastStudiedAt=Instant.now().toString()))
     }
     fun finish() {
         val s=_state.value;val row=s.current ?: return
@@ -343,7 +359,7 @@ internal class OfflineStudyViewModel(private val service: OfflineStudyService,pr
     fun restart() {
         val s=_state.value;val row=s.current ?: return
         if(s.busy || s.storageFailed || row.result==null || row.pack.id in s.syncingIds) return
-        replace(OfflineMaterial(row.pack,clockOffsetMillis=row.clockOffsetMillis), preserveResult=false)
+        replace(OfflineMaterial(row.pack,clockOffsetMillis=row.clockOffsetMillis,displayTitle=row.displayTitle,lastStudiedAt=row.lastStudiedAt,sourceLabels=row.sourceLabels), preserveResult=false)
     }
     fun delete(id: String) {
         if(!_state.value.canDelete || id in _state.value.syncingIds) return

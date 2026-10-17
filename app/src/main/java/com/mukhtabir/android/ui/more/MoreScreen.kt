@@ -3,15 +3,6 @@
 package com.mukhtabir.android.ui.more
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import com.mukhtabir.android.ui.components.appVerticalScrollIndicator
-import com.mukhtabir.android.ui.theme.previewThemeColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,21 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
-import androidx.compose.runtime.collectAsState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import com.mukhtabir.android.core.AppPreferences
-import com.mukhtabir.android.ui.theme.themeLabel
-import com.mukhtabir.android.core.ThemePreference
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,7 +39,6 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.core.MoreSection
 import com.mukhtabir.android.core.NavigationCatalog
 import com.mukhtabir.android.data.remote.UserDto
-import com.mukhtabir.android.ui.components.AppIconButton
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.ui.components.iconFor
@@ -73,7 +54,7 @@ fun AppDrawerContent(user: UserDto, currentRoute: String?, enabled: Boolean, pre
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 Text(stringResource(R.string.app_name), modifier = Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                preferences?.let { DrawerThemeButton(it, enabled) }
+                preferences?.let { com.mukhtabir.android.ui.components.AppThemePicker(it, enabled, iconOnly = true) }
             }
             Text(user.displayName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -120,41 +101,4 @@ fun AppDrawerContent(user: UserDto, currentRoute: String?, enabled: Boolean, pre
 @Composable
 fun MoreScreen(user: UserDto, onNavigate: (String) -> Unit) {
     AppDrawerContent(user, currentRoute = "more", enabled = true, onNavigate = onNavigate)
-}
-
-
-@Composable
-private fun DrawerThemeButton(preferences: AppPreferences, enabled: Boolean) {
-    val theme by preferences.theme.collectAsState()
-    var menuOpen by rememberSaveable { mutableStateOf(false) }
-    val scroll = rememberScrollState()
-    val systemDark = isSystemInDarkTheme()
-    val menuState = stringResource(if (menuOpen) R.string.ui_expanded else R.string.ui_collapsed)
-    Box {
-        AppIconButton({ menuOpen = true }, enabled = enabled, modifier = Modifier.semantics { stateDescription = menuState }) {
-            Icon(Icons.Filled.Palette, stringResource(R.string.drawer_theme_value, themeLabel(theme)), Modifier.size(AppLayoutTokens.secondaryIconSize))
-        }
-        DropdownMenu(menuOpen, { menuOpen = false }, Modifier.heightIn(max = AppLayoutTokens.menuMaxHeight)) {
-            Box(Modifier.widthIn(min=208.dp,max=288.dp).heightIn(max=AppLayoutTokens.menuMaxHeight)
-                .appVerticalScrollIndicator(scroll)) {
-                Column(Modifier.verticalScroll(scroll).padding(end=10.dp)) {
-                    ThemePreference.values().forEach { option ->
-                        val colors=previewThemeColors(option,systemDark)
-                        DropdownMenuItem(text = { Text(themeLabel(option)) },
-                            modifier = Modifier.semantics { selected = theme == option }, enabled = enabled,
-                            leadingIcon={
-                                Row(Modifier.clearAndSetSemantics { },horizontalArrangement=Arrangement.spacedBy(3.dp)) {
-                                    listOf(colors.background,colors.surface,colors.primary).forEach { color ->
-                                        Box(Modifier.size(12.dp).background(color,CircleShape).border(.5.dp,colors.outline,CircleShape))
-                                    }
-                                }
-                            },
-                            trailingIcon=if(theme==option) ({ Icon(Icons.Filled.Check,contentDescription=null,
-                                modifier=Modifier.size(AppLayoutTokens.secondaryIconSize)) }) else null,
-                            onClick = { if (enabled) { preferences.setTheme(option); menuOpen = false } })
-                    }
-                }
-            }
-        }
-    }
 }

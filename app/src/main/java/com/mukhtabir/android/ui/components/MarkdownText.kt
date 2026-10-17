@@ -8,6 +8,13 @@ import android.content.Context
 import kotlin.math.abs
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import com.mukhtabir.android.ui.theme.LocalReadingComfort
+import com.mukhtabir.android.ui.theme.readingMaxWidth
+import com.mukhtabir.android.ui.theme.readingTextStyle
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -57,13 +64,15 @@ fun MarkdownText(
 ) {
     val context = LocalContext.current
     val density = androidx.compose.ui.platform.LocalDensity.current
+    val paragraphScale = LocalReadingComfort.current.readingParagraphs / 100f
+    val paragraphMargin = if (compactBlocks) com.mukhtabir.android.ui.theme.AppTheme.spacing.tight else 8.dp
     val blockMargin = with(density) {
-        (com.mukhtabir.android.ui.theme.AppTheme.spacing.tight * fontScale.coerceAtLeast(1f)).roundToPx()
+        (paragraphMargin * fontScale.coerceAtLeast(1f) * paragraphScale).roundToPx()
     }
     val highlight = MaterialTheme.colorScheme.tertiaryContainer.toArgb()
     val highlightText = MaterialTheme.colorScheme.onTertiaryContainer.toArgb()
     val border = MaterialTheme.colorScheme.outline.toArgb()
-    val markwon = remember(context, highlight, highlightText, border, compactBlocks, blockMargin) {
+    val markwon = remember(context, highlight, highlightText, border, compactBlocks, blockMargin, paragraphScale) {
         Markwon.builder(context)
             .usePlugin(HtmlPlugin.create { html ->
                 html.excludeDefaults(true).addHandler(UnderlineHandler())
@@ -79,8 +88,8 @@ fun MarkdownText(
             .usePlugin(MovementMethodPlugin.create(TableAwareMovementMethod.create()))
             .usePlugin(object : AbstractMarkwonPlugin() {
                 override fun configureTheme(builder: MarkwonTheme.Builder) {
-                    if (compactBlocks) builder.blockMargin(blockMargin)
-                        .headingTextSizeMultipliers(floatArrayOf(1.35f, 1.25f, 1.15f, 1.1f, 1f, 1f))
+                    if (compactBlocks || paragraphScale != 1f) builder.blockMargin(blockMargin)
+                    if (compactBlocks) builder.headingTextSizeMultipliers(floatArrayOf(1.35f, 1.25f, 1.15f, 1.1f, 1f, 1f))
                 }
             })
             .build()
@@ -107,9 +116,10 @@ fun MarkdownText(
     val typeface = com.mukhtabir.android.ui.theme.LocalNativeTypeface.current
     val color = LocalContentColor.current.toArgb()
     val linkColor = MaterialTheme.colorScheme.primary.toArgb()
-    val style = LocalTextStyle.current
+    val style = readingTextStyle(LocalTextStyle.current)
 
-    Column(modifier.fillMaxWidth()) {
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+    Column(Modifier.widthIn(max = readingMaxWidth()).fillMaxWidth()) {
         if (headings.isNotEmpty()) AppSection(stringResource(R.string.explanation_sections), composeCollapsedContent = false) {
             AppActionRow {
                 headings.forEach { target ->
@@ -162,6 +172,7 @@ fun MarkdownText(
                 }
             },
         )
+    }
     }
 }
 

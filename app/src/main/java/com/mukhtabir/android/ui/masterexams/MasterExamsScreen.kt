@@ -19,7 +19,6 @@ import com.mukhtabir.android.ui.components.AppActionRow
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,7 +35,6 @@ import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.MaterialTheme
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
@@ -120,7 +118,7 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                 modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite })
             OutlinedButton(vm::retryStorage,enabled=!s.busy) { Text(stringResource(R.string.retry)) }
             if(s.draft==null) AppDangerOutlinedButton({confirmation="discard-recovery"},enabled=!s.busy) {
-                Text(stringResource(R.string.discard))
+                Text(stringResource(R.string.ux_discard_local_recovery))
             }
         }
         if(s.finishPending && s.status?.isComplete!=true) item {
@@ -189,11 +187,19 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                 }
             s.result?.let { result ->
                 item { Text(stringResource(R.string.master_result),style=MaterialTheme.typography.titleLarge) }
-                item { Text(stringResource(R.string.master_score,result.correctCount,result.totalQuestions,result.answeredCount)) }
-                item { Text(stringResource(R.string.master_percentages,result.accuracy,result.weightedScore)) }
+                item {
+                    com.mukhtabir.android.ui.components.LearningSaveStatus(com.mukhtabir.android.ui.components.LearningSaveState.SERVER)
+                    com.mukhtabir.android.ui.components.LearningResultsSummary(result.correctCount, result.totalQuestions,
+                        result.answeredCount, result.accuracy)
+                }
+                item { Text(stringResource(R.string.report_weighted_score) + ": " +
+                    com.mukhtabir.android.util.bidi(com.mukhtabir.android.util.formatDecimal(result.weightedScore) + "%")) }
                 item { Text(stringResource(R.string.master_result_dates,formatLocalDateTime(result.startedAt),result.finishedAt?.let(::formatLocalDateTime).orEmpty())) }
                 if(result.isMakeup) item { Text(stringResource(R.string.master_makeup)) }
                 if(result.forcedFinish) item { Text(stringResource(R.string.master_forced_finish)) }
+            }
+            if (s.storageFailed || s.needsSync || s.finishPending || s.draftConflict) item {
+                com.mukhtabir.android.ui.components.LearningSaveStatus(com.mukhtabir.android.ui.components.LearningSaveState.REVIEW)
             }
             if(s.status?.isComplete==false) {
                 item {
@@ -285,13 +291,13 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
     confirmation?.let { action ->
         AlertDialog(
             onDismissRequest={if(!s.busy) confirmation=null},
-            title={Text(stringResource(when(action){"start"->R.string.master_start;"finish"->R.string.finish;"report"->R.string.master_report;"discard"->R.string.master_discard_draft;else->R.string.back}))},
+            title={Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"start"->R.string.master_start;"finish"->R.string.finish;"report"->R.string.master_report;"discard"->R.string.master_discard_draft;else->R.string.back}))},
             text={if(action=="report") OutlinedTextField(reportReason,{reportReason=it},label={Text(stringResource(R.string.master_report_reason))},modifier=Modifier.fillMaxWidth())
                 else Text(stringResource(when(action){"discard-recovery"->R.string.master_recovery_discard;"start"->R.string.master_start_confirm;"finish"->R.string.master_finish_confirm;"discard"->R.string.master_discard_confirm;else->R.string.master_leave_confirm}))},
             confirmButton={TextButton({
                 confirmation=null
                 when(action){"discard-recovery"->vm.discardUnreadableRecovery();"start"->vm.start();"finish"->vm.finish();"report"->vm.flag(reportReason);"discard"->vm.discardDraft();else->vm.back()}
-            },enabled=!s.busy){Text(stringResource(R.string.confirm))}},
+            },enabled=!s.busy){Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"discard"->R.string.master_discard_draft;else->R.string.confirm}))}},
             dismissButton={TextButton({confirmation=null},enabled=!s.busy){Text(stringResource(R.string.cancel))}},
         )
     }

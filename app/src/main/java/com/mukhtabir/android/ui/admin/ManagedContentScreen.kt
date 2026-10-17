@@ -78,7 +78,11 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
     val activeLabel=stringResource(R.string.active)
     val enabled=!busy && !s.needsReview && !s.uncertainCreate && s.conflict==null
     if(confirmation!=null || removing!=null) AlertDialog(onDismissRequest={if(!busy) {confirmation=null;removing=null}},
-        title={Text(stringResource(R.string.confirm))},
+        title={Text(stringResource(when {
+            removing != null -> R.string.ux_remove_group_member
+            confirmation == "delete" -> if (kind == ManagedKind.GROUP) R.string.ux_delete_group else R.string.ux_delete_blueprint
+            else -> R.string.confirm
+        }))},
         text={Text(stringResource(when {
             removing!=null -> R.string.manage_remove_member_confirm
             confirmation=="delete" -> if(kind==ManagedKind.GROUP) R.string.manage_delete_group_confirm else R.string.manage_delete_blueprint_confirm
@@ -92,7 +96,11 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
                 else -> { if(s.needsReview || s.uncertainCreate) onBack() else vm.close() }
             }
             confirmation=null;removing=null
-        },enabled=!busy) { Text(stringResource(R.string.confirm)) }},
+        },enabled=!busy) { Text(stringResource(when {
+            removing != null -> R.string.ux_remove_group_member
+            confirmation == "delete" -> if (kind == ManagedKind.GROUP) R.string.ux_delete_group else R.string.ux_delete_blueprint
+            else -> R.string.confirm
+        })) }},
         dismissButton={TextButton({confirmation=null;removing=null},enabled=!busy) { Text(stringResource(R.string.cancel)) }})
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item { Text(title) }
@@ -168,7 +176,7 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
             }
             item { AppActionRow() {
                 Button(vm::save,enabled=enabled) { Text(stringResource(R.string.save)) }
-                if(s.baseline!=null) AppDangerOutlinedButton({confirmation="delete"},enabled=enabled && !s.dirty) { Text(stringResource(R.string.delete)) }
+                if(s.baseline!=null) AppDangerOutlinedButton({confirmation="delete"},enabled=enabled && !s.dirty) { Text(stringResource(if (kind == ManagedKind.GROUP) R.string.ux_delete_group else R.string.ux_delete_blueprint)) }
             } }
             if(kind==ManagedKind.GROUP && s.baseline!=null) {
                 item {
