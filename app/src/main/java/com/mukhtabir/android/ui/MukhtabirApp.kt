@@ -440,7 +440,8 @@ private fun AuthenticatedApp(
                     backDispatcher?.onBackPressed()
                 }
             } else if (!quizSessionActive) {
-                AppTopBar(stringResource(R.string.app_name), enabled = drawerNavigationAllowed, onMenu = openDrawer)
+                AppTopBar(stringResource(R.string.app_name), enabled = drawerNavigationAllowed, onMenu = openDrawer,
+                    onSettings = { if (drawerNavigationAllowed) navController.navigateTopLevel(Routes.MORE_SETTINGS) })
             }
         },
         bottomBar = {

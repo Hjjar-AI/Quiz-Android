@@ -49,6 +49,7 @@ object AppLayoutTokens {
     val headingBreakpoint = 360.dp
     val sessionHeaderBreakpoint = 300.dp
     val sessionPinnedMinHeight = 420.dp
+    val drawerPinnedMinHeight = 360.dp
     val imageMaxHeight = 360.dp
     val imageControlsMaxHeight = 160.dp
     const val questionImageAspectRatio = 1.6f

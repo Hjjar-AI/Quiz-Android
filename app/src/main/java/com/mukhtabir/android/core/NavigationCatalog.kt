@@ -5,7 +5,9 @@ import com.mukhtabir.android.R
 
 /** Capability-filtered destinations shared by the categorized side drawer and restored routes. */
 enum class MoreSection(@StringRes val titleRes: Int) {
-    LEARN(R.string.more_learn), REVIEW(R.string.more_review), EXAMS(R.string.drawer_exams), MODERATE(R.string.drawer_moderation), ADMIN(R.string.more_admin), ACCOUNT(R.string.more_account),
+    LEARN(R.string.more_learn), REVIEW(R.string.more_review), EXAMS(R.string.drawer_exams),
+    ACCOUNT(R.string.more_account), SUPPORT(R.string.drawer_help_information),
+    AUTHORING(R.string.drawer_authoring), MODERATE(R.string.drawer_moderation), ADMIN(R.string.more_admin),
 }
 
 data class MoreDestination(
@@ -16,10 +18,12 @@ data class MoreDestination(
     val implemented: Boolean = true,
     val section: MoreSection = when {
         route in setOf("more/admin/flags", "more/admin/tags", "more/admin/verification", "more/admin/verification_stats") -> MoreSection.MODERATE
+        route in setOf("more/authoring_drafts", "more/master_exams/manage", "more/master_drafts") -> MoreSection.AUTHORING
+        route in setOf("more/help", "more/about", "more/privacy") -> MoreSection.SUPPORT
         route.startsWith("more/master") -> MoreSection.EXAMS
         route.startsWith("more/admin/") -> MoreSection.ADMIN
         route in setOf("history", "more/mistakes", "more/fragile", "more/analytics") -> MoreSection.REVIEW
-        route in setOf("more/profile", "more/settings", "more/change_password", "more/about", "more/help", "more/privacy") -> MoreSection.ACCOUNT
+        route in setOf("more/profile", "more/settings", "more/change_password") -> MoreSection.ACCOUNT
         else -> MoreSection.LEARN
     },
 )
@@ -56,111 +60,50 @@ object NavigationCatalog {
 
     /** Canonical destinations; empty and unauthorized drawer sections are omitted. */
     val moreDestinations: List<MoreDestination> = listOf(
+        MoreDestination("more/questions", R.string.question_library, MaterialIcons.QUESTIONS),
+        MoreDestination("quizzes", R.string.quizzes, MaterialIcons.QUIZ, "tests.start"),
         MoreDestination("more/offline", R.string.offline_title, MaterialIcons.QUIZ),
-        MoreDestination("more/sessions", R.string.device_sessions_title, MaterialIcons.LOCK, section = MoreSection.ACCOUNT),
-        MoreDestination("more/notices", R.string.notices_title, MaterialIcons.INFO, section = MoreSection.ACCOUNT),
-        MoreDestination("more/admin/tag_management", R.string.taxonomy_title, MaterialIcons.TAGS, "questions.manage_tags"),
-        MoreDestination("more/admin/knowledge", R.string.content_knowledge_title, MaterialIcons.MAP),
-        MoreDestination("more/admin/cases", R.string.content_cases_title, MaterialIcons.QUESTIONS),
-        MoreDestination("more/admin/groups", R.string.manage_groups, MaterialIcons.GROUPS, "groups.admin"),
-        MoreDestination("more/admin/blueprints", R.string.manage_blueprints, MaterialIcons.QUIZ, "admin.blueprints"),
-        MoreDestination("more/admin/transfers", R.string.transfer_title, MaterialIcons.SETTINGS, "admin.database"),
-        MoreDestination("more/authoring_drafts", R.string.author_drafts_title, MaterialIcons.QUESTIONS),
-        MoreDestination("more/admin/tools", R.string.tools_title, MaterialIcons.SETTINGS),
-        MoreDestination("more/master_exams/manage", R.string.exam_manage_title, MaterialIcons.QUIZ),
-        MoreDestination("more/master_drafts", R.string.exam_library_title, MaterialIcons.QUESTIONS, "master_exams.drafts_library"),
+        MoreDestination("more/planner", R.string.nav_planner, MaterialIcons.PLANNER),
+        MoreDestination("more/knowledge_map", R.string.nav_knowledge_map, MaterialIcons.MAP),
+        MoreDestination("more/cases", R.string.explore_cases, MaterialIcons.QUESTIONS),
+        MoreDestination("more/categories", R.string.nav_categories, MaterialIcons.CATEGORIES),
+        MoreDestination("more/groups", R.string.nav_groups, MaterialIcons.GROUPS),
+        MoreDestination("bookmarks", R.string.bookmarks, MaterialIcons.BOOKMARK, section = MoreSection.REVIEW),
+        MoreDestination("history", R.string.history, MaterialIcons.HISTORY, "tests.view_own_history"),
+        MoreDestination("more/mistakes", R.string.nav_mistakes, MaterialIcons.MISTAKES),
+        MoreDestination("more/fragile", R.string.nav_fragile, MaterialIcons.FRAGILE),
+        MoreDestination("more/activity", R.string.activity_title, MaterialIcons.ANALYTICS, section = MoreSection.REVIEW),
+        MoreDestination("more/analytics", R.string.nav_analytics, MaterialIcons.ANALYTICS),
+        MoreDestination("more/master_exams", R.string.master_exams_title, MaterialIcons.QUIZ),
         MoreDestination("more/master_results", R.string.exam_results_title, MaterialIcons.ANALYTICS),
         MoreDestination("more/master_csv", R.string.transfer_exam_csv, MaterialIcons.HISTORY),
-        MoreDestination("more/activity", R.string.activity_title, MaterialIcons.ANALYTICS, section = MoreSection.REVIEW),
-        MoreDestination("more/admin/verification_stats", R.string.verification_stats_title, MaterialIcons.ANALYTICS, "admin.verification_stats"),
-        MoreDestination("history", R.string.history, MaterialIcons.HISTORY, "tests.view_own_history"),
-        MoreDestination("more/admin/settings", R.string.nav_admin_settings, MaterialIcons.SETTINGS, "admin.settings"),
-        MoreDestination("more/cases", R.string.explore_cases, MaterialIcons.QUESTIONS),
-        MoreDestination("more/admin/active_users", R.string.active_accounts_title, MaterialIcons.GROUPS, "admin.active_users"),
+        MoreDestination("more/profile", R.string.nav_profile, MaterialIcons.PROFILE),
+        MoreDestination("more/settings", R.string.nav_settings, MaterialIcons.SETTINGS),
+        MoreDestination("more/notices", R.string.notices_title, MaterialIcons.INFO, section = MoreSection.ACCOUNT),
+        MoreDestination("more/sessions", R.string.device_sessions_title, MaterialIcons.LOCK, section = MoreSection.ACCOUNT),
+        MoreDestination("more/change_password", R.string.nav_change_password, MaterialIcons.LOCK),
+        MoreDestination("more/help", R.string.help_title, MaterialIcons.INFO),
+        MoreDestination("more/about", R.string.nav_about, MaterialIcons.INFO),
+        MoreDestination("more/privacy", R.string.privacy_title, MaterialIcons.LOCK),
+        MoreDestination("more/authoring_drafts", R.string.author_drafts_title, MaterialIcons.QUESTIONS),
+        MoreDestination("more/master_exams/manage", R.string.exam_manage_title, MaterialIcons.QUIZ),
+        MoreDestination("more/master_drafts", R.string.exam_library_title, MaterialIcons.QUESTIONS, "master_exams.drafts_library"),
         MoreDestination("more/admin/flags", R.string.moderation_flags_title, MaterialIcons.MISTAKES, "admin.flags"),
         MoreDestination("more/admin/tags", R.string.moderation_tags_title, MaterialIcons.TAGS, "questions.bulk_tag"),
         MoreDestination("more/admin/verification", R.string.moderation_verification_title, MaterialIcons.VERIFIED, "questions.bulk_verify"),
-        MoreDestination("more/master_exams", R.string.master_exams_title, MaterialIcons.QUIZ),
-        MoreDestination("more/help", R.string.help_title, MaterialIcons.INFO),
-        MoreDestination("more/privacy", R.string.privacy_title, MaterialIcons.LOCK),
-        MoreDestination(
-            route = "more/questions",
-            labelRes = R.string.question_library,
-            iconName = MaterialIcons.QUESTIONS,
-        ),
-        MoreDestination(
-            route = "more/categories",
-            labelRes = R.string.nav_categories,
-            iconName = MaterialIcons.CATEGORIES,
-        ),
-        MoreDestination(
-            route = "more/mistakes",
-            labelRes = R.string.nav_mistakes,
-            iconName = MaterialIcons.MISTAKES,
-        ),
-        MoreDestination(
-            route = "more/fragile",
-            labelRes = R.string.nav_fragile,
-            iconName = MaterialIcons.FRAGILE,
-        ),
-        MoreDestination(
-            route = "more/analytics",
-            labelRes = R.string.nav_analytics,
-            iconName = MaterialIcons.ANALYTICS,
-        ),
-        MoreDestination(
-            route = "more/knowledge_map",
-            labelRes = R.string.nav_knowledge_map,
-            iconName = MaterialIcons.MAP,
-        ),
-        MoreDestination(
-            route = "more/planner",
-            labelRes = R.string.nav_planner,
-            iconName = MaterialIcons.PLANNER,
-        ),
-        MoreDestination(
-            route = "more/groups",
-            labelRes = R.string.nav_groups,
-            iconName = MaterialIcons.GROUPS,
-        ),
-        MoreDestination(
-            route = "more/profile",
-            labelRes = R.string.nav_profile,
-            iconName = MaterialIcons.PROFILE,
-        ),
-        MoreDestination(
-            route = "more/settings",
-            labelRes = R.string.nav_settings,
-            iconName = MaterialIcons.SETTINGS,
-        ),
-        MoreDestination(
-            route = "more/change_password",
-            labelRes = R.string.nav_change_password,
-            iconName = MaterialIcons.LOCK,
-        ),
-        MoreDestination(
-            route = "more/about",
-            labelRes = R.string.nav_about,
-            iconName = MaterialIcons.INFO,
-        ),
-        MoreDestination(
-            route = "more/admin/users",
-            labelRes = R.string.nav_admin_users,
-            iconName = MaterialIcons.GROUPS,
-            capability = "admin.users",
-        ),
-        MoreDestination(
-            route = "more/admin/permissions",
-            labelRes = R.string.nav_admin_permissions,
-            iconName = MaterialIcons.LOCK,
-            capability = "admin.permissions",
-        ),
-        MoreDestination(
-            route = "more/admin/history",
-            labelRes = R.string.all_history,
-            iconName = MaterialIcons.HISTORY,
-            capability = "tests.view_all_history",
-        ),
+        MoreDestination("more/admin/verification_stats", R.string.verification_stats_title, MaterialIcons.ANALYTICS, "admin.verification_stats"),
+        MoreDestination("more/admin/users", R.string.nav_admin_users, MaterialIcons.GROUPS, "admin.users"),
+        MoreDestination("more/admin/active_users", R.string.active_accounts_title, MaterialIcons.GROUPS, "admin.active_users"),
+        MoreDestination("more/admin/permissions", R.string.nav_admin_permissions, MaterialIcons.LOCK, "admin.permissions"),
+        MoreDestination("more/admin/groups", R.string.manage_groups, MaterialIcons.GROUPS, "groups.admin"),
+        MoreDestination("more/admin/tag_management", R.string.taxonomy_title, MaterialIcons.TAGS, "questions.manage_tags"),
+        MoreDestination("more/admin/knowledge", R.string.content_knowledge_title, MaterialIcons.MAP),
+        MoreDestination("more/admin/cases", R.string.content_cases_title, MaterialIcons.QUESTIONS),
+        MoreDestination("more/admin/blueprints", R.string.manage_blueprints, MaterialIcons.QUIZ, "admin.blueprints"),
+        MoreDestination("more/admin/history", R.string.all_history, MaterialIcons.HISTORY, "tests.view_all_history"),
+        MoreDestination("more/admin/transfers", R.string.transfer_title, MaterialIcons.SETTINGS, "admin.database"),
+        MoreDestination("more/admin/tools", R.string.tools_title, MaterialIcons.SETTINGS),
+        MoreDestination("more/admin/settings", R.string.nav_admin_settings, MaterialIcons.SETTINGS, "admin.settings"),
     )
 
     /** Filter the catalog by the user's capabilities. */

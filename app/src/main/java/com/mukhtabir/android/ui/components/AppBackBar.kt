@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import com.mukhtabir.android.ui.components.AppIconButton as IconButton
@@ -37,7 +38,7 @@ fun AppBackBar(title: String, enabled: Boolean, onMenu: (() -> Unit)? = null, on
 }
 
 @Composable
-fun AppTopBar(title: String, enabled: Boolean, onMenu: () -> Unit) {
+fun AppTopBar(title: String, enabled: Boolean, onMenu: () -> Unit, onSettings: (() -> Unit)? = null) {
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = AppLayoutTokens.shellHorizontalPadding, vertical = AppLayoutTokens.shellVerticalPadding),
             verticalAlignment = Alignment.CenterVertically) {
@@ -46,6 +47,11 @@ fun AppTopBar(title: String, enabled: Boolean, onMenu: () -> Unit) {
             }
             Text(title, style = MaterialTheme.typography.titleLarge, softWrap = true, maxLines = 2,
                 overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = AppLayoutTokens.shellHorizontalPadding).semantics { heading() })
+            onSettings?.let { action ->
+                IconButton(action, enabled = enabled) {
+                    Icon(Icons.Filled.Settings, stringResource(R.string.nav_settings))
+                }
+            }
         }
     }
 }

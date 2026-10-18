@@ -1820,4 +1820,6 @@
     <string name="launch_downloaded_hint">تابع باستخدام المحتوى الذي سبق تنزيله على هذا الجهاز.</string>
     <string name="launch_demo_hint">جرّب أسئلة علمية نموذجية. لا تحتاج إلى حساب أو تنزيل.</string>
     <string name="launch_checking_session">جارٍ تجهيز تسجيل الدخول…</string>
+    <string name="drawer_help_information">المساعدة والمعلومات</string>
+    <string name="drawer_authoring">إنشاء المحتوى وإدارته</string>
 </resources>

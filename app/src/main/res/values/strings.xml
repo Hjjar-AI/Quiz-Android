@@ -1821,4 +1821,6 @@
     <string name="launch_downloaded_hint">Continue with material already downloaded to this device.</string>
     <string name="launch_demo_hint">Try sample science questions. No account or download needed.</string>
     <string name="launch_checking_session">Preparing your sign-in…</string>
+    <string name="drawer_help_information">Help &amp; information</string>
+    <string name="drawer_authoring">Create &amp; manage content</string>
 </resources>
