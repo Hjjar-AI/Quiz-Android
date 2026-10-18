@@ -68,6 +68,7 @@ internal fun ExamDraftQuestionFields(form: EmbeddedExamDraftForm, enabled: Boole
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ExamDraftChoiceFields(form: EmbeddedExamDraftForm, choice: QuestionChoiceDraft, index: Int,
     enabled: Boolean, change: ((EmbeddedExamDraftForm) -> EmbeddedExamDraftForm) -> Unit, validation: DraftValidationUi = DraftValidationUi()) {
@@ -96,6 +97,7 @@ internal fun ExamDraftChoiceFields(form: EmbeddedExamDraftForm, choice: Question
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolean, maxChoices: Int,
     categories: List<CategoryDto>, caseStemLocked: Boolean, onCaseKeyChange: (String) -> Unit,

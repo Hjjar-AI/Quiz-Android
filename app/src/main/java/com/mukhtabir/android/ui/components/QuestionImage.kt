@@ -81,6 +81,7 @@ fun QuestionImage(url: String?, repository: ImageRepository? = null, modifier: M
     if (inspect && success != null) QuestionImageViewer(success.bytes) { inspect = false }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun QuestionImageViewer(bytes: ByteArray, onClose: () -> Unit) {
     var bitmap by remember(bytes) { mutableStateOf<ImageBitmap?>(null) }
@@ -109,14 +110,15 @@ private fun QuestionImageViewer(bytes: ByteArray, onClose: () -> Unit) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
-            val short = maxHeight < AppLayoutTokens.sessionPinnedMinHeight * androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+            val viewportHeight = maxHeight
+            val short = viewportHeight < AppLayoutTokens.sessionPinnedMinHeight * androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
             Column(Modifier.fillMaxSize().then(if (short) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 AppActionRow {
                     AppOutlinedButton(onClose) { Text(stringResource(R.string.close)) }
                     AppTextButton({ scale = 1f; pan = Offset.Zero }) { Text(stringResource(R.string.image_reset_view)) }
                 }
-                val imageModifier = if (short) Modifier.fillMaxWidth().height((maxHeight * .6f).coerceAtLeast(AppLayoutTokens.imageControlsMaxHeight))
+                val imageModifier = if (short) Modifier.fillMaxWidth().height((viewportHeight * .6f).coerceAtLeast(AppLayoutTokens.imageControlsMaxHeight))
                     else Modifier.weight(1f).fillMaxWidth()
                 Box(imageModifier.clipToBounds().onSizeChanged { viewport = it }
                     .transformable(transform), contentAlignment = Alignment.Center) {

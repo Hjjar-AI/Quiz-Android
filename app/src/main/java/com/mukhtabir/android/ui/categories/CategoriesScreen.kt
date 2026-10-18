@@ -193,6 +193,7 @@ internal class CategoriesViewModel(private val service: CategoryService, private
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: SessionDraftStore, userId: Long,
     onBack: () -> Unit, onBusyChanged: (Boolean) -> Unit) {
@@ -225,9 +226,9 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
             recoveryError?.let { ErrorState(throwable = it) }
         } },
         confirmButton = { Column {
-            AppTextButton({ vm.leave(false, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.author_save_later)) }
+            TextButton({ vm.leave(false, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.author_save_later)) }
             AppDangerTextButton({ vm.leave(true, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.discard_changes_continue)) }
-        } }, dismissButton = { AppTextButton({ leaving = false }, enabled = !s.busy) { Text(stringResource(R.string.keep_editing)) } })
+        } }, dismissButton = { TextButton({ leaving = false }, enabled = !s.busy) { Text(stringResource(R.string.keep_editing)) } })
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),
         verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
         item {
