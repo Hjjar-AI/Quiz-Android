@@ -21,10 +21,7 @@ import com.mukhtabir.android.ui.components.AppActionRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Icon
-import android.graphics.BitmapFactory
-import android.util.Base64
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
@@ -50,7 +47,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
@@ -323,17 +319,8 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                     explanationTranslated = !display.explanation.isNullOrBlank()) }
                 item {ClinicalCaseContext(display.case)}
                 item {com.mukhtabir.android.ui.components.QuestionTextCard(display.question)}
-                row.pack.images[q.id.toString()]?.let {encoded -> item {
-                    val bitmap=remember(encoded) {runCatching {
-                        val bytes=Base64.decode(encoded,Base64.DEFAULT)
-                        val bounds=BitmapFactory.Options().apply {inJustDecodeBounds=true}
-                        BitmapFactory.decodeByteArray(bytes,0,bytes.size,bounds)
-                        var sample=1
-                        while(bounds.outWidth/sample>1600 || bounds.outHeight/sample>1600) sample*=2
-                        BitmapFactory.decodeByteArray(bytes,0,bytes.size,BitmapFactory.Options().apply {inSampleSize=sample})
-                    }.getOrNull()}
-                    if(bitmap!=null) Image(bitmap.asImageBitmap(),contentDescription=stringResource(R.string.offline_image),modifier=Modifier.fillMaxWidth())
-                    else Text(stringResource(R.string.offline_image_error))
+                row.pack.images[q.id.toString()]?.let { encoded -> item {
+                    com.mukhtabir.android.ui.components.QuestionImage(url = null, downloadedImage = encoded)
                 } }
                 if(q.id in row.pack.imageQuestionIds && row.pack.images[q.id.toString()]==null) item {
                     Text(stringResource(R.string.offline_image_omitted),style=MaterialTheme.typography.bodySmall)

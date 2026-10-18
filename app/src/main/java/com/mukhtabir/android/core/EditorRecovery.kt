@@ -37,11 +37,11 @@ internal class EditorRecovery<T>(private val scope: CoroutineScope, private val 
         }
     }
     @OptIn(FlowPreview::class)
-    fun <S> observe(state: StateFlow<S>, snapshot: (S) -> T?) {
+    fun <S> observe(state: StateFlow<S>, canPersist: (S) -> Boolean = { true }, snapshot: (S) -> T?) {
         scope.launch {
             state.debounce(300).collect {
                 mutex.withLock {
-                    if (_ready.value && _pending.value == null) {
+                    if (_ready.value && _pending.value == null && canPersist(state.value)) {
                         latest = snapshot(state.value)
                         if (!blocked) writeLocked(latest)
                     }

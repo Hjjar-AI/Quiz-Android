@@ -52,7 +52,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -559,7 +558,7 @@ private fun PlannerDateField(label: Int, value: String, fallback: String, enable
         val initial = selected ?: parseDate(fallback) ?: LocalDate.now()
         DatePickerDialog(context, { _, year, month, day -> onPicked(LocalDate.of(year, month + 1, day).toString()) },
             initial.year, initial.monthValue - 1, initial.dayOfMonth).show()
-    }, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { if (fieldError != null) error(fieldError) }) {
+    }, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget).semantics { if (fieldError != null) error(fieldError) }) {
         Text(selected?.format(formatter) ?: stringResource(R.string.planner_choose_date))
     }
 }

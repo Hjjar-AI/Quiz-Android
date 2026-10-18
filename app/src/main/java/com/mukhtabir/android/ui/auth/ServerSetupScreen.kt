@@ -1,6 +1,11 @@
 package com.mukhtabir.android.ui.auth
 
 import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.ui.components.AppLaunchLayout
+import com.mukhtabir.android.ui.components.AppLaunchHeader
+import com.mukhtabir.android.ui.components.OfflineLaunchActions
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCardBody
 import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 
@@ -14,13 +19,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import com.mukhtabir.android.ui.components.AppButton as Button
 import androidx.compose.material3.MaterialTheme
@@ -57,17 +57,19 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
     val firstLaunch = onDemo != null && settings.read() == null && initialFileSlot == null
     var showSetup by rememberSaveable { mutableStateOf(!firstLaunch) }
     if (!showSetup) {
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authPadding),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
-        ) {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.semantics { heading() })
-            onDemo?.let { open -> com.mukhtabir.android.ui.demo.DemoInvitation(onOpen = open) }
-            AppOutlinedButton({ showSetup = true }, Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.server_setup_title))
+        AppLaunchLayout {
+            AppLaunchHeader()
+            AppCard(Modifier.fillMaxWidth()) {
+                AppCardBody(Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.launch_online_title), style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.semantics { heading() })
+                    Text(stringResource(R.string.launch_online_hint), style = MaterialTheme.typography.bodyMedium)
+                    Button({ showSetup = true }, Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.launch_connect_server))
+                    }
+                }
             }
+            OfflineLaunchActions(onDemo = onDemo)
             SetupLanguageButton(language, onLanguageChange)
         }
         return
@@ -148,8 +150,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
             },enabled=!busy) { Text(stringResource(R.string.server_setup_title)) }},
             dismissButton={TextButton({pendingUrl=null},enabled=!busy) { Text(stringResource(R.string.cancel)) }})
     }
-    Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authPadding),
-        verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.theme.AppTheme.spacing.section)) {
+    AppLaunchLayout {
         cancelSetup?.let { cancel ->
             TextButton(cancel, enabled = !busy) { Text(stringResource(R.string.back)) }
         }
@@ -240,7 +241,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
         Button({
             val normalized = if (usingFile) fileUrl else ServerSettings.normalize(input)
             if(normalized==null) error=R.string.server_invalid_address else pendingUrl=normalized
-        },enabled=!busy) { Text(stringResource(R.string.server_continue)) }
+        }, modifier = Modifier.fillMaxWidth(), enabled=!busy) { Text(stringResource(R.string.server_continue)) }
     }
 }
 

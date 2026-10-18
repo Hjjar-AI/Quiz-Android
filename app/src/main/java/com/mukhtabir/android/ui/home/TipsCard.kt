@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 
 /**
@@ -46,7 +45,7 @@ fun TipsCard(
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
             verticalAlignment = Alignment.Top,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
                 Text(
                     text = stringResource(R.string.tips_title),
                     style = MaterialTheme.typography.labelMedium,

@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import androidx.compose.material3.Checkbox
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import com.mukhtabir.android.ui.components.AppButton as Button
 import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
@@ -57,7 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -591,10 +589,7 @@ private fun LibraryFiltersDialog(
                 LibraryFilterChoice(stringResource(R.string.source_tags), tag,
                     listOf("" to any) + state.tags.map { it to it }) { tag = it }
                 Text(stringResource(R.string.ux_filter_single_tag), style = MaterialTheme.typography.bodySmall)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(verified, { verified = it })
-                    Text(stringResource(R.string.verified_only), Modifier.weight(1f))
-                }
+                com.mukhtabir.android.ui.components.AppCheckboxRow(stringResource(R.string.verified_only), verified, { verified = it })
                 LibraryFilterChoice(stringResource(R.string.library_page_size), size,
                     listOf("" to stringResource(R.string.library_default_page_size, defaultPageSize)) +
                         listOf(10, 20, 50, 100).map { it.toString() to it.toString() }) { size = it }
@@ -614,7 +609,7 @@ private fun LibraryFilterChoice(label: String, value: String, options: List<Pair
             Text(stringResource(R.string.library_filter_value, label,
                 options.firstOrNull { it.first == value }?.second ?: value))
         }
-        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.heightIn(max = 280.dp)) {
+        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.heightIn(max = AppLayoutTokens.filterMenuMaxHeight)) {
             options.forEach { (key, text) ->
                 DropdownMenuItem(text = { Text(if (key == value) "✓ $text" else text) },
                     modifier = Modifier.semantics { selected = key == value },
@@ -891,7 +886,7 @@ fun QuestionDetailRoute(
             val question = requireNotNull(state.question)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(AppLayoutTokens.libraryPadding),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
             ) {
                 item { AppPageHeading(stringResource(R.string.question_details)) }

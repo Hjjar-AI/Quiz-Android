@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
@@ -29,20 +29,33 @@ import androidx.compose.ui.Alignment
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.theme.AppTheme
 
+object AppControlTokens {
+    const val disabledContentAlpha = .62f
+    const val disabledContainerAlpha = .08f
+    const val disabledBorderAlpha = .25f
+    const val cardBorderAlpha = .35f
+}
+
 /** Page gutters and control spacing stay independent of density and minimum hit targets. */
 object AppLayoutTokens {
     val pagePadding = 8.dp
     val pageInsets = PaddingValues(horizontal = pagePadding, vertical = 6.dp)
     val feedbackVerticalPadding = 10.dp
     val controlGap: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.content
+    val authMaxWidth = 520.dp
     val authPadding = 16.dp
     val authInsets = PaddingValues(horizontal = authPadding, vertical = 6.dp)
     val comparisonBreakpoint = 600.dp
     val headingBreakpoint = 360.dp
     val sessionHeaderBreakpoint = 300.dp
+    val sessionPinnedMinHeight = 420.dp
     val imageMaxHeight = 360.dp
+    val imageControlsMaxHeight = 160.dp
     const val questionImageAspectRatio = 1.6f
     val menuMaxHeight = 360.dp
+    val filterMenuMaxHeight = 280.dp
+    val shellHorizontalPadding = pagePadding
+    val primaryContentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
     val pickerMaxHeight = 420.dp
     val cardPadding: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.card
     val denseCardPadding: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.denseCard
@@ -61,7 +74,7 @@ object AppLayoutTokens {
     val secondaryIconSize = 20.dp
     val cardBorderWidth = 1.dp
     val selectedBorderWidth = 2.dp
-    val answerFeedbackBorderWidth = 3.dp
+    val answerFeedbackBorderWidth = 1.dp
     val questionBorderWidth = 1.5.dp
     val tileMinWidth = 112.dp
     const val tileMaxColumns = 3
@@ -82,7 +95,7 @@ fun AppTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: B
     TextButton(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget), enabled = enabled,
         shape = MaterialTheme.shapes.medium, contentPadding = AppLayoutTokens.secondaryContentPadding,
         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f)), content = content)
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)), content = content)
 }
 
 @Composable
@@ -91,7 +104,7 @@ fun AppIconButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: B
     IconButton(onClick, modifier.sizeIn(minWidth = AppLayoutTokens.touchTarget, minHeight = AppLayoutTokens.touchTarget),
         enabled = enabled, colors = IconButtonDefaults.iconButtonColors(
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f))) {
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha))) {
         Box(Modifier.size(AppLayoutTokens.secondaryIconSize), contentAlignment = Alignment.Center) { content() }
     }
 }
@@ -103,7 +116,7 @@ fun AppDangerTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enab
     TextButton(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget), enabled = enabled,
         shape = MaterialTheme.shapes.medium, contentPadding = AppLayoutTokens.secondaryContentPadding,
         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f)), content = content)
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)), content = content)
 }
 
 @Composable
@@ -130,12 +143,21 @@ fun AppSuccessText(message: String, modifier: Modifier = Modifier) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppPagination(page: Int, totalPages: Int, onPrevious: () -> Unit, onNext: () -> Unit,
-    previousEnabled: Boolean = true, nextEnabled: Boolean = true, modifier: Modifier = Modifier) {
+    previousEnabled: Boolean = true, nextEnabled: Boolean = true, modifier: Modifier = Modifier, statusLabel: String? = null) {
     AppActionRow(modifier) {
         AppOutlinedButton(onPrevious, enabled = previousEnabled && page > 1) { Text(stringResource(R.string.previous)) }
-        Text(stringResource(R.string.page_status, com.mukhtabir.android.util.formatNumber(page),
+        Text(statusLabel ?: stringResource(R.string.page_status, com.mukhtabir.android.util.formatNumber(page),
             com.mukhtabir.android.util.formatNumber(totalPages)),
-            modifier = Modifier.padding(vertical = 14.dp), style = MaterialTheme.typography.bodyMedium)
+            modifier = Modifier.heightIn(min = AppLayoutTokens.touchTarget).wrapContentHeight(),
+            style = MaterialTheme.typography.bodyMedium)
         AppOutlinedButton(onNext, enabled = nextEnabled && page < totalPages) { Text(stringResource(R.string.next)) }
     }
+}
+
+/** Use the same action role in confirmations as in the initiating destructive control. */
+@Composable
+fun AppConfirmationButton(onClick: () -> Unit, destructive: Boolean, enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit) {
+    if (destructive) AppDangerTextButton(onClick, enabled = enabled, content = content)
+    else AppTextButton(onClick, enabled = enabled, content = content)
 }

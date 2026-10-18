@@ -40,7 +40,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -148,7 +147,7 @@ fun KnowledgeMapRoute(
                     selected = state.filter == filter,
                     onClick = { vm.filter(filter) },
                     label = { Text(knowledgeStatusLabel(filter)) },
-                    modifier = Modifier.heightIn(min = 48.dp),
+                    modifier = Modifier.heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget),
                     leadingIcon = if (state.filter == filter) {
                         { Icon(Icons.Filled.Check, contentDescription = null) }
                     } else null,

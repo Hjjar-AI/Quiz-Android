@@ -19,7 +19,6 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppActionRow
 
 import android.app.Activity
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,7 +40,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -78,16 +76,16 @@ fun SettingsRoute(preferences: AppPreferences, serverUrl: String, serverAddressH
                     FilterChip(display.difficulty == value, { preferences.setDisplay(display.copy(difficulty = value)) }, label = { Text(stringResource(label)) })
                 }
             }
-            SettingSwitch(stringResource(R.string.preferences_auto), display.autoAdvance) { preferences.setDisplay(display.copy(autoAdvance = it)) }
-            SettingSwitch(stringResource(R.string.preferences_sound), display.sound) { preferences.setDisplay(display.copy(sound = it)) }
-            SettingSwitch(stringResource(R.string.preferences_haptics), display.haptics) { preferences.setDisplay(display.copy(haptics = it)) }
+            com.mukhtabir.android.ui.components.AppSwitchRow(stringResource(R.string.preferences_auto), display.autoAdvance, onCheckedChange = { preferences.setDisplay(display.copy(autoAdvance = it)) } )
+            com.mukhtabir.android.ui.components.AppSwitchRow(stringResource(R.string.preferences_sound), display.sound, onCheckedChange = { preferences.setDisplay(display.copy(sound = it)) } )
+            com.mukhtabir.android.ui.components.AppSwitchRow(stringResource(R.string.preferences_haptics), display.haptics, onCheckedChange = { preferences.setDisplay(display.copy(haptics = it)) } )
             Text(stringResource(R.string.preferences_haptics_hint), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         AppSection(stringResource(R.string.settings_appearance), subtitle = listOf(
             com.mukhtabir.android.ui.theme.themeLabel(theme),
             stringResource(if (display.compact) R.string.preferences_compact else R.string.ui_spacing_standard)).joinToString(" · ")) {
-            SettingSwitch(stringResource(R.string.preferences_compact), display.compact) { preferences.setDisplay(display.copy(compact = it)) }
+            com.mukhtabir.android.ui.components.AppSwitchRow(stringResource(R.string.preferences_compact), display.compact, onCheckedChange = { preferences.setDisplay(display.copy(compact = it)) } )
             Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleSmall)
             com.mukhtabir.android.ui.components.AppThemePicker(preferences)
 
@@ -123,17 +121,6 @@ fun SettingsRoute(preferences: AppPreferences, serverUrl: String, serverAddressH
     }
 }
 
-@Composable
-private fun SettingSwitch(label: String, checked: Boolean, onChanged: (Boolean) -> Unit) {
-    com.mukhtabir.android.ui.components.AppToggleRow(
-        Modifier.fillMaxWidth()
-            .toggleable(value = checked, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = onChanged),
-        horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-    ) {
-        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-        androidx.compose.material3.Switch(checked, onCheckedChange = null)
-    }
-}
 
 @Composable
 fun AdminSettingsRoute(adminService: AdminService, serverUrl: String, canManageSystem: Boolean,

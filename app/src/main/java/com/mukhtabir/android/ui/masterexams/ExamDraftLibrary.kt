@@ -22,7 +22,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -47,7 +46,7 @@ internal data class DraftLibraryState(
     val busy: Boolean = false, val denied: Boolean = false, val error: Throwable? = null, val selected: QuestionDto? = null,
     val form: EmbeddedExamDraftForm? = null, val baseline: MasterExamDraftWrite? = null,
     val latest: QuestionDto? = null, val review: Boolean = false, val uncertain: String? = null,
-    val categories: List<CategoryDto> = emptyList(), val invalid: Boolean = false, val message: Int? = null,
+    val categories: List<CategoryDto> = emptyList(), val invalid: Boolean = false, val validationAttempt: Int = 0, val message: Int? = null,
 )
 
 internal class ExamDraftLibraryViewModel(private val user: UserDto, private val service: MasterExamService,
@@ -212,7 +211,7 @@ internal class ExamDraftLibraryViewModel(private val user: UserDto, private val 
         val row = s.selected ?: return
         if (s.denied || s.busy || s.review || s.uncertain != null || pendingRecovery.value != null || !allowed(row)) return
         val payload = s.form?.payload(maxChoices)
-        if (!delete && payload == null) { mutable.update { it.copy(invalid = true) }; return }
+        if (!delete && payload == null) { mutable.update { it.copy(invalid = true, validationAttempt = it.validationAttempt + 1) }; return }
         mutable.update { it.copy(busy = true, error = null, message = null) }
         viewModelScope.launch {
             var posting = false
@@ -281,7 +280,10 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
     if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text(stringResource(R.string.ux_delete_private_question)) },
         text = { Text(stringResource(R.string.exam_library_delete_warning)) }, confirmButton = { AppDangerTextButton({ deleting = false; vm.delete() }) { Text(stringResource(R.string.ux_delete_private_question)) } },
         dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } })
-    LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
+    val validation = DraftValidationUi(if (s.invalid) s.form?.validationErrors(maxChoices).orEmpty() else emptyList(), s.validationAttempt)
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(validation.attempt) { if (validation.errors.isNotEmpty()) listState.scrollToItem(if (s.review) 2 else 1) }
+    LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), state = listState, verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(R.string.exam_library_title))
             AppOutlinedButton(back, enabled = !s.busy) { Text(stringResource(R.string.back)) }
@@ -290,7 +292,7 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
             s.error?.let { ErrorState(throwable = it) }
             s.message?.let { Text(stringResource(it)) }
             if (s.denied) Text(stringResource(R.string.error_forbidden))
-            if (s.invalid) Text(stringResource(R.string.exam_draft_invalid))
+            if (s.invalid) DraftValidationSummary(validation)
             if (s.uncertain != null) {
                 Text(stringResource(R.string.exam_tools_uncertain))
                 AppOutlinedButton(vm::reconcile, enabled = !s.busy) { Text(stringResource(R.string.refresh)) }
@@ -306,7 +308,7 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
             item {
                 Text(stringResource(R.string.exam_library_preserve))
                 s.form?.let { form -> ExamDraftFields(form, !s.denied && !s.busy && !s.review && s.uncertain == null, maxChoices, s.categories,
-                    !s.selected?.case?.stem.isNullOrBlank() && form.caseKey == s.selected?.case?.key, vm::edit) }
+                    !s.selected?.case?.stem.isNullOrBlank() && form.caseKey == s.selected?.case?.key, vm::edit, validation = validation) }
                 AppButton(vm::save, enabled = !s.denied && !s.busy && !s.review && s.uncertain == null && s.form?.payload(maxChoices) != s.baseline) { Text(stringResource(R.string.save)) }
                 AppDangerOutlinedButton({ deleting = true }, enabled = !s.denied && !s.busy && !s.review && s.uncertain == null) { Text(stringResource(R.string.ux_delete_private_question)) }
             }

@@ -466,7 +466,7 @@ internal class MasterExamEditorViewModel(
         val draft = s.embedded ?: return
         if (!editable(s) || s.dirty || s.targets != null || s.pickerOpen) return
         val payload = draft.form.payload(maxChoices)
-        if (payload == null) { _state.update { it.copy(embedded = draft.copy(validation = true)) }; return }
+        if (payload == null) { _state.update { it.copy(embedded = draft.copy(validation = true, validationAttempt = draft.validationAttempt + 1)) }; return }
         _state.update { it.copy(busy = true, error = null, message = null, embedded = draft.copy(error = null, validation = false)) }
         viewModelScope.launch {
             var posting = false

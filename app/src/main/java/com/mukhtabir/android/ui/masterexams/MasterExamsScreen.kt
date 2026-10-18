@@ -3,6 +3,8 @@
 package com.mukhtabir.android.ui.masterexams
 
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -19,6 +21,7 @@ import com.mukhtabir.android.ui.components.AppActionRow
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,9 +53,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.SessionDraftStore
@@ -66,7 +66,6 @@ import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.components.QuestionImage
 import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.ui.quiz.KeepSessionScreenOn
-import com.mukhtabir.android.util.formatNumber
 
 @Composable
 fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepository, draftStore: SessionDraftStore, onManage: (() -> Unit)? = null, initialExamId: Long? = null, onShare: ((Long) -> Unit)? = null, onBack: () -> Unit) {
@@ -97,8 +96,49 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
     }
     BackHandler(s.examId!=null || s.busy, onBack=leave)
 
-    Box(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets)) {
+    val status = s.status
+    val active = status?.isComplete == false
+    val ids = status?.questionIds.orEmpty()
+    val currentIndex = ids.indexOf(s.page?.question?.id)
+    val answeredIndices = ids.mapIndexedNotNull { index, id ->
+        index.takeIf { id.toString() in status?.answers.orEmpty() }
+    }.toSet()
+    val canNavigate = !s.busy && !s.finishPending && !s.storageFailed && !s.needsSync && s.draft == null &&
+        (s.graceRemainingSeconds ?: 0) > 0
+    var showMap by remember(status?.sessionId) { mutableStateOf(false) }
+    if (showMap && active) AlertDialog(onDismissRequest = { showMap = false },
+        title = { Text(stringResource(R.string.session_question_navigation)) },
+        text = {
+            Column(Modifier.heightIn(max = AppLayoutTokens.menuMaxHeight).verticalScroll(rememberScrollState())) {
+                Text(stringResource(R.string.master_navigation_hint))
+                com.mukhtabir.android.ui.components.LearningQuestionChips(currentIndex, ids.size,
+                    answeredIndices, emptySet(), canNavigate, onChoose = { index ->
+                        vm.goto(ids[index]); showMap = false
+                    })
+            }
+        }, confirmButton = { TextButton({ showMap = false }) { Text(stringResource(R.string.done)) } })
+    val sessionHeader: @Composable () -> Unit = {
+        val grace = s.remainingSeconds == 0L && (s.graceRemainingSeconds ?: 0) > 0
+        val seconds = (if (grace) s.graceRemainingSeconds else s.remainingSeconds) ?: 0L
+        com.mukhtabir.android.ui.components.LearningSessionHeader(currentIndex, ids.size, answeredIndices.size,
+            seconds = seconds.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(), overtime = grace)
+    }
+    val sessionNavigation: @Composable () -> Unit = {
+        com.mukhtabir.android.ui.components.LearningSessionNavigation(
+            onPrevious = { vm.move(-1) }, onNext = { vm.move(1) },
+            previousEnabled = canNavigate && currentIndex > 0,
+            nextEnabled = canNavigate && currentIndex >= 0 && currentIndex < ids.lastIndex,
+            nextLabel = stringResource(R.string.next), onQuestions = { showMap = true })
+    }
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val pinned = maxHeight >= AppLayoutTokens.sessionPinnedMinHeight * fontScale
+    Column(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),
+        verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+    if (active && pinned) sessionHeader()
+    Box(Modifier.weight(1f)) {
     LazyColumn(Modifier.fillMaxSize(),state=listState,verticalArrangement=Arrangement.spacedBy(AppTheme.spacing.section)) {
+        if (active && !pinned) item { sessionHeader() }
         item {
             AppActionRow() {
                 OutlinedButton(leave,enabled=!s.busy) { Text(stringResource(R.string.back)) }
@@ -206,13 +246,9 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
             }
             if(s.status?.isComplete==false) {
                 item {
-                    Text(stringResource(R.string.master_timer,com.mukhtabir.android.util.formatSessionDuration(s.remainingSeconds ?: 0)),style=MaterialTheme.typography.titleLarge)
                     if(s.remainingSeconds==0L && (s.graceRemainingSeconds ?: 0)>0) {
                         Text(stringResource(R.string.master_grace_notice),modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite })
-                        // The notice announces once; the ticking value is not a live region.
-                        Text(stringResource(R.string.master_grace_timer,com.mukhtabir.android.util.formatSessionDuration(s.graceRemainingSeconds ?: 0)))
                     }
-                    Text(stringResource(R.string.master_answered,s.status!!.answers.size,s.status!!.questionIds.size))
                     Text(stringResource(R.string.master_time_rule))
                 }
                 if(s.needsSync) item { Text(stringResource(R.string.master_sync_required),color=MaterialTheme.colorScheme.error) }
@@ -223,7 +259,6 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                         (s.draft==null || s.draft?.questionId==page.question.id)
                     val displayDraft=s.draft?.takeIf { !s.draftConflict && it.questionId==page.question.id }
                     val selected=displayDraft?.answer ?: page.savedAnswer
-                    item { Text(stringResource(R.string.page_of,page.index+1,page.total),style=MaterialTheme.typography.titleMedium) }
                     item { com.mukhtabir.android.ui.components.QuestionLanguageSelector(page.question.translations,
                         page.question.choices.size, readingLocale, { readingLocale = it },
                         hasCase = page.question.case?.stem?.isNotBlank() == true, caseTranslations = page.question.case?.translations ?: kotlinx.serialization.json.JsonObject(emptyMap())) }
@@ -258,41 +293,18 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                     }
                 }
                 item {
-                    Text(stringResource(R.string.master_navigation_hint))
-                    val ids=s.status!!.questionIds
-                    val currentIndex=ids.indexOf(s.page?.question?.id)
-                    val canNavigate=!s.busy && !s.finishPending && !s.storageFailed && !s.needsSync && s.draft==null && (s.graceRemainingSeconds ?: 0)>0
-                    AppActionRow() {
-                        OutlinedButton({vm.move(-1)},enabled=canNavigate && currentIndex>0,modifier=Modifier.heightIn(min=48.dp)) {
-                            Text(stringResource(R.string.previous))
-                        }
-                        OutlinedButton({vm.move(1)},enabled=canNavigate && currentIndex>=0 && currentIndex<ids.lastIndex,modifier=Modifier.heightIn(min=48.dp)) {
-                            Text(stringResource(R.string.next))
-                        }
-                    }
-                    AppActionRow() {
-                        ids.forEachIndexed { index,id ->
-                            val label=stringResource(R.string.select_question_number,index+1)
-                            val answerState=stringResource(if(id.toString() in s.status!!.answers)
-                                R.string.session_question_answered else R.string.session_question_unanswered)
-                            FilterChip(selected=id==s.page?.question?.id,onClick={vm.goto(id)},
-                                label={Text("${formatNumber(index+1)}${if(id.toString() in s.status!!.answers) " ✓" else ""}")},
-                                modifier=Modifier.heightIn(min=48.dp).semantics {
-                                    contentDescription=label
-                                    stateDescription=answerState
-                                },enabled=canNavigate)
-                        }
-                    }
-                }
-                item {
                     Button({confirmation="finish"},enabled=!s.busy && !s.storageFailed && !s.needsSync && (!s.finishPending || s.finishSessionId==s.status?.sessionId) &&
                         (s.draft==null || s.graceRemainingSeconds==0L)) { Text(stringResource(R.string.finish)) }
                 }
             }
         }
+        if (active && !pinned) item { sessionNavigation() }
     }
     if (s.busy && s.page != null) {
         AppLoadingIndicator(Modifier.align(Alignment.TopEnd), compact = true)
+    }
+    }
+    if (active && pinned) sessionNavigation()
     }
     }
     confirmation?.let { action ->
@@ -301,7 +313,8 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
             title={Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"start"->R.string.master_start;"finish"->R.string.finish;"report"->R.string.master_report;"discard"->R.string.master_discard_draft;else->R.string.back}))},
             text={if(action=="report") OutlinedTextField(reportReason,{reportReason=it},label={Text(stringResource(R.string.master_report_reason))},modifier=Modifier.fillMaxWidth())
                 else Text(stringResource(when(action){"discard-recovery"->R.string.master_recovery_discard;"start"->R.string.master_start_confirm;"finish"->R.string.master_finish_confirm;"discard"->R.string.master_discard_confirm;else->R.string.master_leave_confirm}))},
-            confirmButton={TextButton({
+            confirmButton={com.mukhtabir.android.ui.components.AppConfirmationButton(
+                destructive = action == "discard" || action == "discard-recovery", onClick = {
                 confirmation=null
                 when(action){"discard-recovery"->vm.discardUnreadableRecovery();"start"->vm.start();"finish"->vm.finish();"report"->vm.flag(reportReason);"discard"->vm.discardDraft();else->vm.back()}
             },enabled=!s.busy){Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"discard"->R.string.master_discard_draft;"start"->R.string.master_start;"finish"->R.string.finish_exam_action;"report"->R.string.master_report;else->R.string.back_to_exams_action}))}},

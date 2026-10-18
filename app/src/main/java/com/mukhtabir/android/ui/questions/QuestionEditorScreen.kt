@@ -52,7 +52,6 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -820,7 +819,7 @@ fun QuestionEditorRoute(
             Text(stringResource(R.string.maximum_choices, s.maxChoices))
             s.choices.forEachIndexed { index, choice ->
                 key(choice.id) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
                         MarkdownField(choice.text, { vm.choice(choice.id, it) }, enabled = enabled,
                             label = stringResource(R.string.choice_number, index + 1), error = fieldError(choice.text.isBlank() || choice.text.length > 300 || s.choices.count { it.text.trim().equals(choice.text.trim(), ignoreCase = true) } > 1), modifier = Modifier.fillMaxWidth())
                         FilterChip(selected = s.correctChoiceId == choice.id, onClick = { vm.selectCorrect(choice.id) },

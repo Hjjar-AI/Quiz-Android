@@ -29,7 +29,6 @@ import com.mukhtabir.android.ui.components.AppCard as Card
 import androidx.compose.material3.Checkbox
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
@@ -42,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -88,7 +86,7 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
             confirmation=="delete" -> if(kind==ManagedKind.GROUP) R.string.manage_delete_group_confirm else R.string.manage_delete_blueprint_confirm
             else -> R.string.manage_leave_confirm
         }))},
-        confirmButton={TextButton({
+        confirmButton={com.mukhtabir.android.ui.components.AppConfirmationButton(destructive = removing != null || confirmation == "delete", onClick = {
             val member=removing
             when {
                 member!=null -> vm.removeMember(member)
@@ -150,10 +148,8 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
             item {
                 OutlinedTextField(s.name,{vm.field("name",it)},label={Text(stringResource(R.string.manage_name))},enabled=!busy,modifier=Modifier.fillMaxWidth())
                 OutlinedTextField(s.description,{vm.field("description",it)},label={Text(stringResource(R.string.description))},enabled=!busy,modifier=Modifier.fillMaxWidth())
-                Row(verticalAlignment=Alignment.CenterVertically) {
-                    Text(stringResource(R.string.active),Modifier.weight(1f))
-                    Switch(s.active,vm::active,modifier=Modifier.semantics {contentDescription=activeLabel},enabled=!busy && (kind==ManagedKind.BLUEPRINT || s.baseline!=null))
-                }
+                com.mukhtabir.android.ui.components.AppSwitchRow(activeLabel, s.active, vm::active,
+                    enabled = !busy && (kind == ManagedKind.BLUEPRINT || s.baseline != null))
             }
             if(kind==ManagedKind.BLUEPRINT) {
                 item { Text(stringResource(R.string.manage_weights_hint)) }

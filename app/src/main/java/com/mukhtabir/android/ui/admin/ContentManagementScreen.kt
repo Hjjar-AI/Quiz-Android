@@ -28,7 +28,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
@@ -69,7 +68,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
             else -> R.string.manage_leave_confirm
         }) + if(confirmation == "delete") "\n" + stringResource(R.string.content_linked_count,
             if (knowledge) s.selectedKnowledge?.questionCount ?: 0 else s.selectedCase?.questionCount ?: 0) else "") },
-        confirmButton = { TextButton({ val action = confirmation; confirmation = null
+        confirmButton = { com.mukhtabir.android.ui.components.AppConfirmationButton(destructive = confirmation == "delete", onClick = { val action = confirmation; confirmation = null
             if (action == "delete") vm.delete() else if (s.uncertain) onBack() else vm.close()
         }, enabled = !busy) { Text(stringResource(if (confirmation == "delete") {
             if (knowledge) R.string.ux_delete_knowledge else R.string.ux_delete_case

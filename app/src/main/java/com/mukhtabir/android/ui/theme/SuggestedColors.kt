@@ -10,18 +10,18 @@ import com.mukhtabir.android.core.ThemePreference
 // stays readable in dialogs, nested cards and scrolling question content.
 internal fun suggestedColors(theme: ThemePreference): ColorScheme? = when (theme) {
     ThemePreference.FOOD_DELIVERY -> lightColorScheme(
-        primary = Color(0xFF892D19), onPrimary = Color(0xFFFFFFFF),
+        primary = Color(0xFF792510), onPrimary = Color(0xFFFFFFFF),
         primaryContainer = Color(0xFFF0CAB4), onPrimaryContainer = Color(0xFF4D1A0D),
-        secondary = Color(0xFF806000), onSecondary = Color(0xFFFFFFFF),
+        secondary = Color(0xFF594000), onSecondary = Color(0xFFFFFFFF),
         secondaryContainer = Color(0xFFFFF0CC), onSecondaryContainer = Color(0xFF3A2A00),
-        tertiary = Color(0xFF08763C), onTertiary = Color(0xFFFFFFFF),
+        tertiary = Color(0xFF064D27), onTertiary = Color(0xFFFFFFFF),
         tertiaryContainer = Color(0xFFD8F5E3), onTertiaryContainer = Color(0xFF073C20),
         background = Color(0xFFE4AB8B), onBackground = Color(0xFF351C12),
         surface = Color(0xFFF3D3BE), onSurface = Color(0xFF351C12),
         surfaceVariant = Color(0xFFE8BFA3), onSurfaceVariant = Color(0xFF5B3423),
         outline = Color(0xFF72452E), outlineVariant = Color(0xFFC58D6D),
-        surfaceTint = Color(0xFF892D19),
-        error = Color(0xFF8D2419), onError = Color.White,
+        surfaceTint = Color(0xFF792510),
+        error = Color(0xFF801D15), onError = Color.White,
         errorContainer = Color(0xFFF9DEDC), onErrorContainer = Color(0xFF410E0B),
         inverseSurface = Color(0xFF322F35), inverseOnSurface = Color(0xFFF5EFF7), inversePrimary = Color(0xFFD0BCFF),
     )

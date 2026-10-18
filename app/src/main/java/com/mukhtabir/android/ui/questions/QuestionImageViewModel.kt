@@ -11,7 +11,6 @@ import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.QuestionService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,7 +77,7 @@ internal class QuestionImageViewModel(
         _state.update { it.copy(busy = true) }
         viewModelScope.launch {
             try {
-                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { android.util.Base64.decode(saved.data, android.util.Base64.NO_WRAP) }
+                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.mukhtabir.android.data.remote.decodeQuestionImageData(saved.data) }
                 val image = decodeQuestionImage(context, bytes)
                 coroutineContext.ensureActive()
                 pendingRecovery.value = null

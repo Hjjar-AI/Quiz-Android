@@ -3,11 +3,11 @@ package com.mukhtabir.android.ui.components
 import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,22 +42,36 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import com.mukhtabir.android.R
 
 @Composable
-private fun appCardBorder() = BorderStroke(AppLayoutTokens.cardBorderWidth, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))
+private fun appCardBorder() = BorderStroke(AppLayoutTokens.cardBorderWidth, MaterialTheme.colorScheme.outlineVariant.copy(alpha = AppControlTokens.cardBorderAlpha))
 
 /** Consistent actions: readable wrapping labels and a minimum 48dp touch target. */
 @Composable
 fun AppButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit) {
+    AppFilledButton(onClick, modifier, enabled, MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.onPrimary, content)
+}
+
+/** Filled alternative action that remains distinct from the page and card surfaces. */
+@Composable
+fun AppSecondaryButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit) {
+    AppFilledButton(onClick, modifier, enabled, MaterialTheme.colorScheme.secondary,
+        MaterialTheme.colorScheme.onSecondary, content)
+}
+
+@Composable
+private fun AppFilledButton(onClick: () -> Unit, modifier: Modifier, enabled: Boolean,
+    containerColor: Color, contentColor: Color, content: @Composable RowScope.() -> Unit) {
     Button(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget), enabled = enabled,
-        shape = MaterialTheme.shapes.medium, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
-        colors = ButtonDefaults.buttonColors(
-            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .08f),
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f)), content = content)
+        shape = MaterialTheme.shapes.medium, contentPadding = AppLayoutTokens.primaryContentPadding,
+        colors = ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor,
+            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContainerAlpha),
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)), content = content)
 }
 
 @Composable
@@ -72,13 +86,13 @@ fun AppOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enable
 fun AppCompactButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    val foreground = if (enabled) scheme.onPrimary else scheme.onSurface.copy(alpha = .62f)
+    val foreground = if (enabled) scheme.onPrimary else scheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)
     Surface(onClick = onClick, enabled = enabled,
         modifier = modifier.heightIn(min = AppLayoutTokens.touchTarget).semantics { role = Role.Button },
         shape = MaterialTheme.shapes.medium, color = Color.Transparent, contentColor = foreground) {
         Box(Modifier.padding(vertical = AppLayoutTokens.secondaryFrameInset), propagateMinConstraints = true) {
             Surface(shape = MaterialTheme.shapes.medium,
-                color = if (enabled) scheme.primary else scheme.onSurface.copy(alpha = .08f), contentColor = foreground) {
+                color = if (enabled) scheme.primary else scheme.onSurface.copy(alpha = AppControlTokens.disabledContainerAlpha), contentColor = foreground) {
                 Row(Modifier.heightIn(min = AppLayoutTokens.secondaryVisualHeight).padding(AppLayoutTokens.secondaryContentPadding),
                     horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     ProvideTextStyle(MaterialTheme.typography.labelLarge) { content() }
@@ -94,14 +108,14 @@ fun AppCompactButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled
 internal fun AppSecondaryOutlinedButton(onClick: () -> Unit, modifier: Modifier, enabled: Boolean,
     contentColor: Color, content: @Composable RowScope.() -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    val textColor = if (enabled) contentColor else scheme.onSurface.copy(alpha = .62f)
+    val textColor = if (enabled) contentColor else scheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)
     Surface(onClick = onClick, enabled = enabled,
         modifier = modifier.heightIn(min = AppLayoutTokens.touchTarget).widthIn(min = AppLayoutTokens.touchTarget)
             .semantics { role = Role.Button },
         shape = MaterialTheme.shapes.medium, color = Color.Transparent, contentColor = textColor) {
         Box(Modifier.padding(vertical = AppLayoutTokens.secondaryFrameInset), propagateMinConstraints = true) {
             Surface(shape = MaterialTheme.shapes.medium, color = Color.Transparent, contentColor = textColor,
-                border = BorderStroke(AppLayoutTokens.cardBorderWidth, if (enabled) scheme.outlineVariant else scheme.onSurface.copy(alpha = .25f))) {
+                border = BorderStroke(AppLayoutTokens.cardBorderWidth, if (enabled) scheme.outlineVariant else scheme.onSurface.copy(alpha = AppControlTokens.disabledBorderAlpha))) {
                 Row(Modifier.heightIn(min = AppLayoutTokens.secondaryVisualHeight).padding(AppLayoutTokens.secondaryContentPadding),
                     horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     ProvideTextStyle(MaterialTheme.typography.labelLarge) { content() }
@@ -145,7 +159,7 @@ fun AppPageHeading(title: String, subtitle: String? = null, action: @Composable 
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
         val headingMaxWidth = maxWidth
         if (keepActionInline && action != null) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap), verticalAlignment = Alignment.CenterVertically) {
                     PageHeadingText(title, null, Modifier.weight(1f), titleAnimationDurationMillis)
                     action()
@@ -223,4 +237,45 @@ fun AppListRow(modifier: Modifier = Modifier, content: @Composable RowScope.() -
         .padding(horizontal = AppLayoutTokens.cardPadding, vertical = AppLayoutTokens.denseCardVerticalPadding),
         horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
         verticalAlignment = Alignment.CenterVertically, content = content)
+}
+
+/** One semantic and touch target for a label and its passive Material control. */
+@Composable
+fun AppSwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier, enabled: Boolean = true) {
+    AppToggleRow(modifier.toggleable(value = checked, enabled = enabled, role = Role.Switch,
+        onValueChange = onCheckedChange)) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+        androidx.compose.material3.Switch(checked, onCheckedChange = null, enabled = enabled)
+    }
+}
+
+@Composable
+fun AppCheckboxRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier, enabled: Boolean = true) {
+    AppToggleRow(modifier.toggleable(value = checked, enabled = enabled, role = Role.Checkbox,
+        onValueChange = onCheckedChange)) {
+        androidx.compose.material3.Checkbox(checked, onCheckedChange = null, enabled = enabled)
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/** Keep the field usable when the action label grows with language or text scaling. */
+@Composable
+fun AppSearchRow(field: @Composable (Modifier) -> Unit, action: @Composable () -> Unit) {
+    val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth < AppLayoutTokens.headingBreakpoint || scale >= 1.3f) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                field(Modifier.fillMaxWidth())
+                action()
+            }
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
+                verticalAlignment = Alignment.CenterVertically) {
+                field(Modifier.weight(1f))
+                action()
+            }
+        }
+    }
 }

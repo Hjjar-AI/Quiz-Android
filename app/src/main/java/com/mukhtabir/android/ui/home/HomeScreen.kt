@@ -22,7 +22,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.semantics.contentDescription
@@ -46,7 +45,6 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -626,24 +624,7 @@ private fun HomeModeGrid(modes: List<HomeModeData>, onOpen: (TestMode) -> Unit) 
 
 @Composable
 private fun HomeActivity(activity: StreakHistoryDto) {
-    val days = activity.days.sortedBy { it.date }
-    val leading = days.firstOrNull()?.date?.let { runCatching { java.time.LocalDate.parse(it).dayOfWeek.value - 1 }.getOrDefault(0) } ?: 0
-    val cells = List<com.mukhtabir.android.data.remote.StreakDayDto?>(leading) { null } + days
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        cells.chunked(7).forEach { week ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                (week + List<com.mukhtabir.android.data.remote.StreakDayDto?>(7 - week.size) { null }).forEach { day ->
-                    val label = day?.let { stringResource(R.string.activity_day, com.mukhtabir.android.util.formatCalendarDate(it.date), formatNumber(it.sessions), formatNumber(it.questions)) }
-                    androidx.compose.material3.Surface(Modifier.weight(1f).semantics { label?.let { contentDescription = it } },
-                        shape = MaterialTheme.shapes.extraSmall,
-                        color = if (day != null && day.questions > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant) {
-                        Text(day?.questions?.let(::formatNumber) ?: "", Modifier.padding(vertical = 6.dp),
-                            style = MaterialTheme.typography.labelSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    }
-                }
-            }
-        }
-    }
+    com.mukhtabir.android.ui.components.AppActivityCalendar(activity.days)
 }
 
 @Composable

@@ -64,7 +64,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.SessionDraftStore
@@ -717,7 +716,7 @@ internal fun SelectableButton(
     answerCorrect: Boolean? = null,
     neutralSelection: Boolean = false,
 ) {
-    val selectionModifier = modifier.heightIn(min = 48.dp).semantics {
+    val selectionModifier = modifier.heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget).semantics {
         this.selected = selected
         accessibilityLabel?.let { contentDescription = it }
     }

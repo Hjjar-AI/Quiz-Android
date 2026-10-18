@@ -1,13 +1,18 @@
 package com.mukhtabir.android.ui
 
+import com.mukhtabir.android.ui.components.AppLaunchLayout
+import com.mukhtabir.android.ui.components.AppLaunchHeader
+import com.mukhtabir.android.ui.components.OfflineLaunchActions
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCardBody
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.ui.components.AppTextButton
 
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 
 import androidx.lifecycle.repeatOnLifecycle
 
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -237,20 +242,21 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
                 authState.isRestoring || !startupFinished -> StartupScreen(onFinished={startupFinished=true},
                     onOffline=cachedOwner?.let {owner -> ({localOfflineOwner=owner})}, onDemo=onDemo)
 
-                authState.restorePending && authState.user == null -> Column(
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                        .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authPadding),
-                    verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.theme.AppTheme.spacing.section, Alignment.CenterVertically),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(stringResource(R.string.saved_login_retry))
-                    cachedOwner?.let {owner -> OutlinedButton({localOfflineOwner=owner}) {Text(stringResource(R.string.offline_open_cached))} }
-                    onDemo?.let { open -> OutlinedButton(open, enabled = !authState.isLoading) {
-                        Text(stringResource(R.string.demo_open))
-                    } }
-                    if (authState.isLoading) AppLoadingIndicator()
-                    ErrorState(throwable = authState.restoreError,
-                        onRetry = if (authState.isLoading) null else authViewModel::restoreSession)
+                authState.restorePending && authState.user == null -> AppLaunchLayout {
+                    AppLaunchHeader()
+                    AppCard(Modifier.fillMaxWidth()) {
+                        AppCardBody(Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.saved_login_retry),
+                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.semantics { heading() })
+                            if (authState.isLoading) AppLoadingIndicator()
+                            ErrorState(throwable = authState.restoreError,
+                                onRetry = if (authState.isLoading) null else authViewModel::restoreSession)
+                        }
+                    }
+                    OfflineLaunchActions(
+                        onDownloaded = cachedOwner?.let { owner -> ({ localOfflineOwner = owner }) },
+                        onDemo = onDemo, enabled = !authState.isLoading, downloadedEnabled = true)
                     com.mukhtabir.android.ui.components.AppSection(stringResource(R.string.startup_more_options),
                         enabled = !authState.isLoading, expandedOverride = showRecoveryOptions,
                         onExpandedChange = { showRecoveryOptions = it }) {
@@ -311,14 +317,15 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
 
 @Composable
 private fun StartupScreen(onFinished: () -> Unit, onOffline: (() -> Unit)? = null, onDemo: (() -> Unit)? = null) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-        .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.pageInsets),
-        verticalArrangement=Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment=Alignment.CenterHorizontally) {
-        com.mukhtabir.android.ui.components.StartupBrand(onFinished=onFinished)
-        AppLoadingIndicator()
-        onOffline?.let {open -> OutlinedButton(open) {Text(stringResource(R.string.offline_open_cached))}}
-        onDemo?.let {open -> AppTextButton(open) {Text(stringResource(R.string.demo_open))}}
+    AppLaunchLayout(centerVertically = true) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.theme.AppTheme.spacing.content)) {
+            com.mukhtabir.android.ui.components.StartupBrand(onFinished = onFinished)
+            AppLoadingIndicator()
+            Text(stringResource(R.string.launch_checking_session),
+                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+        }
+        OfflineLaunchActions(onDownloaded = onOffline, onDemo = onDemo)
     }
 }
 
@@ -827,7 +834,8 @@ private fun AuthenticatedApp(
                 )
             }
             composable(Routes.MORE_CATEGORIES) {
-                CategoriesRoute(container.categoryService, user.has("categories.manage"), container.sessionDraftStore, user.id)
+                CategoriesRoute(container.categoryService, user.has("categories.manage"), container.sessionDraftStore, user.id,
+                    onBack = { navController.popBackStack() }, onBusyChanged = { questionActionBusy = it })
             }
             composable(Routes.MORE_KNOWLEDGE_MAP) {
                 KnowledgeMapRoute(container.questionService, user.has("tests.start"), user.id,
@@ -975,7 +983,7 @@ private fun AuthenticatedApp(
             }
             if (user.has("admin.permissions")) {
                 composable(Routes.MORE_ADMIN_PERMISSIONS+"?user={targetUser}",arguments=listOf(navArgument("targetUser"){type=NavType.LongType;defaultValue=0L})) {entry ->
-                    PermissionsRoute(container.adminService, canManage=user.has("admin.permissions"), actingUserId=user.id, pageSize=publicConfig.itemsPerPage, roles=publicConfig.roles, onBusyChanged={questionActionBusy=it},initialUserId=entry.arguments?.getLong("targetUser")?.takeIf {it>0})
+                    PermissionsRoute(container.adminService, canManage=user.has("admin.permissions"), actingUserId=user.id, pageSize=publicConfig.itemsPerPage, roles=publicConfig.roles, onBusyChanged={questionActionBusy=it},onBack={navController.popBackStack()},initialUserId=entry.arguments?.getLong("targetUser")?.takeIf {it>0})
                 }
             }
             if (user.has("tests.view_all_history")) {
@@ -1004,7 +1012,7 @@ private fun AppNavigationBar(navController: NavHostController, user: UserDto, en
     if (ShellNavigation.isFocused(currentRoute)) return
     Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.surface) {
         Row(Modifier.fillMaxWidth().windowInsetsPadding(androidx.compose.material3.NavigationBarDefaults.windowInsets)
-            .selectableGroup().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            .selectableGroup().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
             tabs.filter { item -> item.capability?.let(user::has) ?: true }.forEach { item ->
                 val selected = selectedTab == item.route
                 Box(Modifier.weight(1f)

@@ -9,7 +9,6 @@ import com.mukhtabir.android.ui.components.AppLoadingIndicator
 
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.toggleable
@@ -46,7 +45,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.QuestionRatingRowDto
@@ -202,11 +200,10 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
             }
         }
         item {
-            Text(stringResource(R.string.moderation_page,s.page,s.totalPages,s.total))
-            Row(horizontalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-                OutlinedButton({vm.page(s.page-1)},enabled=enabled && s.page>1){Text(stringResource(R.string.previous))}
-                OutlinedButton({vm.page(s.page+1)},enabled=enabled && s.page<s.totalPages){Text(stringResource(R.string.next))}
-            }
+            com.mukhtabir.android.ui.components.AppPagination(s.page, s.totalPages,
+                onPrevious = { vm.page(s.page - 1) }, onNext = { vm.page(s.page + 1) },
+                previousEnabled = enabled, nextEnabled = enabled,
+                statusLabel = stringResource(R.string.moderation_page, s.page, s.totalPages, s.total))
         }
     }
 }

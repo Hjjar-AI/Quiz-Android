@@ -13,6 +13,7 @@ import com.mukhtabir.android.ui.components.AppDangerTextButton
 import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
 
 import androidx.compose.foundation.layout.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
@@ -49,7 +50,19 @@ internal class CategoriesViewModel(private val service: CategoryService, private
     store: SessionDraftStore, userId: Long) : ViewModel() {
     private val _state = MutableStateFlow(CategoriesUiState()); val state = _state.asStateFlow()
     val recovery = EditorRecovery(viewModelScope, store, userId, "categories-new", CategoryDraft.serializer())
-    init { recovery.observe(state) { it.draft.takeIf { d -> d != CategoryDraft() } }; load() }
+    init { recovery.observe(state, canPersist = { !it.busy }) { it.draft.takeIf { d -> d != CategoryDraft() } }; load() }
+    /** Navigation waits for the exact latest snapshot; no server write is dispatched here. */
+    fun leave(discard: Boolean, onDone: () -> Unit) {
+        val snapshot = _state.value
+        if (snapshot.busy) return
+        if (!discard && (!recovery.ready.value || recovery.pending.value != null)) { onDone(); return }
+        _state.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            val persisted = recovery.persist(if (discard) null else snapshot.draft.takeIf { it != CategoryDraft() })
+            _state.update { it.copy(busy = false, draft = if (persisted && discard) CategoryDraft() else it.draft) }
+            if (persisted) onDone()
+        }
+    }
     fun restore(draft: CategoryDraft) { _state.update { it.copy(draft = draft.copy(uncertain = draft.uncertain || draft.action != null), conflict = draft.editing != null, saved = false) } }
     private fun editable() = canManage && !_state.value.busy && !recovery.blocked && !_state.value.draft.uncertain && !_state.value.conflict
     fun field(name: String? = null, description: String? = null, color: String? = null, icon: String? = null) {
@@ -181,7 +194,8 @@ internal class CategoriesViewModel(private val service: CategoryService, private
 }
 
 @Composable
-fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: SessionDraftStore, userId: Long) {
+fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: SessionDraftStore, userId: Long,
+    onBack: () -> Unit, onBusyChanged: (Boolean) -> Unit) {
     val vm: CategoriesViewModel = viewModel(key = "categories-$userId-$canManage", factory = CategoriesViewModel.Factory(service, canManage, store, userId))
     val s by vm.state.collectAsState(); val blocked = editorRecoveryBlocked(vm.recovery)
     var iconPicker by remember { mutableStateOf(false) }
@@ -193,32 +207,56 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
     val dirty=if(currentEditor==null) s.draft.name.isNotBlank() || s.draft.description.isNotBlank() || s.draft.color!="#667eea" || s.draft.icon!="bi-folder"
         else s.draft.name!=currentEditor.name || s.draft.description!=currentEditor.description.orEmpty() || s.draft.color!=currentEditor.color.orEmpty() || s.draft.icon!=currentEditor.icon.orEmpty()
     val editable = canManage && !s.busy && !blocked && !s.draft.uncertain && !s.conflict
-    Column(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-        AppPageHeading(stringResource(R.string.nav_categories))
-        EditorRecoveryControls(vm.recovery, s.busy, vm::restore)
-        if (canManage) {
-            OutlinedTextField(s.draft.name, { vm.field(name=it) }, label={Text(stringResource(R.string.category_name))}, enabled=editable, modifier=Modifier.fillMaxWidth())
-            OutlinedTextField(s.draft.description, { vm.field(description=it) }, label={Text(stringResource(R.string.description))}, enabled=editable, modifier=Modifier.fillMaxWidth())
-            OutlinedTextField(s.draft.color, { vm.field(color=it) }, label={Text(stringResource(R.string.category_color))}, enabled=editable, modifier=Modifier.fillMaxWidth())
-            AppOutlinedButton({iconPicker=true},enabled=editable) { Text(stringResource(R.string.category_icon_selected,s.draft.icon)) }
-            Row { AppButton(vm::save,enabled=editable && s.draft.name.isNotBlank()) {Text(stringResource(R.string.save))}
-                AppOutlinedButton({nextEditor=null;if(dirty) discardEditor=true else vm.cancelEdit()},enabled=!s.busy && !blocked && !s.draft.uncertain) {Text(stringResource(R.string.cancel))} }
+    var leaving by remember { mutableStateOf(false) }
+    val recoveryError by vm.recovery.error.collectAsState()
+    val back: () -> Unit = {
+        if (!s.busy) {
+            if (dirty || s.draft.uncertain || s.draft.action != null) leaving = true
+            else vm.leave(false, onBack)
         }
-        if (s.saved) AppSuccessText(stringResource(R.string.saved))
-        if (s.busy) AppLoadingIndicator()
-        s.error?.let {ErrorState(throwable=it,onRetry=if(s.busy) null else vm::load)}
-        s.actionError?.let {ErrorState(throwable=it)}
-        if (s.draft.uncertain || s.conflict) {
-            Text(stringResource(if(s.terminalReceipt) R.string.recovery_target_gone else R.string.author_write_unknown))
-            if (s.draft.uncertain && !s.terminalReceipt) AppOutlinedButton(vm::retryPending,enabled=!s.busy && !blocked) {Text(stringResource(R.string.retry_same_request))}
-            AppOutlinedButton(vm::reconcile,enabled=!s.busy && !blocked) {Text(stringResource(R.string.refresh))}
-            s.latest?.let { Text("${it.name} · ${it.color} · ${it.icon}") }
-            if (s.reviewed && s.latest != null && s.conflict) Row {
-                AppOutlinedButton({vm.resolve(true)}) {Text(stringResource(R.string.keep_question_draft))}
-                AppOutlinedButton({vm.resolve(false)}) {Text(stringResource(R.string.use_server_question))}
-            } else if(s.reviewed) AppOutlinedButton(vm::acknowledge) {Text(stringResource(R.string.tools_reviewed))}
+    }
+    BackHandler(onBack = back)
+    BlockedBackHandler(s.busy)
+    DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
+    if (leaving) AlertDialog(onDismissRequest = { if (!s.busy) leaving = false },
+        title = { Text(stringResource(R.string.category_leave_title)) },
+        text = { Column {
+            Text(stringResource(if (s.draft.uncertain || s.draft.action != null) R.string.author_leave_unknown else R.string.category_leave_draft))
+            recoveryError?.let { ErrorState(throwable = it) }
+        } },
+        confirmButton = { Column {
+            AppTextButton({ vm.leave(false, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.author_save_later)) }
+            AppDangerTextButton({ vm.leave(true, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.discard_changes_continue)) }
+        } }, dismissButton = { AppTextButton({ leaving = false }, enabled = !s.busy) { Text(stringResource(R.string.keep_editing)) } })
+    LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),
+        verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+        item {
+            AppPageHeading(stringResource(R.string.nav_categories))
+            EditorRecoveryControls(vm.recovery, s.busy, vm::restore)
+            if (canManage) {
+                OutlinedTextField(s.draft.name, { vm.field(name=it) }, label={Text(stringResource(R.string.category_name))}, enabled=editable, modifier=Modifier.fillMaxWidth())
+                OutlinedTextField(s.draft.description, { vm.field(description=it) }, label={Text(stringResource(R.string.description))}, enabled=editable, modifier=Modifier.fillMaxWidth())
+                OutlinedTextField(s.draft.color, { vm.field(color=it) }, label={Text(stringResource(R.string.category_color))}, enabled=editable, modifier=Modifier.fillMaxWidth())
+                AppOutlinedButton({iconPicker=true},enabled=editable) { Text(stringResource(R.string.category_icon_selected,s.draft.icon)) }
+                AppActionRow { AppButton(vm::save,enabled=editable && s.draft.name.isNotBlank()) {Text(stringResource(R.string.save))}
+                    AppOutlinedButton({nextEditor=null;if(dirty) discardEditor=true else vm.cancelEdit()},enabled=!s.busy && !blocked && !s.draft.uncertain) {Text(stringResource(R.string.cancel))} }
+            }
+            if (s.saved) AppSuccessText(stringResource(R.string.saved))
+            if (s.busy) AppLoadingIndicator()
+            s.error?.let {ErrorState(throwable=it,onRetry=if(s.busy) null else vm::load)}
+            s.actionError?.let {ErrorState(throwable=it)}
+            if (s.draft.uncertain || s.conflict) {
+                Text(stringResource(if(s.terminalReceipt) R.string.recovery_target_gone else R.string.author_write_unknown))
+                if (s.draft.uncertain && !s.terminalReceipt) AppOutlinedButton(vm::retryPending,enabled=!s.busy && !blocked) {Text(stringResource(R.string.retry_same_request))}
+                AppOutlinedButton(vm::reconcile,enabled=!s.busy && !blocked) {Text(stringResource(R.string.refresh))}
+                s.latest?.let { Text("${it.name} · ${it.color} · ${it.icon}") }
+                if (s.reviewed && s.latest != null && s.conflict) AppActionRow {
+                    AppOutlinedButton({vm.resolve(true)}) {Text(stringResource(R.string.keep_question_draft))}
+                    AppOutlinedButton({vm.resolve(false)}) {Text(stringResource(R.string.use_server_question))}
+                } else if(s.reviewed) AppOutlinedButton(vm::acknowledge) {Text(stringResource(R.string.tools_reviewed))}
+            }
         }
-        LazyColumn(Modifier.weight(1f)) { items(s.items,key={it.id}) { item ->
+        items(s.items,key={it.id}) { item ->
             AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {Row {
                 val known=categoryIconOptions.firstOrNull {it.value==item.icon}
                 Icon(iconFor(known?.nativeIcon ?: MaterialIcons.CATEGORIES),contentDescription=null)
@@ -228,7 +266,7 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
                     AppOutlinedButton({mergeSource=item;mergeTarget=null},enabled=editable && !dirty && currentEditor==null && s.items.size > 1) {Text(stringResource(R.string.category_merge))}
                     AppDangerOutlinedButton({vm.requestDelete(item)},enabled=editable) {Text(stringResource(R.string.ux_delete_category))} }
             } }
-        } }
+        }
     }
     mergeSource?.let { source -> AlertDialog(onDismissRequest={if(!s.busy) mergeSource=null},
         title={Text(stringResource(R.string.category_merge))},
@@ -259,6 +297,6 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
         if(categoryIconOptions.none {it.value==s.draft.icon}) item {Text(stringResource(R.string.category_icon_selected,s.draft.icon))} }
     },confirmButton={TextButton({iconPicker=false}) {Text(stringResource(R.string.close))}})
     s.confirmDelete?.let { item -> AlertDialog(onDismissRequest=vm::dismissDelete,title={Text(stringResource(R.string.ux_delete_category))},
-        text={Text(stringResource(R.string.category_delete_confirmation,item.name))},confirmButton={AppButton(vm::confirmDelete,enabled=editable){Text(stringResource(R.string.ux_delete_category))}},
+        text={Text(stringResource(R.string.category_delete_confirmation,item.name))},confirmButton={AppDangerTextButton(vm::confirmDelete,enabled=editable){Text(stringResource(R.string.ux_delete_category))}},
         dismissButton={AppOutlinedButton(vm::dismissDelete){Text(stringResource(R.string.cancel))}}) }
 }

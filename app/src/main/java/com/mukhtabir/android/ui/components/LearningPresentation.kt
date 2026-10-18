@@ -40,8 +40,9 @@ fun LearningSessionHeader(index: Int, total: Int, answered: Int, seconds: Int? =
                 verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                    Text(stringResource(R.string.session_position, formatNumber(index + 1), formatNumber(total)),
+                    if (index >= 0) Text(stringResource(R.string.session_position, formatNumber(index + 1), formatNumber(total)),
                         style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).semantics { heading() })
+                    else Spacer(Modifier.weight(1f))
                     if (seconds != null && !stacked) Column(horizontalAlignment = Alignment.End) {
                         Text(stringResource(if (overtime) R.string.session_clock_additional else R.string.session_clock_remaining),
                             style = MaterialTheme.typography.labelSmall)
@@ -174,16 +175,27 @@ fun LearningQuestionMap(current: Int, total: Int, answered: Set<Int>, flagged: S
         Text(stringResource(R.string.flow_final_counts, formatNumber(answered.size),
             formatNumber((total - answered.size).coerceAtLeast(0)), formatNumber(flagged.size)))
         Text(stringResource(R.string.flow_map_hint), style = MaterialTheme.typography.bodySmall)
-        AppActionRow {
-            (0 until total).forEach { index ->
-                val isAnswered = index in answered
-                val isFlagged = index in flagged
-                val status = stringResource(if (isAnswered) R.string.session_question_answered else R.string.session_question_unanswered) +
-                    if (isFlagged) " · " + stringResource(R.string.flow_flagged) else ""
-                AppFilterChip(selected = index == current, onClick = { onChoose(index) }, enabled = enabled,
-                    modifier = Modifier.heightIn(min = AppLayoutTokens.touchTarget).semantics { stateDescription = status },
-                    label = { Text(formatNumber(index + 1) + (if (isAnswered) " ✓" else "") + (if (isFlagged) " ⚑" else "")) })
-            }
+        LearningQuestionChips(current, total, answered, flagged, enabled, onChoose)
+    }
+}
+
+/** Reused by ordinary and master maps without imposing flag controls or write behavior. */
+@Composable
+fun LearningQuestionChips(current: Int, total: Int, answered: Set<Int>, flagged: Set<Int>, enabled: Boolean,
+    onChoose: (Int) -> Unit) {
+    AppActionRow {
+        (0 until total).forEach { index ->
+            val questionLabel = stringResource(R.string.select_question_number, index + 1)
+            val isAnswered = index in answered
+            val isFlagged = index in flagged
+            val status = stringResource(if (isAnswered) R.string.session_question_answered else R.string.session_question_unanswered) +
+                if (isFlagged) " · " + stringResource(R.string.flow_flagged) else ""
+            AppFilterChip(selected = index == current, onClick = { onChoose(index) }, enabled = enabled,
+                modifier = Modifier.heightIn(min = AppLayoutTokens.touchTarget).semantics {
+                    contentDescription = questionLabel
+                    stateDescription = status
+                },
+                label = { Text(formatNumber(index + 1) + (if (isAnswered) " ✓" else "") + (if (isFlagged) " ⚑" else "")) })
         }
     }
 }

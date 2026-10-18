@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.MoreSection
 import com.mukhtabir.android.core.NavigationCatalog
@@ -47,7 +46,7 @@ import com.mukhtabir.android.ui.components.iconFor
 fun AppDrawerContent(user: UserDto, currentRoute: String?, enabled: Boolean, preferences: AppPreferences? = null, onNavigate: (String) -> Unit) {
     val destinations = NavigationCatalog.visibleFor(user)
     val standalone = destinations.filter { it.route in setOf("more/about", "more/privacy") }
-    Column(Modifier.fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = AppTheme.spacing.content),
+    Column(Modifier.fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.libraryPadding, vertical = AppTheme.spacing.content),
         verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
         Column(Modifier.padding(horizontal = AppLayoutTokens.cardPadding, vertical = AppLayoutTokens.tightGap),
             verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
@@ -60,7 +59,7 @@ fun AppDrawerContent(user: UserDto, currentRoute: String?, enabled: Boolean, pre
         }
         NavigationDrawerItem(label = { Text(stringResource(R.string.home)) }, selected = currentRoute == "home",
             onClick = { if (enabled) onNavigate("home") }, icon = { Icon(Icons.Filled.Home, null) })
-        Divider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        Divider(Modifier.padding(vertical = AppTheme.spacing.section), color = MaterialTheme.colorScheme.outlineVariant)
         MoreSection.values().forEach { section ->
             val rows = destinations.filter { it.section == section && it !in standalone }
             if (rows.isNotEmpty()) {

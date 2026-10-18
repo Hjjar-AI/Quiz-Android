@@ -8,8 +8,13 @@ import android.text.method.LinkMovementMethod
 import android.widget.TextView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.Alignment
+import com.mukhtabir.android.ui.theme.readingTextStyle
+import com.mukhtabir.android.ui.theme.readingMaxWidth
+import com.mukhtabir.android.ui.theme.readingParagraphMargin
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -67,7 +72,7 @@ internal fun FullContent(privacy: Boolean) {
 private fun PolicyHtml(html: String) {
     val color = MaterialTheme.colorScheme.onSurface.toArgb()
     val links = MaterialTheme.colorScheme.primary.toArgb()
-    val style = MaterialTheme.typography.bodyLarge
+    val style = readingTextStyle(MaterialTheme.typography.bodyLarge)
     val density = androidx.compose.ui.platform.LocalDensity.current
     val typeface = com.mukhtabir.android.ui.theme.LocalNativeTypeface.current
     // Native TextView renders no scripts. Keep only safe external links and make tables linear and readable.
@@ -75,10 +80,27 @@ private fun PolicyHtml(html: String) {
         .replace(Regex("(?i)href=([\"'])(?!https?://|mailto:)[^\"']*\\1"), "")
         .replace(Regex("(?i)</t[dh]>"), "</span> · ").replace(Regex("(?i)<t[dh][^>]*>"), "<span>")
         .replace(Regex("(?i)</tr>"), "<br>") }
-    AndroidView(factory = { TextView(it).apply { setTextIsSelectable(true); movementMethod = LinkMovementMethod.getInstance() } }, update = {
-        it.text = HtmlCompat.fromHtml(safe, HtmlCompat.FROM_HTML_MODE_LEGACY)
-        it.typeface = typeface
-        it.setTextColor(color); it.setLinkTextColor(links); it.applyReadingStyle(style, density)
-        it.alignReadingText()
-    }, modifier = Modifier.fillMaxWidth())
+    // HTML already has paragraph breaks; add only the requested extra spacing.
+    val paragraphMargin = readingParagraphMargin()
+    val extraGap = with(density) {
+        ((paragraphMargin - com.mukhtabir.android.ui.theme.readingParagraphBaseMargin).coerceAtLeast(0.dp) * fontScale.coerceAtLeast(1f)).roundToPx()
+    }
+    val rendered = remember(safe, extraGap) {
+        android.text.SpannableString(HtmlCompat.fromHtml(safe, HtmlCompat.FROM_HTML_MODE_LEGACY)).apply {
+            if (extraGap > 0) Regex("\n\n").findAll(toString()).forEach { paragraph ->
+                setSpan(android.text.style.LineHeightSpan { _, _, _, _, _, metrics ->
+                    metrics.descent += extraGap
+                    metrics.bottom += extraGap
+                }, paragraph.range.first, paragraph.range.first + 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
+    }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        AndroidView(factory = { TextView(it).apply { setTextIsSelectable(true); movementMethod = LinkMovementMethod.getInstance() } }, update = {
+            if (it.tag !== rendered) { it.text = rendered; it.tag = rendered }
+            it.typeface = typeface
+            it.setTextColor(color); it.setLinkTextColor(links); it.applyReadingStyle(style, density)
+            it.alignReadingText()
+        }, modifier = Modifier.widthIn(max = readingMaxWidth()).fillMaxWidth())
+    }
 }

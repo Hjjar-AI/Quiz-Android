@@ -199,10 +199,13 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
                         applicationContext.getString(errorResource(response.code)),
                     )
                 }
-                response.body?.bytes() ?: throw ApiException(
-                    response.code,
-                    applicationContext.getString(R.string.error_empty_image_response),
-                )
+                val body = response.body ?: throw ApiException(response.code,
+                    applicationContext.getString(R.string.error_empty_image_response))
+                try {
+                    body.byteStream().use { readBoundedQuestionImage(it, body.contentLength()) }
+                } catch (_: IllegalArgumentException) {
+                    throw ApiException(null, applicationContext.getString(R.string.question_image_too_large))
+                }
             }
         } catch (error: ApiException) {
             throw error

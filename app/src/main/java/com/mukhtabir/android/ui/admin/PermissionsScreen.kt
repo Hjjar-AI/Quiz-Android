@@ -44,7 +44,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -77,7 +76,10 @@ internal data class PermissionsState(
     val loading: Boolean = false,
     val error: Throwable? = null, val lookupError: Throwable? = null, val notice: Int? = null,
     val saved: Boolean = false, val uncertain: String? = null,
-)
+) {
+    val roleDirty: Boolean get() = data != null && selected != data.roles[role].orEmpty().toSet()
+    val userDirty: Boolean get() = user != null && overrides != user.overrides
+}
 
 internal class PermissionsViewModel(private val service: AdminService, private val canManage: Boolean,
     private val pageSize: Int) : ViewModel() {
@@ -103,9 +105,9 @@ internal class PermissionsViewModel(private val service: AdminService, private v
                 selected = if (s.data == null) data.roles[s.role].orEmpty().toSet() else s.selected) }
         }
     }
-    fun role(value: String) {
+    fun role(value: String, discardDraft: Boolean = false) {
         val s = _state.value
-        if (!editable() || value == "admin" || value !in s.data?.roles.orEmpty()) return
+        if (!editable() || value == s.role || value == "admin" || value !in s.data?.roles.orEmpty() || (s.roleDirty && !discardDraft)) return
         _state.update { it.copy(role = value, selected = it.data?.roles?.get(value).orEmpty().toSet(), saved = false, notice = null) }
     }
     fun toggle(cap: String) {
@@ -130,19 +132,19 @@ internal class PermissionsViewModel(private val service: AdminService, private v
         }
     }
     fun openTarget(id: Long) {
-        if(!editable() || id<=0) return
+        if(!editable() || id<=0 || _state.value.userDirty) return
         read {
             val result=service.userPermissions(id);coroutineContext.ensureActive()
             _state.update {it.copy(user=result,selectedUser=PermissionUserDto(result.userId,result.username,role=result.role),overrides=result.overrides,saved=false)}
         }
     }
-    fun select(user: PermissionUserDto) {
-        if (!editable() || _state.value.users?.items?.none { it.id == user.id } != false) return
+    fun select(user: PermissionUserDto, discardDraft: Boolean = false) {
+        if (!editable() || _state.value.selectedUser?.id == user.id || (_state.value.userDirty && !discardDraft) || _state.value.users?.items?.none { it.id == user.id } != false) return
         _state.update { it.copy(selectedUser = user, user = null, overrides = emptyMap(), saved = false, notice = null) }
         loadUser()
     }
     fun loadUser() {
-        if (!editable()) return
+        if (!editable() || _state.value.userDirty) return
         val id = _state.value.selectedUser?.id ?: return
         read {
             val result = service.userPermissions(id); coroutineContext.ensureActive()
@@ -170,7 +172,7 @@ internal class PermissionsViewModel(private val service: AdminService, private v
     }
     fun saveRole() {
         val s = _state.value; val baseline = s.data ?: return
-        if (s.role == "admin" || s.role !in baseline.roles) return
+        if (s.role == "admin" || s.role !in baseline.roles || (s.userDirty && s.user?.role == s.role)) return
         write("role") { dispatch ->
             val fresh = service.permissions(); coroutineContext.ensureActive()
             if (fresh.roles[s.role].orEmpty().toSet() != baseline.roles[s.role].orEmpty().toSet()) {
@@ -220,9 +222,11 @@ internal class PermissionsViewModel(private val service: AdminService, private v
     }
 }
 
+private data class PermissionDestination(val role: String? = null, val user: PermissionUserDto? = null, val exit: Boolean = false)
+
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Long, pageSize: Int, roles: Map<String, String>, onBusyChanged: (Boolean) -> Unit, initialUserId: Long? = null) {
+fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Long, pageSize: Int, roles: Map<String, String>, onBusyChanged: (Boolean) -> Unit, onBack: () -> Unit, initialUserId: Long? = null) {
     val vm: PermissionsViewModel = viewModel(key = "admin-permissions-$actingUserId-$canManage-$pageSize-$initialUserId",
         factory = PermissionsViewModel.Factory(service, canManage, pageSize))
     val s by vm.state.collectAsState()
@@ -230,7 +234,29 @@ fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Lo
     LaunchedEffect(initialUserId,s.data,s.loading) {
         if(!requestedTarget && initialUserId!=null && s.data!=null && !s.loading) {requestedTarget=true;vm.openTarget(initialUserId)}
     }
+    var destination by androidx.compose.runtime.remember { mutableStateOf<PermissionDestination?>(null) }
+    val leave: () -> Unit = {
+        if (!s.loading) {
+            if (s.roleDirty || s.userDirty || s.uncertain != null) destination = PermissionDestination(exit = true)
+            else onBack()
+        }
+    }
+    BackHandler(onBack = leave)
     com.mukhtabir.android.ui.components.BlockedBackHandler(enabled = s.loading)
+    destination?.let { target ->
+        com.mukhtabir.android.ui.components.AppConfirmationDialog(onDismissRequest = { destination = null },
+            title = { Text(stringResource(R.string.permissions_unsaved_title)) },
+            text = { Text(stringResource(if (s.uncertain != null) R.string.author_leave_unknown else R.string.permissions_unsaved_body)) },
+            confirmButton = { com.mukhtabir.android.ui.components.AppDangerTextButton({
+                destination = null
+                when {
+                    target.exit -> onBack()
+                    target.role != null -> vm.role(target.role, discardDraft = true)
+                    target.user != null -> vm.select(target.user, discardDraft = true)
+                }
+            }, enabled = !s.loading && (target.exit || s.uncertain == null)) { Text(stringResource(R.string.discard_changes_continue)) } },
+            dismissButton = { com.mukhtabir.android.ui.components.AppTextButton({ destination = null }) { Text(stringResource(R.string.keep_editing)) } })
+    }
     DisposableEffect(s.loading) {
         onBusyChanged(s.loading)
         onDispose { onBusyChanged(false) }
@@ -257,7 +283,7 @@ fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Lo
         item { AppSection(stringResource(R.string.role_capabilities), initiallyExpanded = true) {
             AppActionRow() {
                 catalog?.roles?.keys?.filter { it != "admin" }?.forEach { role ->
-                    FilterChip(s.role == role, { vm.role(role) }, { Text(com.mukhtabir.android.util.roleLabel(role, roles[role])) }, enabled = enabled)
+                    FilterChip(s.role == role, { if (role != s.role && s.roleDirty) destination = PermissionDestination(role = role) else vm.role(role) }, { Text(com.mukhtabir.android.util.roleLabel(role, roles[role])) }, enabled = enabled)
                 }
             }
             groups.forEach { group -> AppSection(group.label) {
@@ -272,7 +298,8 @@ fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Lo
                     }
                 }
             } }
-            AppButton(vm::saveRole, enabled = enabled && catalog != null) { Text(stringResource(R.string.save_role_capabilities)) }
+            if (s.userDirty && s.user?.role == s.role) Text(stringResource(R.string.permissions_save_user_first))
+            AppButton(vm::saveRole, enabled = enabled && catalog != null && !(s.userDirty && s.user?.role == s.role)) { Text(stringResource(R.string.save_role_capabilities)) }
         } }
         item { AppSection(stringResource(R.string.user_overrides), initiallyExpanded = true) {
             OutlinedTextField(s.query, vm::query, label = { Text(stringResource(R.string.permissions_search_user)) },
@@ -283,7 +310,7 @@ fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Lo
                 Text(stringResource(R.string.permissions_results_query, s.appliedQuery.ifBlank { stringResource(R.string.none) }))
                 if (page.items.isEmpty() && !s.loading && s.lookupError==null) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.permissions_no_users))
                 page.items.forEach { user ->
-                    AppOutlinedButton({ vm.select(user) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+                    AppOutlinedButton({ if (s.selectedUser?.id != user.id && s.userDirty) destination = PermissionDestination(user = user) else vm.select(user) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.weight(1f)) {
                             Text(user.displayName)
                             Text("${com.mukhtabir.android.util.bidi("@${user.username}")} · ${com.mukhtabir.android.util.roleLabel(user.role, roles[user.role])} · " +

@@ -21,8 +21,6 @@ val LocalNativeTypeface = staticCompositionLocalOf<android.graphics.Typeface> { 
 
 val LocalAppBackground = staticCompositionLocalOf<androidx.compose.ui.graphics.Brush?> { null }
 
-val LocalAppSpacing = staticCompositionLocalOf { 16.dp }
-
 // Native equivalents of the web Stone and Dark palettes.
 private val LightColors = lightColorScheme(
     primary = Color(0xFF6F4A32), onPrimary = Color.White,
@@ -157,7 +155,7 @@ fun MukhtabirTheme(darkTheme: Boolean = isSystemInDarkTheme(), preference: com.m
         FeedbackColors(Color(0xFFB6F2CD), Color(0xFFFFE0A3), Color(0xFFC7EDFF))
     else if (darkTheme) FeedbackColors(Color(0xFF6BB98D), Color(0xFFE6CF45), Color(0xFF67B2D5)) else LocalFeedback.current
     val spacing = if (display.compact) AppSpacing(section = 4.dp, card = 6.dp, denseCard = 4.dp, content = 3.dp, libraryCard = 4.dp, cardVertical = 3.dp, denseCardVertical = 2.dp) else AppSpacing()
-    CompositionLocalProvider(LocalSpacing provides spacing, LocalAppBackground provides background, LocalFeedback provides feedback, LocalAppSpacing provides spacing.section, LocalNativeTypeface provides nativeTypeface, LocalReadingComfort provides display) {
+    CompositionLocalProvider(LocalSpacing provides spacing, LocalAppBackground provides background, LocalFeedback provides feedback, LocalNativeTypeface provides nativeTypeface, LocalReadingComfort provides display) {
         MaterialTheme(colorScheme = themedColors(if (darkTheme) DarkColors else LightColors, preference), typography = typography,
             shapes = shapes,
             content = content)

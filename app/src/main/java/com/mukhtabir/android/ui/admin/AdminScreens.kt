@@ -16,7 +16,6 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 
 import com.mukhtabir.android.ui.components.AppActionRow
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,7 +33,6 @@ import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.MaterialTheme
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,7 +46,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -63,9 +60,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.mukhtabir.android.data.remote.AdminUserCreateRequest
 import com.mukhtabir.android.data.remote.AdminUserUpdateRequest
-import com.mukhtabir.android.data.remote.RoleCapabilitiesDto
 import com.mukhtabir.android.data.remote.UserDto
-import com.mukhtabir.android.data.remote.UserCapabilitiesDto
 import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.ui.components.ErrorState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -266,10 +261,11 @@ class AdminUsersViewModel(private val service: AdminService,private val pageSize
         dismissButton={TextButton({batchAction=null;batchPassword=""}){Text(stringResource(R.string.cancel))}}) }
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item { AppPageHeading(stringResource(R.string.nav_admin_users)) }
-        item { Row(horizontalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-            OutlinedTextField(s.search,{vm.field("search",it)},label={Text(stringResource(R.string.search))},enabled=!s.loading,modifier=Modifier.weight(1f))
-            Button({vm.load(1)},enabled=!s.loading) { Text(stringResource(R.string.search)) }
-        } }
+        item { com.mukhtabir.android.ui.components.AppSearchRow(
+            field = { fieldModifier -> OutlinedTextField(s.search, { vm.field("search", it) },
+                label = { Text(stringResource(R.string.search)) }, enabled = !s.loading, modifier = fieldModifier) },
+            action = { Button({ vm.load(1) }, enabled = !s.loading) { Text(stringResource(R.string.search)) } },
+        ) }
         s.error?.let { item { ErrorState(throwable = it, onRetry = if(s.loading) null else { { vm.load(s.page) } }) } }
         s.validation?.let { item { Text(stringResource(it), color=MaterialTheme.colorScheme.error) } }
         if(s.saved) item { AppSuccessText(stringResource(R.string.saved)) }
@@ -306,11 +302,11 @@ class AdminUsersViewModel(private val service: AdminService,private val pageSize
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
             AppActionRow(){ (roles.keys.ifEmpty{setOf("member","moderator","admin")}+s.role).forEach { role -> FilterChip(s.role==role,{vm.field("role",role)},{Text(com.mukhtabir.android.util.roleLabel(role, roles[role]))},enabled=!s.loading) } }
-            Row(verticalAlignment=Alignment.CenterVertically){Text(stringResource(R.string.active),Modifier.weight(1f));Switch(s.active,vm::active,enabled=!s.loading)}
+            com.mukhtabir.android.ui.components.AppSwitchRow(stringResource(R.string.active), s.active, vm::active, enabled = !s.loading)
             OutlinedTextField(s.adminPassword,{vm.field("admin",it)},label={Text(stringResource(R.string.current_admin_password))},visualTransformation=PasswordVisualTransformation(),enabled=!s.loading,modifier=Modifier.fillMaxWidth(),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
-            Row(horizontalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)){Button(vm::save,enabled=!s.loading && !s.needsReview && !s.createUncertain){Text(stringResource(R.string.save))}; if(s.selected!=null) OutlinedButton({vm.select(null)},enabled=!s.loading){Text(stringResource(R.string.cancel))}}
+            AppActionRow {Button(vm::save,enabled=!s.loading && !s.needsReview && !s.createUncertain){Text(stringResource(R.string.save))}; if(s.selected!=null) OutlinedButton({vm.select(null)},enabled=!s.loading){Text(stringResource(R.string.cancel))}}
         } } }
         item {
             if(s.batchIds.isNotEmpty()) {

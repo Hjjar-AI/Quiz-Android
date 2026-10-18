@@ -44,7 +44,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -263,7 +262,7 @@ fun GroupsRoute(service: GroupService, userId: Long) {
             if(board.rows.isEmpty() && !state.boardLoading && state.boardError==null && state.error==null) item { EmptyState(stringResource(R.string.group_board_empty)) }
             items(board.rows, key = { "member-${it.userId}" }) { row ->
                 Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.fillMaxWidth().padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
                         Text(row.fullName.ifBlank { row.username },style=MaterialTheme.typography.titleMedium)
                         if(row.userId==userId) Text(stringResource(R.string.group_self))
                         if(row.rank>0) Text(stringResource(R.string.group_rank,formatNumber(row.rank)))

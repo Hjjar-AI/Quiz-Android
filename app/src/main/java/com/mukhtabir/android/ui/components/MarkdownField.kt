@@ -23,7 +23,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 
 private enum class MarkdownAction(@StringRes val label: Int) {
@@ -45,22 +44,24 @@ fun MarkdownField(
     minLines: Int = 1,
     modifier: Modifier = Modifier,
     error: String? = null,
+    fieldFocusRequester: FocusRequester? = null,
 ) {
     var field by remember { mutableStateOf(TextFieldValue(value)) }
     var toolsVisible by remember { mutableStateOf(false) }
-    val focus = remember { FocusRequester() }
+    val localFocus = remember { FocusRequester() }
+    val focus = fieldFocusRequester ?: localFocus
     val placeholder = stringResource(R.string.markdown_text_placeholder)
     LaunchedEffect(value) {
         if (field.text != value) field = TextFieldValue(value, TextRange(
             field.selection.start.coerceIn(0, value.length), field.selection.end.coerceIn(0, value.length)))
     }
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
         TextButton(onClick = { toolsVisible = !toolsVisible }, enabled = enabled,
-            modifier = Modifier.heightIn(min = 48.dp)) {
+            modifier = Modifier.heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget)) {
             Text(stringResource(if (toolsVisible) R.string.markdown_hide_tools else R.string.markdown_show_tools, label))
         }
         if (toolsVisible) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
             MarkdownAction.values().forEach { action ->
                 TextButton(onClick = {
                     if (enabled) {
@@ -68,7 +69,7 @@ fun MarkdownField(
                         onValueChange(field.text)
                         focus.requestFocus()
                     }
-                }, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(action.label)) }
+                }, enabled = enabled, modifier = Modifier.heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget)) { Text(stringResource(action.label)) }
             }
         }
         OutlinedTextField(value = field, onValueChange = {

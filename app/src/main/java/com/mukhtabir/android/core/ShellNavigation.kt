@@ -19,6 +19,7 @@ object ShellNavigation {
         "more/admin/groups", "more/admin/blueprints", "more/admin/transfers", "more/master_preview/{examId}",
         "more/master_results/{examId}", "more/admin/tag_management", "more/admin/knowledge", "more/admin/cases",
         "more/master_drafts", "more/master_drafts/{draftId}",
+        "more/categories", "more/admin/permissions",
     )
     // The exam list can restore an attempt; preserve its existing restriction on shell navigation.
     fun preservesDraft(route: String?): Boolean = base(route) in focused

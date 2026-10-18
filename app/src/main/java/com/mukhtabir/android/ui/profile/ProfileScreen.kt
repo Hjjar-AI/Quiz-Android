@@ -13,10 +13,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -32,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.UserDto
 import com.mukhtabir.android.util.formatLongDate
@@ -95,7 +92,7 @@ fun ProfileScreen(
                         fontWeight = FontWeight.Bold,
                     )
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
                     Text(
                         text = user.displayName,
                         style = MaterialTheme.typography.titleLarge,
@@ -175,7 +172,7 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(onClick = action)
-                                .heightIn(min = 48.dp)
+                                .heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget)
                                 .padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.cardPadding, vertical = AppLayoutTokens.denseCardVerticalPadding),
                         ) {
                             Text(label, style = MaterialTheme.typography.bodyLarge)

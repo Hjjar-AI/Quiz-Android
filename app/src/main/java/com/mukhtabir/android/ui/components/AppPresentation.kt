@@ -120,7 +120,7 @@ fun AppFilterChip(selected: Boolean, onClick: () -> Unit, label: @Composable () 
     colors: SelectableChipColors = FilterChipDefaults.filterChipColors(
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
         labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f),
+        disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha),
         selectedContainerColor = MaterialTheme.colorScheme.primary,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimary)) {
     val leading: (@Composable () -> Unit)? = leadingIcon?.let { content ->

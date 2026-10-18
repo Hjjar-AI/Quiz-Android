@@ -8,39 +8,29 @@ import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppDangerTextButton
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
-import androidx.compose.material3.MaterialTheme
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.MasterExamDraftWrite
 import com.mukhtabir.android.data.remote.localizedForDisplay
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
 import com.mukhtabir.android.ui.components.ErrorState
-import com.mukhtabir.android.ui.components.MarkdownField
 import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.questions.QuestionChoiceDraft
 import com.mukhtabir.android.util.formatNumber
@@ -53,23 +43,41 @@ internal data class EmbeddedExamDraftForm(
     val difficulty: String = "medium", val category: Long? = null,
     val caseKey: String = "", val caseStem: String = "", val caseOrder: String = "",
 ) {
-    fun payload(maxChoices: Int): MasterExamDraftWrite? {
+    internal fun parsedCaseOrder(): Int? = caseOrder.trim().map { char ->
+        val digit = Character.digit(char, 10)
+        if (digit >= 0) ('0'.code + digit).toChar() else char
+    }.joinToString("").toIntOrNull()?.takeIf { it > 0 }
+
+    fun validationErrors(maxChoices: Int): List<DraftFieldError> = buildList {
         fun length(value: String) = value.codePointCount(0, value.length)
-        val text = question.trim()
-        val answers = choices.map { it.text.trim() }
-        val correct = choices.indexOfFirst { it.id == correctId } + 1
-        val order = if (caseOrder.isBlank()) null else caseOrder.trim().map { char ->
-            val digit = Character.digit(char, 10)
-            if (digit >= 0) ('0'.code + digit).toChar() else char
-        }.joinToString("").toIntOrNull()?.takeIf { it > 0 } ?: return null
-        if (text.isEmpty() || length(text) > 3000 || answers.size !in 2..maxChoices.coerceAtLeast(2) ||
-            answers.any { it.isEmpty() || length(it) > 300 } || correct !in 1..answers.size ||
-            answers.map { it.lowercase(Locale.ROOT) }.distinct().size != answers.size ||
-            length(source.trim()) > 200 || length(caseKey.trim()) > 64 || length(caseStem.trim()) > 3000 ||
-            (category != null && category <= 0) || difficulty !in setOf("easy", "medium", "hard") ||
-            (caseKey.isBlank() && (caseStem.isNotBlank() || caseOrder.isNotBlank()))) return null
-        return MasterExamDraftWrite(text, answers, correct, explanation.trim(), source.trim(), difficulty, category,
-            caseKey.trim().takeIf { it.isNotEmpty() }, caseStem.trim().takeIf { it.isNotEmpty() }, order)
+        fun text(key: String, value: String, limit: Int, required: Boolean = false) {
+            if (required && value.trim().isEmpty()) add(DraftFieldError(key, R.string.draft_field_required))
+            else if (length(value.trim()) > limit) add(DraftFieldError(key, R.string.draft_field_too_long, limit))
+        }
+        text("question", question, 3000, true)
+        if (choices.size !in 2..maxChoices.coerceAtLeast(2)) add(DraftFieldError("choices", R.string.draft_choice_count, maxChoices.coerceAtLeast(2)))
+        val counts = choices.groupingBy { it.text.trim().lowercase(Locale.ROOT) }.eachCount()
+        choices.forEach { choice ->
+            text("choice:${choice.id}", choice.text, 300, true)
+            if (choice.text.isNotBlank() && counts[choice.text.trim().lowercase(Locale.ROOT)] != 1)
+                add(DraftFieldError("choice:${choice.id}", R.string.draft_choice_duplicate))
+        }
+        if (choices.none { it.id == correctId }) add(DraftFieldError("correct", R.string.draft_correct_required))
+        text("source", source, 200)
+        if (difficulty !in setOf("easy", "medium", "hard")) add(DraftFieldError("difficulty", R.string.draft_difficulty_invalid))
+        if (category != null && category <= 0) add(DraftFieldError("category", R.string.draft_category_invalid))
+        text("caseKey", caseKey, 64)
+        if (caseKey.isBlank() && (caseStem.isNotBlank() || caseOrder.isNotBlank()))
+            add(DraftFieldError("caseKey", R.string.draft_case_key_required))
+        text("caseStem", caseStem, 3000)
+        if (caseOrder.isNotBlank() && parsedCaseOrder() == null) add(DraftFieldError("caseOrder", R.string.draft_case_order_invalid))
+    }
+
+    fun payload(maxChoices: Int): MasterExamDraftWrite? {
+        if (validationErrors(maxChoices).isNotEmpty()) return null
+        return MasterExamDraftWrite(question.trim(), choices.map { it.text.trim() },
+            choices.indexOfFirst { it.id == correctId } + 1, explanation.trim(), source.trim(), difficulty, category,
+            caseKey.trim().takeIf { it.isNotEmpty() }, caseStem.trim().takeIf { it.isNotEmpty() }, parsedCaseOrder())
     }
 
     fun moveChoice(id: String, offset: Int): EmbeddedExamDraftForm {
@@ -84,7 +92,7 @@ internal data class EmbeddedExamDraftForm(
 internal data class EmbeddedExamDraftState(
     val form: EmbeddedExamDraftForm = EmbeddedExamDraftForm(), val baseline: EmbeddedExamDraftForm = form,
     val beforeIds: List<Long> = emptyList(),
-    val validation: Boolean = false, val error: Throwable? = null,
+    val validation: Boolean = false, val validationAttempt: Int = 0, val error: Throwable? = null,
     val uncertain: Boolean = false, val reconciled: Boolean = false, val createdId: Long? = null,
 ) { val dirty: Boolean get() = form != baseline }
 
@@ -93,9 +101,20 @@ internal data class EmbeddedExamDraftState(
 internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEditorState, vm: MasterExamEditorViewModel) {
     val form = draft.form
     val enabled = vm.editable(s)
-    var preview by rememberSaveable { mutableStateOf(false) }
+    val validation = DraftValidationUi(if (draft.validation) form.validationErrors(vm.maxChoices) else emptyList(), draft.validationAttempt)
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    androidx.compose.runtime.LaunchedEffect(validation.attempt) {
+        val field = validation.errors.firstOrNull()?.key ?: return@LaunchedEffect
+        val base = 1 + if (draft.reconciled) (s.exam?.questionIds.orEmpty() - draft.beforeIds.toSet()).size else 0
+        val item = when {
+            field == "question" -> base
+            field == "correct" && form.choices.isNotEmpty() -> base + 1
+            field.startsWith("choice:") -> base + 1 + form.choices.indexOfFirst { "choice:${it.id}" == field }.coerceAtLeast(0)
+            else -> base + 1 + form.choices.size
+        }
+        listState.scrollToItem(item)
+    }
     var confirmClose by remember { mutableStateOf(false) }
-    var categoryMenu by remember { mutableStateOf(false) }
     val canClose = !s.busy && (!(draft.uncertain || draft.createdId != null) || draft.reconciled)
     val close: () -> Unit = {
         if (canClose) {
@@ -111,7 +130,7 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
     AlertDialog(onDismissRequest = close,
         title = { Text(stringResource(R.string.exam_draft_create)) },
         text = {
-            LazyColumn(Modifier.heightIn(max = com.mukhtabir.android.ui.components.AppLayoutTokens.pickerMaxHeight), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
+            LazyColumn(Modifier.heightIn(max = com.mukhtabir.android.ui.components.AppLayoutTokens.pickerMaxHeight), state = listState, verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
                 item {
                     Text(stringResource(R.string.exam_draft_scope))
                     if (s.busy) AppLoadingIndicator()
@@ -120,7 +139,7 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
                     s.message?.let { Text(stringResource(it), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
                     if (s.denied) Text(stringResource(R.string.error_forbidden))
                     if (s.exam?.canEditNow == false) Text(stringResource(R.string.exam_author_frozen))
-                    if (draft.validation) Text(stringResource(R.string.exam_draft_invalid), color = MaterialTheme.colorScheme.error)
+                    if (draft.validation) DraftValidationSummary(validation)
                     if (draft.uncertain) Text(stringResource(R.string.exam_draft_uncertain))
                     draft.createdId?.let { Text(stringResource(R.string.exam_draft_created_id, formatNumber(it))) }
                     if (draft.uncertain || draft.createdId != null) {
@@ -150,71 +169,20 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
                         }
                     }
                 }
-                item {
-                    FilterChip(preview, { preview = !preview }, label = { Text(stringResource(R.string.question_markdown_preview)) })
-                    if (preview) {
-                        if (form.caseStem.isNotBlank()) MarkdownText(form.caseStem)
-                        com.mukhtabir.android.ui.components.QuestionTextCard(form.question)
-                        form.choices.forEachIndexed { index, choice ->
-                            com.mukhtabir.android.ui.components.QuestionChoiceCard {
-                                Column(Modifier.weight(1f)) {
-                                    Text(stringResource(R.string.choice_number, index + 1))
-                                    MarkdownText(choice.text)
-                                    if (choice.id == form.correctId) Text(stringResource(R.string.correct_answer))
-                                }
-                            }
-                        }
-                        ExplanationCard(form.explanation)
-                    }
-                    MarkdownField(form.question, { value -> vm.editEmbeddedDraft { it.copy(question = value) } },
-                        label = stringResource(R.string.question_text), enabled = enabled, minLines = 3)
-                    Text(stringResource(R.string.maximum_choices, vm.maxChoices.coerceAtLeast(2)))
-                }
+                item { ExamDraftQuestionFields(form, enabled, vm::editEmbeddedDraft, validation) }
                 items(form.choices, key = { it.id }) { choice ->
-                    val index = form.choices.indexOf(choice)
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        MarkdownField(choice.text, { value -> vm.editEmbeddedDraft { f -> f.copy(choices = f.choices.map { if (it.id == choice.id) it.copy(text = value) else it }) } },
-                            label = stringResource(R.string.choice_number, index + 1), enabled = enabled)
-                        FilterChip(choice.id == form.correctId, { vm.editEmbeddedDraft { it.copy(correctId = choice.id) } }, enabled = enabled,
-                            label = { Text(stringResource(R.string.correct_answer)) })
-                        TextButton({ vm.editEmbeddedDraft { it.moveChoice(choice.id, -1) } }, enabled = enabled && index > 0) { Text(stringResource(R.string.move_choice_up)) }
-                        TextButton({ vm.editEmbeddedDraft { it.moveChoice(choice.id, 1) } }, enabled = enabled && index < form.choices.lastIndex) { Text(stringResource(R.string.move_choice_down)) }
-                        AppDangerTextButton({ vm.editEmbeddedDraft { it.copy(choices = it.choices.filterNot { row -> row.id == choice.id },
-                            correctId = it.correctId.takeUnless { selected -> selected == choice.id }) } }, enabled = enabled && form.choices.size > 2) { Text(stringResource(R.string.remove_choice)) }
-                    }
+                    ExamDraftChoiceFields(form, choice, form.choices.indexOf(choice), enabled, vm::editEmbeddedDraft, validation)
                 }
                 item {
-                    OutlinedButton({ vm.editEmbeddedDraft { if (it.choices.size < vm.maxChoices.coerceAtLeast(2)) it.copy(choices = it.choices + QuestionChoiceDraft()) else it } },
-                        enabled = enabled && form.choices.size < vm.maxChoices.coerceAtLeast(2)) { Text(stringResource(R.string.add_choice)) }
-                    MarkdownField(form.explanation, { value -> vm.editEmbeddedDraft { it.copy(explanation = value) } },
-                        label = stringResource(R.string.explanation), enabled = enabled, minLines = 2)
-                    OutlinedTextField(form.source, { value -> vm.editEmbeddedDraft { it.copy(source = value) } }, enabled = enabled,
-                        label = { Text(stringResource(R.string.question_source)) }, modifier = Modifier.fillMaxWidth())
-                    Text(stringResource(R.string.difficulty))
-                    listOf("easy" to R.string.difficulty_easy, "medium" to R.string.difficulty_medium, "hard" to R.string.difficulty_hard).forEach { (value, label) ->
-                        FilterChip(form.difficulty == value, { vm.editEmbeddedDraft { it.copy(difficulty = value) } }, enabled = enabled,
-                            label = { Text(stringResource(label)) })
-                    }
-                    if (s.draftCategoriesBusy) AppLoadingIndicator()
-                    s.draftCategoriesError?.let { ErrorState(throwable = it, onRetry = if (s.busy || s.draftCategoriesBusy) null else vm::loadDraftCategories) }
-                    Box {
-                        OutlinedButton({ categoryMenu = true }, enabled = enabled && !s.draftCategoriesBusy && s.draftCategoriesError == null) {
-                            Text(stringResource(R.string.nav_categories) + ": " + (s.draftCategories.firstOrNull { it.id == form.category }?.name ?: stringResource(R.string.none)))
-                        }
-                        DropdownMenu(categoryMenu && enabled, { categoryMenu = false }) {
-                            DropdownMenuItem(text = { Text(stringResource(R.string.none)) }, onClick = { vm.editEmbeddedDraft { it.copy(category = null) }; categoryMenu = false })
-                            s.draftCategories.forEach { category ->
-                                DropdownMenuItem(text = { Text(category.name) }, onClick = { vm.editEmbeddedDraft { it.copy(category = category.id) }; categoryMenu = false })
-                            }
-                        }
-                    }
-                    Text(stringResource(R.string.editor_case_stem_hint))
-                    OutlinedTextField(form.caseKey, { value -> vm.editEmbeddedDraft { it.copy(caseKey = value) } }, enabled = enabled,
-                        label = { Text(stringResource(R.string.editor_case_key)) }, modifier = Modifier.fillMaxWidth())
-                    MarkdownField(form.caseStem, { value -> vm.editEmbeddedDraft { it.copy(caseStem = value) } },
-                        label = stringResource(R.string.editor_case_stem), enabled = enabled, minLines = 2)
-                    OutlinedTextField(form.caseOrder, { value -> vm.editEmbeddedDraft { it.copy(caseOrder = value) } }, enabled = enabled,
-                        label = { Text(stringResource(R.string.editor_case_order)) }, modifier = Modifier.fillMaxWidth())
+                    ExamDraftDetailsFields(form, enabled, vm.maxChoices, s.draftCategories, caseStemLocked = false,
+                        onCaseKeyChange = { value -> vm.editEmbeddedDraft { it.copy(caseKey = value) } },
+                        categoryEnabled = !s.draftCategoriesBusy && s.draftCategoriesError == null,
+                        revealError = s.draftCategoriesError != null,
+                        categoryStatus = {
+                            if (s.draftCategoriesBusy) AppLoadingIndicator()
+                            s.draftCategoriesError?.let { ErrorState(throwable = it,
+                                onRetry = if (s.busy || s.draftCategoriesBusy) null else vm::loadDraftCategories) }
+                        }, change = vm::editEmbeddedDraft, validation = validation)
                 }
             }
         }, confirmButton = { TextButton(vm::createEmbeddedDraft, enabled = enabled) { Text(stringResource(R.string.exam_draft_create)) } },

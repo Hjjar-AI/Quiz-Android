@@ -40,16 +40,6 @@ private val demoQuestions = listOf(
     DemoQuestion(R.string.demo_q8, listOf(R.string.demo_q8_c1, R.string.demo_q8_c2, R.string.demo_q8_c3, R.string.demo_q8_c4), 3, R.string.demo_q8_explanation),
 )
 
-/** Public sample content only. No services, account state, storage or synchronization. */
-@Composable
-fun DemoInvitation(onOpen: () -> Unit, enabled: Boolean = true) {
-    DemoHero {
-        Text(stringResource(R.string.demo_title), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(R.string.demo_intro), style = MaterialTheme.typography.bodyMedium)
-        AppButton(onOpen, Modifier.fillMaxWidth(), enabled = enabled) { Text(stringResource(R.string.demo_open)) }
-    }
-}
-
 @Composable
 private fun DemoHero(content: @Composable ColumnScope.() -> Unit) {
     val scheme = MaterialTheme.colorScheme

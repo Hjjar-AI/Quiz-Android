@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.ui.theme.LocalReadingComfort
 import com.mukhtabir.android.ui.theme.readingMaxWidth
 import com.mukhtabir.android.ui.theme.readingTextStyle
@@ -65,9 +64,9 @@ fun MarkdownText(
     val context = LocalContext.current
     val density = androidx.compose.ui.platform.LocalDensity.current
     val paragraphScale = LocalReadingComfort.current.readingParagraphs / 100f
-    val paragraphMargin = if (compactBlocks) com.mukhtabir.android.ui.theme.AppTheme.spacing.tight else 8.dp
+    val paragraphMargin = com.mukhtabir.android.ui.theme.readingParagraphMargin(compactBlocks)
     val blockMargin = with(density) {
-        (paragraphMargin * fontScale.coerceAtLeast(1f) * paragraphScale).roundToPx()
+        (paragraphMargin * fontScale.coerceAtLeast(1f)).roundToPx()
     }
     val highlight = MaterialTheme.colorScheme.tertiaryContainer.toArgb()
     val highlightText = MaterialTheme.colorScheme.onTertiaryContainer.toArgb()

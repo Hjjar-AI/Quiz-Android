@@ -53,6 +53,7 @@ internal fun AuthorUserLookup(admin: AdminService, enabled: Boolean, pageSize: I
     if (!busy && error == null) rows.forEach { person ->
         TextButton({ if (enabled) pick(person) }, enabled = enabled) { Text(person.displayName + " (@" + person.username + ")") }
     }
-    OutlinedButton({ search(page - 1) }, enabled = enabled && !busy && error == null && page > 1) { Text(stringResource(R.string.previous)) }
-    OutlinedButton({ search(page + 1) }, enabled = enabled && !busy && error == null && page < totalPages) { Text(stringResource(R.string.next)) }
+    com.mukhtabir.android.ui.components.AppPagination(page, totalPages,
+        onPrevious = { search(page - 1) }, onNext = { search(page + 1) },
+        previousEnabled = enabled && !busy && error == null, nextEnabled = enabled && !busy && error == null)
 }

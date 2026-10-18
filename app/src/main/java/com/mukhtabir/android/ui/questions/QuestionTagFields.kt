@@ -17,7 +17,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.components.ErrorState
 
@@ -48,7 +47,7 @@ internal fun QuestionTagFields(s: QuestionEditorState,vm: QuestionEditorViewMode
     }
     s.tagsError?.let { ErrorState(throwable=it,onRetry=if(enabled && !s.tagsLoading) vm::refreshTags else null) }
     val matches=s.tagSuggestions.filter { it !in s.tags && it.contains(s.tagInput.trim(),ignoreCase=true) }
-    if(matches.isNotEmpty()) Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+    if(matches.isNotEmpty()) Column(verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
         Text(stringResource(R.string.editor_tags_suggestions,matches.take(20).size,matches.size))
         matches.take(20).forEach { name ->
             OutlinedButton({vm.addTag(name)},enabled=enabled && !s.tagsLoading && s.tagsError==null) { Text(name) }
