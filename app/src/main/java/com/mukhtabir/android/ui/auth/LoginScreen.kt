@@ -1,14 +1,17 @@
 package com.mukhtabir.android.ui.auth
 
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppSaveStatus
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.ui.components.AppTextButton
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -23,9 +26,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Icon
+import androidx.compose.ui.text.input.VisualTransformation
+import com.mukhtabir.android.ui.components.AppIconButton
+import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.mukhtabir.android.R
@@ -43,6 +59,10 @@ fun LoginScreen(
     onOffline: (() -> Unit)? = null,
     onDemo: (() -> Unit)? = null,
 ) {
+    var passwordVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading, state.password.isEmpty()) {
+        if (state.isLoading || state.password.isEmpty()) passwordVisible = false
+    }
     BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
         val viewportHeight = maxHeight
         Column(
@@ -51,19 +71,17 @@ fun LoginScreen(
                 .verticalScroll(rememberScrollState())
                 .heightIn(min = viewportHeight)
                 .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authInsets),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
             )
-            onDemo?.let { open -> com.mukhtabir.android.ui.demo.DemoInvitation(onOpen = open, enabled = !state.isLoading) }
             Text(
                 text = stringResource(R.string.login_title),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Spacer(modifier = Modifier.height(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap))
             OutlinedTextField(
                 value = state.username,
                 onValueChange = onUsernameChange,
@@ -74,7 +92,6 @@ fun LoginScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
-            Spacer(modifier = Modifier.height(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap))
             OutlinedTextField(
                 value = state.password,
                 onValueChange = onPasswordChange,
@@ -82,20 +99,21 @@ fun LoginScreen(
                 label = { Text(stringResource(R.string.password)) },
                 enabled = !state.isLoading,
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    AppIconButton({ passwordVisible = !passwordVisible }, enabled = !state.isLoading) {
+                        Icon(if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = stringResource(if (passwordVisible) R.string.hide_password else R.string.show_password))
+                    }
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrect = false, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onLogin() }),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
             state.loginError?.let {
-                Spacer(modifier = Modifier.height(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap))
-                Text(
-                    text = it.userMessage(),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                AppSaveStatus(it.userMessage(), failed = true,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             }
-            Spacer(modifier = Modifier.height(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap))
             Button(
                 onClick = onLogin,
                 modifier = Modifier.fillMaxWidth(),
@@ -109,12 +127,15 @@ fun LoginScreen(
                     Text(stringResource(R.string.sign_in))
                 }
             }
-            AppTextButton(onHelp, enabled=!state.isLoading) { Text(stringResource(R.string.help_title)) }
-            AppTextButton(onPrivacy, enabled=!state.isLoading) { Text(stringResource(R.string.privacy_title)) }
             onOffline?.let {open -> AppTextButton(open,enabled=!state.isLoading) {Text(stringResource(R.string.offline_open_cached))} }
-            onChangeServer?.let { change -> AppTextButton(change,enabled=!state.isLoading) {
-                Text(stringResource(R.string.server_change))
-            } }
+            onDemo?.let {open -> AppTextButton(open,enabled=!state.isLoading) {Text(stringResource(R.string.demo_open))} }
+            AppSection(stringResource(R.string.startup_more_options), enabled = !state.isLoading) {
+                AppTextButton(onHelp, enabled=!state.isLoading) { Text(stringResource(R.string.help_title)) }
+                AppTextButton(onPrivacy, enabled=!state.isLoading) { Text(stringResource(R.string.privacy_title)) }
+                onChangeServer?.let { change -> AppTextButton(change,enabled=!state.isLoading) {
+                    Text(stringResource(R.string.server_change))
+                } }
+            }
         }
     }
 }

@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
@@ -132,12 +133,12 @@ fun QuizRoute(
     if(confirmFinishRecovery) AlertDialog(onDismissRequest={confirmFinishRecovery=false},
         title={Text(stringResource(R.string.quiz_finish_recovery_title))},
         text={Text(stringResource(R.string.quiz_finish_review_confirm))},
-        confirmButton={TextButton({confirmFinishRecovery=false;viewModel.acknowledgeFinishRecovery()},enabled=!state.isLoading) { Text(stringResource(R.string.confirm)) }},
+        confirmButton={TextButton({confirmFinishRecovery=false;viewModel.acknowledgeFinishRecovery()},enabled=!state.isLoading) { Text(stringResource(R.string.quiz_finish_review_done)) }},
         dismissButton={TextButton({confirmFinishRecovery=false}) { Text(stringResource(R.string.cancel)) }})
     if(confirmRecoveredFinish) AlertDialog(onDismissRequest={confirmRecoveredFinish=false},
         title={Text(stringResource(R.string.finish_session_title))},
         text={Text(stringResource(R.string.finish_session_message))},
-        confirmButton={TextButton({confirmRecoveredFinish=false;viewModel.finish()},enabled=!state.isLoading && !state.recoveryRequired) { Text(stringResource(R.string.confirm)) }},
+        confirmButton={TextButton({confirmRecoveredFinish=false;viewModel.finish()},enabled=!state.isLoading && !state.recoveryRequired) { Text(stringResource(R.string.finish_session_action)) }},
         dismissButton={TextButton({confirmRecoveredFinish=false}) { Text(stringResource(R.string.cancel)) }})
     val display by preferences.display.collectAsState()
     val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
@@ -245,8 +246,9 @@ fun QuizRoute(
         if (sessionActive) SessionHeader(sessionUi) {
             SessionToolsMenu(state, sessionUi, viewModel, preferences, onPause = { confirmPause = true })
         }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
         Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(contentScroll),
+            Modifier.fillMaxSize().verticalScroll(contentScroll),
             verticalArrangement = Arrangement.spacedBy(if (sessionActive) AppTheme.spacing.content else AppTheme.spacing.section),
         ) {
             state.syncConflict?.let { conflict ->
@@ -283,7 +285,7 @@ fun QuizRoute(
                 AppPageHeading(stringResource(R.string.quizzes))
             }
 
-            if (state.isLoading) AppLoadingIndicator()
+            if (state.isLoading && state.questionPage == null) AppLoadingIndicator()
             if (state.locallyFinished) Text(stringResource(R.string.offline_finished_session),
                 style = MaterialTheme.typography.bodySmall)
             if (state.error != null || state.hasUnknownError) {
@@ -398,6 +400,10 @@ fun QuizRoute(
                     (state.syncConflict != null && state.syncConflict?.index == state.questionPage?.index)), imageRepository, viewModel)
                 state.setupLoaded -> SetupContent(state.copy(isLoading = state.isLoading || state.recoveryRequired || state.draftStorageFailed), canUseBlueprint, viewModel)
             }
+        }
+        if (state.isLoading && state.questionPage != null) {
+            AppLoadingIndicator(Modifier.align(Alignment.TopEnd), compact = true)
+        }
         }
         if (sessionActive && state.questionPage != null) SessionNavigation(sessionUi, viewModel)
     }

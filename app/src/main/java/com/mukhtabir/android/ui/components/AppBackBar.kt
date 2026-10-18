@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import com.mukhtabir.android.R
 
 @Composable
@@ -30,7 +31,8 @@ fun AppBackBar(title: String, enabled: Boolean, onMenu: (() -> Unit)? = null, on
                 Icon(Icons.Filled.ArrowBack, stringResource(R.string.back),
                     Modifier.directionalIcon())
             }
-            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).padding(horizontal = 8.dp).semantics { heading() })
+            Text(title, style = MaterialTheme.typography.titleLarge, softWrap = true, maxLines = 2,
+                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = 8.dp).semantics { heading() })
         }
     }
 }
@@ -43,7 +45,8 @@ fun AppTopBar(title: String, enabled: Boolean, onMenu: () -> Unit) {
             IconButton(onMenu, enabled = enabled, modifier = Modifier) {
                 Icon(Icons.Filled.Menu, stringResource(R.string.drawer_open))
             }
-            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).padding(horizontal = 8.dp).semantics { heading() })
+            Text(title, style = MaterialTheme.typography.titleLarge, softWrap = true, maxLines = 2,
+                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = 8.dp).semantics { heading() })
         }
     }
 }

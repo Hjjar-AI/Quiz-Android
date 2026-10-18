@@ -35,11 +35,11 @@ fun SessionResultReview(
             verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
         ) {
             if (showHeading) Text(
-                stringResource(
-                    if (result.isCorrect) R.string.review_correct else R.string.review_wrong,
-                    index,
-                ),
-                color = if (result.isCorrect) {
+                if (result.userAnswer == null) stringResource(R.string.quiz_review_unanswered, formatNumber(index))
+                else stringResource(if (result.isCorrect) R.string.review_correct else R.string.review_wrong, index),
+                color = if (result.userAnswer == null) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else if (result.isCorrect) {
                     AppTheme.feedback.success
                 } else {
                     MaterialTheme.colorScheme.error
@@ -61,7 +61,7 @@ fun SessionResultReview(
                         result.correctAnswer -> true
                         result.userAnswer -> false
                         else -> null
-                    },interactiveText=true)
+                    },interactiveText=true,reviewMode=true)
             }
             if(result.userAnswer==null || result.correctAnswer==null) Text(stringResource(R.string.your_answer,
                 result.userAnswer?.let(::formatNumber) ?: stringResource(R.string.unanswered)))

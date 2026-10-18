@@ -986,7 +986,7 @@
     <string name="device_session_revoked">Session ended.</string>
     <string name="offline_title">Offline practice</string>
     <string name="offline_open_cached">Practise downloaded material offline</string>
-    <string name="offline_hint">Downloaded study material and answers stay encrypted on this phone for the last signed-in account. Logout clears them; server changes retain them in their server profile and require sign-in again. Offline practice has no exam timer. Saved sign-in is required to reopen downloaded material offline.</string>
+    <string name="offline_hint">Downloaded material and answers stay encrypted on this device for your account and server. Signing out clears them; changing servers keeps them in a separate profile and requires sign-in again. Offline practice has no exam timer. Login-session expiry alone does not block retained downloads.</string>
     <string name="offline_download">Download for offline practice</string>
     <string name="offline_ids">Question IDs, separated by commas</string>
     <string name="offline_ids_invalid">Use distinct positive question IDs within the per-pack question limit.</string>
@@ -1779,4 +1779,18 @@
     <string name="ux_remove_group_member">Remove group member</string>
     <string name="ux_import_preview_ready">Preview ready</string>
     <string name="ux_import_selected">Selected file</string>
+    <string name="server_show_files">Use a connection file</string>
+    <string name="server_hide_files">Hide connection files</string>
+    <string name="server_show_help">Connection help</string>
+    <string name="server_hide_help">Hide connection help</string>
+    <string name="startup_more_options">More options</string>
+    <string name="startup_hide_options">Hide options</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="language_picker_selection">العربية / English · %1$s</string>
+    <string name="answer_status_correct">Correct answer</string>
+    <string name="finish_session_action">Finish session</string>
+    <string name="finish_exam_action">Finish exam</string>
+    <string name="leave_screen_action">Leave screen</string>
+    <string name="back_to_exams_action">Return to exam list</string>
 </resources>

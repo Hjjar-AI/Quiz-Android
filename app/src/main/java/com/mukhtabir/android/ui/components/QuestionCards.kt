@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.lerp
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -80,9 +82,13 @@ fun QuestionChoiceCard(modifier: Modifier = Modifier, selected: Boolean = false,
             null -> if (selected) lerp(colors.choice, if (neutralSelection) scheme.onSurface else scheme.primary, .08f) else colors.choice
         },
         contentColor = scheme.onSurface,
-        border = BorderStroke(if (selected) AppLayoutTokens.selectedBorderWidth else AppLayoutTokens.cardBorderWidth, when (answerCorrect) {
-            true -> AppTheme.feedback.success
-            false -> scheme.error
+        border = BorderStroke(when {
+            answerCorrect != null -> AppLayoutTokens.answerFeedbackBorderWidth
+            selected -> AppLayoutTokens.selectedBorderWidth
+            else -> AppLayoutTokens.cardBorderWidth
+        }, when (answerCorrect) {
+            true -> AppTheme.feedback.success.saturatedAnswerBorder()
+            false -> scheme.error.saturatedAnswerBorder()
             null -> if (selected) { if (neutralSelection) scheme.onSurfaceVariant else scheme.primary } else colors.border
         })) {
         Row(selection.fillMaxWidth().heightIn(min = AppLayoutTokens.touchTarget)
@@ -90,4 +96,12 @@ fun QuestionChoiceCard(modifier: Modifier = Modifier, selected: Boolean = false,
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.content),
             verticalAlignment = Alignment.Top, content = content)
     }
+}
+
+/** Richer feedback outlines without changing theme colors or subtle choice fills. */
+private fun Color.saturatedAnswerBorder(): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(toArgb(), hsv)
+    hsv[1] = (hsv[1] + .20f).coerceAtMost(1f)
+    return Color(android.graphics.Color.HSVToColor(hsv)).copy(alpha = alpha)
 }

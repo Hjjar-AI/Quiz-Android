@@ -116,7 +116,7 @@ fun DemoScreen(onExit: () -> Unit) {
         confirmButton = {
             if (current == DemoDialog.DISCARD) AppDangerTextButton({ session = DemoSession(); dialog = null }) {
                 Text(stringResource(R.string.ui_demo_home))
-            } else AppTextButton({ session = session.finish(session.deadlineReached()); dialog = null }) { Text(stringResource(R.string.finish)) }
+            } else AppTextButton({ session = session.finish(session.deadlineReached()); dialog = null }) { Text(stringResource(R.string.finish_session_action)) }
         },
         dismissButton = { AppTextButton({ dialog = null }) { Text(stringResource(R.string.cancel)) } },
     ) }
@@ -212,7 +212,7 @@ fun DemoScreen(onExit: () -> Unit) {
                                 val status = if (!feedback) null else when (choice) { question.correct -> true; answer -> false; else -> null }
                                 AnswerChoice(number = choice + 1, text = stringResource(label), selected = answer == choice,
                                     enabled = active && !feedback, onClick = if (active) ({ session = session.copy(index = index).answer(choice) }) else null,
-                                    answerCorrect = status, neutralSelection = session.mode == DemoMode.EXAM && active, interactiveText = reviewing)
+                                    answerCorrect = status, neutralSelection = session.mode == DemoMode.EXAM && active, interactiveText = reviewing, reviewMode = reviewing)
                             }
                         }
                         if (feedback) ExplanationCard(stringResource(question.explanation), title = stringResource(R.string.explanation))

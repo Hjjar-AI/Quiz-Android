@@ -6,21 +6,35 @@ Native Kotlin/Compose client for Mukhtabir Django. Arabic/English, RTL, themes a
 
 - Offline first-launch demo: bundled science questions, quick study, timed exam, recall and result review; no account/server/download required. Demo progress is separate from private learning.
 - Ordinary study/exam/recall, book/category/tag selection, shared practice launcher, targeted practice from results, confidence/reflection, session flags/maps and final review. Bilingual comparison respects answer/explanation reveal rules.
+- Revealed correct/wrong choices use a shared 3dp feedback border with more saturated theme-derived green/red and inline answer-status labels with decorative check/cross icons that wrap when needed; completed review distinguishes unanswered questions and labels selected answers even when the key is unavailable; unrevealed choices retain subdued selection styling without feedback animations. During active questions, save indicators overlay content rather than shifting it; scroll resets remain tied to navigation.
 - Reading comfort: saved text size, line/paragraph spacing, reading width and app font; offline study preview and independent reading reset.
+- Compact login uses shared spacing and a password visibility toggle that resets when submitting or clearing the password; sign-in stays first, with offline/demo access visible and Help/Privacy/server changes under shared expandable options. Offline practice uses one back/title bar with two-line wrapping titles and fixed navigation controls; list-only guidance stays out of questions. Save feedback remains compact and repeated status text is suppressed.
 - Continue learning, daily planner progress, downloaded collections, bookmarks, personal History, mistakes, fragile knowledge, analytics, groups and knowledge/case browsing.
 - Filter labels explain any-tag matching and combined restrictions. Import file cards start collapsed with status, reports/error details and explicit uncertain-outcome review; destructive actions name what they remove.
 - Capability-gated authoring, private drafts, master exams, moderation and administration. Django is authoritative; personal History always uses the signed-in user, and all-user history requires its separate capability.
 
 ## Setup
 
-Use JDK 17 and SDK 34; set `ANDROID_HOME` or ignored `local.properties` (`sdk.dir`). Use the included wrapper. With explicit build authorization:
+Use JDK 17 and SDK 34; set `ANDROID_HOME` or ignored `local.properties` (`sdk.dir`). The optional [build helper](build.py) opens an interactive input menu when run without arguments: choose the output type, cached-only dependencies and build/install or preview. It also accepts direct command-line options, checks the toolchain and reports output paths. It works from any working directory; use `python` instead of `python3` where appropriate.
 
 ```bash
-./gradlew assembleDebug
-./gradlew installDebug
+python3 build.py                                # Interactive menu
+python3 build.py --interactive --dry-run         # Menu with command preview only
+python3 build.py --help
+python3 build.py release --format aab --dry-run  # Show command; no Java/Gradle execution
+python3 build.py --check                        # Check JDK/SDK; no Gradle execution
+# Build/install commands, when explicitly authorized:
+python3 build.py debug                          # Debug APK without prompts
+python3 build.py release                        # Release APK (unsigned)
+python3 build.py release --format aab            # Release AAB (unsigned)
+python3 build.py debug --format aab              # Debug AAB
+python3 build.py --install                      # Debug APK; install on connected compatible devices
+python3 build.py --offline                      # Debug APK using cached dependencies
 ```
 
-First launch offers demo or server setup. Enter a reachable HTTP/HTTPS origin or full deployment-prefix `/api/v1/` URL. Manual input starts blank; saved manual addresses reopen. Emulator host access uses `10.0.2.2`; a phone needs a reachable LAN address or USB `adb reverse tcp:PORT tcp:PORT` with its actual backend port. Phone `localhost` means the phone.
+Release signing stays external; the helper does not create keys, sign release outputs, change versions or run automated suites. `--offline` also requires the wrapper distribution to be cached to avoid its initial download. Direct `./gradlew assembleDebug` and `./gradlew installDebug` remain available. APKs are under `app/build/outputs/apk/<variant>/`; AABs are under `app/build/outputs/bundle/<variant>/`. This project has no native libraries or ABI splits, so separate CPU builds are unnecessary.
+
+First launch shows the offline demo action, server setup action and a compact language picker showing the saved language choice. Learning/setup confirmation buttons name their action. Login options, connection-file slots, connection help and advanced practice controls share the same disclosure component; Back returns to the welcome screen before a server is configured. Enter a reachable HTTP/HTTPS origin or full deployment-prefix `/api/v1/` URL. Manual input starts blank; saved manual addresses reopen. Emulator host access uses `10.0.2.2`; a phone needs a reachable LAN address or USB `adb reverse tcp:PORT tcp:PORT` with its actual backend port. Phone `localhost` means the phone.
 
 A build-time URL can come from `MUKHTABIR_API_BASE_URL`, ignored `server.properties` (`api.base.url`), then `local.properties`; this does not replace the phone-selected address. See [server.properties.example](server.properties.example).
 
@@ -38,6 +52,7 @@ Address changes clear sign-in/reminders, restart navigation and require reauthen
 - **Deadlines:** exam time continues offline; answers must reach the server before its deadline. Only downloaded study can finish on device for later explicit synchronization. Local completion does not establish server History/learning credit.
 - **Offline collections:** selected downloads/sync require `tests.start`; full-bank/focused catalogue download additionally requires `tests.download_full_bank`. Without that grant, the server enforces a cumulative selected-question budget (currently 200 distinct IDs); deleting local copies does not reset it. Admin Permissions controls the grant. Interrupted downloads retain checkpoints; text-only copies and explicit update/review are supported.
 - **Storage:** immutable encrypted pack files and an encrypted account/server index; no authenticated HTTP disk cache. Freeze completion UUIDs, bodies, answers and occurrence times across retries. Rename/flag/display metadata must not alter signed packs or upload identities. Failed reads/commits retain recovery and block unsafe changes.
+- **Offline launch:** retained downloads and the bundled demo can open during startup connection checks and after a saved-login read fails. Recovery keeps Retry visible and groups sign-out/server changes under More options. Login also offers downloads when eligible and the demo.
 - **Access:** ordinary login expiry permits retained local-only downloaded practice; uploads require fresh authentication. Explicit logout, another account or confirmed account expiry revoke/clear private storage. Changing server address retains isolated files but requires reauthentication. Revoking download permission cannot remotely erase an offline device.
 - **Drafts:** retain readable content, selections and confirmed results on failure. Compare current server state before explicit retry/discard. Task saved state holds account-checked navigation metadata, not private answer/question bodies; sensitive drafts use memory or existing encrypted recovery. Never log secrets/private responses.
 
@@ -55,11 +70,11 @@ Useful diagnostics: `adb devices -l`, `adb shell pidof com.mukhtabir.android`, `
 
 ## Verification
 
-User-run `assembleDebug` succeeded. Its seven Kotlin warnings are cleaned up in source, pending rebuild confirmation. Source/resource/whitespace checks pass; device behavior remains unverified:
+User-run `assembleDebug` succeeded. Its seven Kotlin warnings are cleaned up in source, pending rebuild confirmation. Source/resource/whitespace and build-helper menu/cancellation/argument/dry-run checks pass; the helper has not compiled or installed the app. Current source still needs a rebuild; device behavior remains unverified:
 
 1. Build/install current source; confirm matching backend/schema, HTTPS/HTTP/CSRF, account/capability freshness and server/profile isolation.
-2. Cold-launch demo in airplane mode; exercise all modes, timers, restart/rotation/process restoration and exit/reset.
-3. Exercise book filters, shared launchers, targeted results, flags/maps, bilingual reading and withheld exam/recall content; verify stale/failed reads and retained selections.
+2. Verify the simplified welcome screen, language dialog, setup Back navigation and expandable connection files/help; verify compact login/options, password reveal/reset/keyboard behavior, selected-language labels and the single offline back/title bar with long Arabic/English names; verify later offline launches during/after failed saved-login checks, with/without eligible downloads, demo exit and recovery options; cold-launch demo in airplane mode; exercise all modes, timers, restart/rotation/process restoration and exit/reset.
+3. Exercise book filters, shared launchers, targeted results, flags/maps, bilingual reading and withheld exam/recall content and stronger revealed-answer borders and inline/wrapped status icons/labels across themes; confirm stable scroll during successful/failed answer saves and compact non-duplicated feedback; verify action-specific confirmations, unanswered/unknown-key review labels, stale/failed reads and retained selections.
 4. Interrupt answer/start/pause/Finish/sync, lose responses and fail storage; review server state explicitly, retain drafts/confirmed results, reject duplicate/late writes and preserve completion identities. Include master grace, private-draft revisions and overlapping exams.
 5. Verify downloaded-bank permissions/checkpoints, legacy copies, titles/dates, rename recovery, local completion, explicit sync, logout/account/server switches and no duplicate learning/History credit.
 6. Check planner day/midnight attribution and overlapping review counts; collapsed import cards/status/errors/review, filter matching, specific destructive labels, merges/editor revision conflicts and partial outcomes; exports/administration permissions.

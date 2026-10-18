@@ -6,6 +6,8 @@ import com.mukhtabir.android.ui.components.AppLoadingIndicator
 
 import androidx.lifecycle.repeatOnLifecycle
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -199,6 +201,7 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
     LaunchedEffect(authState.user?.id) {
         if (authState.user != null && authState.user?.id != localOfflineOwner) localOfflineOwner=null
     }
+    var showRecoveryOptions by rememberSaveable(container) { mutableStateOf(false) }
     var publicInformation by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(publicInformation != null) { publicInformation = null }
     val publicConfig by produceState(
@@ -232,23 +235,31 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
                     localOnly=true,canSync=false,maxQuestions=publicConfig.maxQuizQuestions,onBack={localOfflineOwner=null})
                 publicInformation != null -> LearnerInformation(privacy=publicInformation=="privacy", onBack={ publicInformation=null })
                 authState.isRestoring || !startupFinished -> StartupScreen(onFinished={startupFinished=true},
-                    onOffline=cachedOwner?.let {owner -> ({localOfflineOwner=owner})})
+                    onOffline=cachedOwner?.let {owner -> ({localOfflineOwner=owner})}, onDemo=onDemo)
 
                 authState.restorePending && authState.user == null -> Column(
-                    modifier = Modifier.fillMaxSize().padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authPadding),
-                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                        .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authPadding),
+                    verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.theme.AppTheme.spacing.section, Alignment.CenterVertically),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(stringResource(R.string.saved_login_retry))
                     cachedOwner?.let {owner -> OutlinedButton({localOfflineOwner=owner}) {Text(stringResource(R.string.offline_open_cached))} }
+                    onDemo?.let { open -> OutlinedButton(open, enabled = !authState.isLoading) {
+                        Text(stringResource(R.string.demo_open))
+                    } }
                     if (authState.isLoading) AppLoadingIndicator()
                     ErrorState(throwable = authState.restoreError,
                         onRetry = if (authState.isLoading) null else authViewModel::restoreSession)
-                    OutlinedButton(authViewModel::logout, enabled = !authState.isLoading) {
-                        Text(stringResource(R.string.sign_out))
-                    }
-                    onChangeServer?.let { change ->
-                        OutlinedButton(change,enabled=!authState.isLoading) { Text(stringResource(R.string.server_change)) }
+                    com.mukhtabir.android.ui.components.AppSection(stringResource(R.string.startup_more_options),
+                        enabled = !authState.isLoading, expandedOverride = showRecoveryOptions,
+                        onExpandedChange = { showRecoveryOptions = it }) {
+                        OutlinedButton(authViewModel::logout, enabled = !authState.isLoading) {
+                            Text(stringResource(R.string.sign_out))
+                        }
+                        onChangeServer?.let { change ->
+                            OutlinedButton(change,enabled=!authState.isLoading) { Text(stringResource(R.string.server_change)) }
+                        }
                     }
                 }
 
@@ -299,13 +310,15 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
 }
 
 @Composable
-private fun StartupScreen(onFinished: () -> Unit, onOffline: (() -> Unit)? = null) {
-    Column(Modifier.fillMaxSize().padding(com.mukhtabir.android.ui.components.AppLayoutTokens.pageInsets),
+private fun StartupScreen(onFinished: () -> Unit, onOffline: (() -> Unit)? = null, onDemo: (() -> Unit)? = null) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+        .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.pageInsets),
         verticalArrangement=Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
         horizontalAlignment=Alignment.CenterHorizontally) {
         com.mukhtabir.android.ui.components.StartupBrand(onFinished=onFinished)
         AppLoadingIndicator()
         onOffline?.let {open -> OutlinedButton(open) {Text(stringResource(R.string.offline_open_cached))}}
+        onDemo?.let {open -> AppTextButton(open) {Text(stringResource(R.string.demo_open))}}
     }
 }
 

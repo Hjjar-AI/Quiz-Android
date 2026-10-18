@@ -1,5 +1,8 @@
 package com.mukhtabir.android.ui.components
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -23,7 +26,8 @@ import com.mukhtabir.android.util.formatNumber
 fun AnswerChoice(number: Int, text: String, modifier: Modifier = Modifier,
     selected: Boolean = false, enabled: Boolean = true, onClick: (() -> Unit)? = null,
     answerCorrect: Boolean? = null, neutralSelection: Boolean = false,
-    markdown: Boolean = true, accessibilityLabel: String? = null, interactiveText: Boolean = false) {
+    markdown: Boolean = true, accessibilityLabel: String? = null, interactiveText: Boolean = false,
+    reviewMode: Boolean = false) {
     QuestionChoiceCard(modifier.semantics {
         this.selected = selected
         accessibilityLabel?.let { contentDescription = it }
@@ -37,13 +41,29 @@ fun AnswerChoice(number: Int, text: String, modifier: Modifier = Modifier,
                 if (markdown) MarkdownText(text, interactive = interactiveText)
                 else Text(text, style = com.mukhtabir.android.ui.theme.readingTextStyle(MaterialTheme.typography.bodyLarge))
             }
-            if (answerCorrect == true) Text(stringResource(R.string.correct_answer),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = if (selected) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier)
-            if (selected && answerCorrect != null) Text(stringResource(
-                if (answerCorrect) R.string.quiz_your_choice else R.string.quiz_your_wrong_choice),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = if (!answerCorrect) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier)
+            val answerLabel = when {
+                selected && answerCorrect == true -> listOf(
+                    stringResource(R.string.quiz_your_choice),
+                    stringResource(R.string.answer_status_correct),
+                ).joinToString(" · ")
+                answerCorrect == true -> stringResource(R.string.answer_status_correct)
+                selected && answerCorrect == false -> stringResource(R.string.quiz_your_wrong_choice)
+                selected && reviewMode -> stringResource(R.string.quiz_your_choice)
+                else -> null
+            }
+            answerLabel?.let { label ->
+                Row(
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        if (selected) liveRegion = LiveRegionMode.Polite
+                    },
+                    horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (answerCorrect != null) Icon(if (answerCorrect) Icons.Filled.Check else Icons.Filled.Close,
+                        contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text(label, style = MaterialTheme.typography.labelMedium)
+                }
+            }
         }
     }
 }

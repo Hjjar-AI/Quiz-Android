@@ -155,13 +155,15 @@ enum class LearningSaveState { DEVICE, WAITING, SERVER, REVIEW, SYNCING }
 
 @Composable
 fun LearningSaveStatus(state: LearningSaveState, detail: String? = null, actions: @Composable (() -> Unit)? = null) {
-    AppSaveStatus(stringResource(when (state) {
+    val label = stringResource(when (state) {
         LearningSaveState.DEVICE -> R.string.ui_saved_device
         LearningSaveState.WAITING -> R.string.ui_waiting_sync
         LearningSaveState.SERVER -> R.string.ui_saved_server
         LearningSaveState.REVIEW -> R.string.ui_needs_review
         LearningSaveState.SYNCING -> R.string.quiz_syncing
-    }) + (detail?.let { " · $it" } ?: ""), failed = state == LearningSaveState.REVIEW, action = actions)
+    })
+    AppSaveStatus(label + (detail?.takeIf { it.isNotBlank() && it != label }?.let { " · $it" } ?: ""),
+        failed = state == LearningSaveState.REVIEW, action = actions)
 }
 
 /** No answers/keys: navigation position, completion and local revisit flags only. */

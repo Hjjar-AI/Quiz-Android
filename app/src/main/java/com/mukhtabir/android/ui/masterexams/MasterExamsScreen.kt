@@ -18,6 +18,8 @@ import com.mukhtabir.android.ui.components.AppActionRow
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -95,7 +97,8 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
     }
     BackHandler(s.examId!=null || s.busy, onBack=leave)
 
-    LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),state=listState,verticalArrangement=Arrangement.spacedBy(AppTheme.spacing.section)) {
+    Box(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets)) {
+    LazyColumn(Modifier.fillMaxSize(),state=listState,verticalArrangement=Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppActionRow() {
                 OutlinedButton(leave,enabled=!s.busy) { Text(stringResource(R.string.back)) }
@@ -107,7 +110,7 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
         s.exam?.id?.let {id -> onShare?.let {share -> item {
             OutlinedButton({share(id)},enabled=!s.busy) {Text(stringResource(R.string.link_share_exam))}
         } } }
-        if(s.busy) item { AppLoadingIndicator() }
+        if(s.busy && s.page == null) item { AppLoadingIndicator() }
         s.error?.let { item { ErrorState(throwable=it,onRetry=if(s.busy) null else vm::refresh) } }
         s.message?.let { item { Text(stringResource(it)) } }
         if (!requestHandled && s.examId != null && s.examId != initialExamId) item {
@@ -288,6 +291,10 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
             }
         }
     }
+    if (s.busy && s.page != null) {
+        AppLoadingIndicator(Modifier.align(Alignment.TopEnd), compact = true)
+    }
+    }
     confirmation?.let { action ->
         AlertDialog(
             onDismissRequest={if(!s.busy) confirmation=null},
@@ -297,7 +304,7 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
             confirmButton={TextButton({
                 confirmation=null
                 when(action){"discard-recovery"->vm.discardUnreadableRecovery();"start"->vm.start();"finish"->vm.finish();"report"->vm.flag(reportReason);"discard"->vm.discardDraft();else->vm.back()}
-            },enabled=!s.busy){Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"discard"->R.string.master_discard_draft;else->R.string.confirm}))}},
+            },enabled=!s.busy){Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"discard"->R.string.master_discard_draft;"start"->R.string.master_start;"finish"->R.string.finish_exam_action;"report"->R.string.master_report;else->R.string.back_to_exams_action}))}},
             dismissButton={TextButton({confirmation=null},enabled=!s.busy){Text(stringResource(R.string.cancel))}},
         )
     }

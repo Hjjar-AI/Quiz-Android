@@ -1,6 +1,7 @@
 package com.mukhtabir.android.ui.auth
 
 import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
@@ -53,6 +54,24 @@ import kotlinx.coroutines.withContext
 )
 @Composable
 fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Boolean) -> Unit, onCancel: (() -> Unit)?, initialFileSlot: Int? = null, language: String = com.mukhtabir.android.core.AppPreferences.LANGUAGE_ARABIC, onLanguageChange: (String) -> Unit = {}, onDemo: (() -> Unit)? = null) {
+    val firstLaunch = onDemo != null && settings.read() == null && initialFileSlot == null
+    var showSetup by rememberSaveable { mutableStateOf(!firstLaunch) }
+    if (!showSetup) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authPadding),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
+        ) {
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.semantics { heading() })
+            onDemo?.let { open -> com.mukhtabir.android.ui.demo.DemoInvitation(onOpen = open) }
+            AppOutlinedButton({ showSetup = true }, Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.server_setup_title))
+            }
+            SetupLanguageButton(language, onLanguageChange)
+        }
+        return
+    }
     // Invalid pasted URLs may contain credentials; keep the editable input memory-only.
     var savedFiles by remember { mutableStateOf(settings.importedFiles()) }
     val initialFile = savedFiles.firstOrNull { it.slot == initialFileSlot }
@@ -63,6 +82,8 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
     // Switching to manual entry never copies an imported address into this field.
     var input by remember { mutableStateOf(if (initialFile != null || settings.isFileConfigured()) "" else initialUrl) }
     var pendingUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    var showFiles by rememberSaveable { mutableStateOf(initialFile != null || settings.isFileConfigured()) }
+    var showHelp by rememberSaveable { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<Int?>(null) }
     var sameServer by rememberSaveable { mutableStateOf(false) }
@@ -97,7 +118,8 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
             }
         }
     }
-    BackHandler { if(!busy) onCancel?.invoke() }
+    val cancelSetup: (() -> Unit)? = if (firstLaunch) ({ showSetup = false }) else onCancel
+    BackHandler { if (!busy) cancelSetup?.invoke() }
     pendingUrl?.let { url ->
         AlertDialog(onDismissRequest={if(!busy) pendingUrl=null},
             title={Text(stringResource(R.string.server_confirm_title))},
@@ -123,64 +145,57 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
                         } catch(cancel: CancellationException) { throw cancel }
                     }
                 }
-            },enabled=!busy) { Text(stringResource(R.string.confirm)) }},
+            },enabled=!busy) { Text(stringResource(R.string.server_setup_title)) }},
             dismissButton={TextButton({pendingUrl=null},enabled=!busy) { Text(stringResource(R.string.cancel)) }})
     }
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authPadding),
         verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.theme.AppTheme.spacing.section)) {
-        Text(stringResource(R.string.language), style = MaterialTheme.typography.titleSmall)
-        com.mukhtabir.android.ui.components.AppActionRow {
-            listOf("system", "en", "ar").forEach { code ->
-                com.mukhtabir.android.ui.components.AppFilterChip(selected = language == code,
-                    onClick = { onLanguageChange(code) }, enabled = !busy,
-                    label = { Text(when (code) {
-                        "ar" -> "العربية"
-                        "en" -> "English"
-                        else -> stringResource(R.string.system_default)
-                    }) })
-            }
+        cancelSetup?.let { cancel ->
+            TextButton(cancel, enabled = !busy) { Text(stringResource(R.string.back)) }
         }
-        onDemo?.let { open -> com.mukhtabir.android.ui.demo.DemoInvitation(onOpen = open, enabled = !busy) }
+        SetupLanguageButton(language, onLanguageChange, enabled = !busy)
         Text(stringResource(R.string.server_setup_title),style=MaterialTheme.typography.headlineMedium,
             modifier=Modifier.semantics { heading() })
         Text(stringResource(R.string.server_setup_hint))
-        Text(stringResource(R.string.server_saved_files_title), style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(R.string.server_saved_files_hint))
-        (1..3).forEach { slot ->
-            val saved = savedFiles.firstOrNull { it.slot == slot }
-            Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-                Text(stringResource(R.string.server_saved_file_number, slot))
-                if (saved != null) {
-                    if (settings.activeImportedSlot() == slot) {
-                        Text(stringResource(R.string.server_saved_file_current))
-                    }
-                    if (usingFile && selectedSlot == slot) {
-                        Text(stringResource(R.string.server_saved_file_selected))
+        AppSection(stringResource(R.string.server_show_files), enabled = !busy,
+            expandedOverride = showFiles, onExpandedChange = { showFiles = it }) {
+            Text(stringResource(R.string.server_saved_files_hint))
+            (1..3).forEach { slot ->
+                val saved = savedFiles.firstOrNull { it.slot == slot }
+                Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                    Text(stringResource(R.string.server_saved_file_number, slot))
+                    if (saved != null) {
+                        if (settings.activeImportedSlot() == slot) {
+                            Text(stringResource(R.string.server_saved_file_current))
+                        }
+                        if (usingFile && selectedSlot == slot) {
+                            Text(stringResource(R.string.server_saved_file_selected))
+                        }
+                        AppOutlinedButton({
+                            if (!busy) {
+                                fileUrl = saved.address
+                                selectedSlot = slot
+                                usingFile = true
+                                input = ""
+                                sameServer = false
+                                pendingUrl = null
+                                error = null
+                            }
+                        }, enabled = !busy) { Text(stringResource(R.string.server_use_saved_file, slot)) }
                     }
                     AppOutlinedButton({
                         if (!busy) {
-                            fileUrl = saved.address
-                            selectedSlot = slot
-                            usingFile = true
-                            input = ""
-                            sameServer = false
-                            pendingUrl = null
-                            error = null
+                            uploadSlot = slot
+                            try { picker.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
+                            catch (_: Exception) { uploadSlot = null; error = R.string.server_file_invalid }
                         }
-                    }, enabled = !busy) { Text(stringResource(R.string.server_use_saved_file, slot)) }
-                }
-                AppOutlinedButton({
-                    if (!busy) {
-                        uploadSlot = slot
-                        try { picker.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
-                        catch (_: Exception) { uploadSlot = null; error = R.string.server_file_invalid }
+                    }, enabled = !busy) {
+                        Text(stringResource(if (saved == null) R.string.server_add_file_slot else R.string.server_replace_file_slot, slot))
                     }
-                }, enabled = !busy) {
-                    Text(stringResource(if (saved == null) R.string.server_add_file_slot else R.string.server_replace_file_slot, slot))
                 }
             }
+            Text(stringResource(R.string.server_file_hint))
         }
-        Text(stringResource(R.string.server_file_hint))
         if (usingFile) {
             Text(stringResource(R.string.server_file_selected))
             TextButton({
@@ -214,8 +229,11 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
             }
             Text(stringResource(R.string.server_same_server_hint))
         }
-        Text(stringResource(R.string.server_phone_hint))
-        Text(stringResource(R.string.server_certificate_hint))
+        AppSection(stringResource(R.string.server_show_help), enabled = !busy,
+            expandedOverride = showHelp, onExpandedChange = { showHelp = it }) {
+            Text(stringResource(R.string.server_phone_hint))
+            Text(stringResource(R.string.server_certificate_hint))
+        }
         error?.let { Text(stringResource(it),color=MaterialTheme.colorScheme.error,
             modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite }) }
         if(busy) AppLoadingIndicator()
@@ -223,6 +241,43 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
             val normalized = if (usingFile) fileUrl else ServerSettings.normalize(input)
             if(normalized==null) error=R.string.server_invalid_address else pendingUrl=normalized
         },enabled=!busy) { Text(stringResource(R.string.server_continue)) }
-        onCancel?.let { cancel -> TextButton(cancel,enabled=!busy) { Text(stringResource(R.string.cancel)) } }
     }
+}
+
+@OptIn(
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+)
+@Composable
+private fun SetupLanguageButton(language: String, onLanguageChange: (String) -> Unit, enabled: Boolean = true) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val selectedLanguage = when (language) {
+        "ar" -> "العربية"
+        "en" -> "English"
+        else -> stringResource(R.string.system_default)
+    }
+    TextButton({ open = true }, enabled = enabled) {
+        Text(stringResource(R.string.language_picker_selection, selectedLanguage))
+    }
+    if (open) AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text(stringResource(R.string.language)) },
+        text = {
+            com.mukhtabir.android.ui.components.AppActionRow {
+                listOf("system", "en", "ar").forEach { code ->
+                    com.mukhtabir.android.ui.components.AppFilterChip(
+                        selected = language == code,
+                        onClick = { open = false; onLanguageChange(code) },
+                        enabled = enabled,
+                        label = { Text(when (code) {
+                            "ar" -> "العربية"
+                            "en" -> "English"
+                            else -> stringResource(R.string.system_default)
+                        }) },
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton({ open = false }) { Text(stringResource(R.string.close)) } },
+    )
 }

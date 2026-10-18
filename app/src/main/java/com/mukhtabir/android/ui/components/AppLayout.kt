@@ -170,7 +170,7 @@ fun AppPageHeading(title: String, subtitle: String? = null, action: @Composable 
 @Composable
 fun AppSection(title: String, modifier: Modifier = Modifier, initiallyExpanded: Boolean = false,
     subtitle: String? = null, revealError: Boolean = false, revealRequest: Int = 0, expandedOverride: Boolean? = null,
-    onExpandedChange: ((Boolean) -> Unit)? = null, composeCollapsedContent: Boolean = true,
+    onExpandedChange: ((Boolean) -> Unit)? = null, composeCollapsedContent: Boolean = true, enabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit) {
     var savedExpanded by rememberSaveable(title) { mutableStateOf(initiallyExpanded) }
     val expanded = expandedOverride ?: savedExpanded
@@ -178,7 +178,7 @@ fun AppSection(title: String, modifier: Modifier = Modifier, initiallyExpanded: 
     val focusManager = LocalFocusManager.current
     val state = stringResource(if (expanded) R.string.ui_expanded else R.string.ui_collapsed)
     AppCard(modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().heightIn(min = AppLayoutTokens.touchTarget).clickable(role = Role.Button) { if (expanded) focusManager.clearFocus(); savedExpanded = !expanded; onExpandedChange?.invoke(!expanded) }
+        Row(Modifier.fillMaxWidth().heightIn(min = AppLayoutTokens.touchTarget).clickable(enabled = enabled, role = Role.Button) { if (expanded) focusManager.clearFocus(); savedExpanded = !expanded; onExpandedChange?.invoke(!expanded) }
             .semantics { stateDescription = state }.padding(AppLayoutTokens.cardInsets),
             horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap), verticalAlignment = Alignment.CenterVertically) {
             AppSectionHeading(title,subtitle=subtitle,modifier=Modifier.weight(1f),action={

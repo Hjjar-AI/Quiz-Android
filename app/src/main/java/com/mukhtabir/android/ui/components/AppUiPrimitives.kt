@@ -61,6 +61,7 @@ object AppLayoutTokens {
     val secondaryIconSize = 20.dp
     val cardBorderWidth = 1.dp
     val selectedBorderWidth = 2.dp
+    val answerFeedbackBorderWidth = 3.dp
     val questionBorderWidth = 1.5.dp
     val tileMinWidth = 112.dp
     const val tileMaxColumns = 3
