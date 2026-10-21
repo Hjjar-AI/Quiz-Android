@@ -15,6 +15,8 @@ The earlier confirmed corrections remain: dp-based chart strokes/gaps, bounded b
 
 ## Source checks and limits
 
+The supplied user-run `./gradlew assembleDebug` for **0.1.6.20261022 (code 7)** succeeded in 4m 47s, confirming compilation after the Login layout opt-in. The remaining unused `bookFiltersReady` declaration was removed afterward; active eligibility stays in `QuizSetupActions`. Cleanup source/whitespace checks pass; it has not been rebuilt. Gradle’s generic deprecation notice remains undiagnosed.
+
 - Passed lexical/delimiter and duplicate-import checks for 32 changed production Kotlin files, all 1,815 translatable English/Arabic keys/placeholders (plus the intentional non-translatable launcher label), changed resource references and 27 installed icon classes. Checked installed Material sheet/rail API names and Markwon builder metadata, permissions/callers, whitespace and document links.
-- No Gradle, builds, compilation, packaging, automated-suite inspection/execution, migrations, dependency/version edits or rendered previews. The pre-existing Android version-file edit is preserved. These checks do not establish Kotlin/template compilation, device layout, lifecycle, accessibility, HTTP or concurrency behavior.
+- No agent-run Gradle/build/compilation/packaging, automated-suite inspection/execution, migrations, dependency/version edits or rendered previews. The pre-existing Android version-file edit is preserved. The source checks alone do not establish compilation; the supplied build result above does. Device layout, lifecycle, accessibility, HTTP and concurrency behavior remain unverified.
 - Device gates: English/Arabic/RTL, all themes/densities, Amiri/other fonts, 100–200% text, narrow/landscape/tablet/resizing/IME, keyboard/TalkBack/focus, reduced motion, failed reads, withheld review, account/server switches and explicit draft/bookmark/copy recovery. See the [verification queue](../../README.md#verification).

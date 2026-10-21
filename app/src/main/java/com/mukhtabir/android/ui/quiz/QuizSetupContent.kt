@@ -109,8 +109,6 @@ internal fun QuizSetupContent(
     val selectedBook = state.selectedBook.takeIf { bankPool }
     val bookExists = selectedBook == null || state.books.any { it.name == selectedBook }
     val scopedFilters = state.selectedCategoryIds.isNotEmpty() || state.selectedTags.isNotEmpty()
-    val bookFiltersReady = selectedBook == null || !scopedFilters ||
-        (state.bookFiltersFor == selectedBook && !state.bookFiltersLoading && state.bookFiltersError == null)
     val extraTags = state.additionalTags.split(',').map { it.trim() }.filter { it.isNotEmpty() }
     val selectedTagCount = (state.selectedTags + extraTags).distinct().size
     val hasFilters = scopedFilters || extraTags.isNotEmpty()

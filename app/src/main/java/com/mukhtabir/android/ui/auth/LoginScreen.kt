@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.userMessage
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun LoginScreen(
     state: AuthUiState,
