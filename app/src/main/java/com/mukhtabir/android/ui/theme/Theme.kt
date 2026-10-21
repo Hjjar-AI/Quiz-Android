@@ -66,14 +66,14 @@ private val LocalFeedback = staticCompositionLocalOf {
     FeedbackColors(Color(0xFF064126), Color(0xFF533800), Color(0xFF123C56))
 }
 data class AppSpacing(
-    val section: androidx.compose.ui.unit.Dp = 6.dp,
-    val card: androidx.compose.ui.unit.Dp = 8.dp,
-    val denseCard: androidx.compose.ui.unit.Dp = 6.dp,
-    val content: androidx.compose.ui.unit.Dp = 4.dp,
-    val tight: androidx.compose.ui.unit.Dp = 4.dp,
-    val libraryCard: androidx.compose.ui.unit.Dp = 6.dp,
-    val cardVertical: androidx.compose.ui.unit.Dp = 4.dp,
-    val denseCardVertical: androidx.compose.ui.unit.Dp = 3.dp,
+    val section: androidx.compose.ui.unit.Dp = 4.dp,
+    val card: androidx.compose.ui.unit.Dp = 6.dp,
+    val denseCard: androidx.compose.ui.unit.Dp = 4.dp,
+    val content: androidx.compose.ui.unit.Dp = 3.dp,
+    val tight: androidx.compose.ui.unit.Dp = 3.dp,
+    val libraryCard: androidx.compose.ui.unit.Dp = 4.dp,
+    val cardVertical: androidx.compose.ui.unit.Dp = 3.dp,
+    val denseCardVertical: androidx.compose.ui.unit.Dp = 2.dp,
 )
 private val LocalSpacing = staticCompositionLocalOf { AppSpacing() }
 
@@ -106,7 +106,7 @@ private fun TextStyle.readableHeading(arabic: Boolean): TextStyle = copy(
 fun MukhtabirTheme(darkTheme: Boolean = isSystemInDarkTheme(), preference: com.mukhtabir.android.core.ThemePreference = com.mukhtabir.android.core.ThemePreference.SYSTEM,
     display: com.mukhtabir.android.core.DisplayPreferences = com.mukhtabir.android.core.DisplayPreferences(), content: @Composable () -> Unit) {
     val arabic = ConfigurationCompat.getLocales(LocalConfiguration.current)[0]?.language == "ar"
-    val resolvedFont = if (display.font == "default") (if (arabic) "noto-arabic" else "inter") else display.font
+    val resolvedFont = if (display.font == "default") "amiri" else display.font
     val fontRes = when (resolvedFont) {
         "noto-arabic" -> com.mukhtabir.android.R.font.noto_arabic
         "inter" -> com.mukhtabir.android.R.font.inter
@@ -154,7 +154,7 @@ fun MukhtabirTheme(darkTheme: Boolean = isSystemInDarkTheme(), preference: com.m
     val feedback = if (preference == com.mukhtabir.android.core.ThemePreference.WEATHER)
         FeedbackColors(Color(0xFFB6F2CD), Color(0xFFFFE0A3), Color(0xFFC7EDFF))
     else if (darkTheme) FeedbackColors(Color(0xFF6BB98D), Color(0xFFE6CF45), Color(0xFF67B2D5)) else LocalFeedback.current
-    val spacing = if (display.compact) AppSpacing(section = 4.dp, card = 6.dp, denseCard = 4.dp, content = 3.dp, libraryCard = 4.dp, cardVertical = 3.dp, denseCardVertical = 2.dp) else AppSpacing()
+    val spacing = if (display.compact) AppSpacing(section = 3.dp, card = 4.dp, denseCard = 3.dp, content = 2.dp, tight = 2.dp, libraryCard = 3.dp, cardVertical = 2.dp, denseCardVertical = 1.dp) else AppSpacing()
     CompositionLocalProvider(LocalSpacing provides spacing, LocalAppBackground provides background, LocalFeedback provides feedback, LocalNativeTypeface provides nativeTypeface, LocalReadingComfort provides display) {
         MaterialTheme(colorScheme = themedColors(if (darkTheme) DarkColors else LightColors, preference), typography = typography,
             shapes = shapes,

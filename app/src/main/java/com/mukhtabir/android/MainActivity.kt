@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import com.mukhtabir.android.ui.theme.MukhtabirTheme
@@ -51,6 +52,9 @@ class MainActivity : ComponentActivity() {
             val language by preferences.language.collectAsState()
             var editingServer by rememberSaveable { mutableStateOf(app.serverSettings.read()==null) }
             var demoActive by rememberSaveable { mutableStateOf(false) }
+            // Unconfigured installs do not enter MukhtabirApp's saved-login splash.
+            // Save completion through rotation and language recreation.
+            var welcomeSplashFinished by rememberSaveable { mutableStateOf(app.serverSettings.read() != null) }
             var requestedFileSlot by rememberSaveable { mutableStateOf<Int?>(null) }
             val darkTheme = when (theme) {
                 ThemePreference.SYSTEM -> isSystemInDarkTheme()
@@ -67,7 +71,14 @@ class MainActivity : ComponentActivity() {
                         navigationBarStyle = if (darkTheme) SystemBarStyle.dark(barColor) else SystemBarStyle.light(barColor, barColor),
                     )
                 }
-                if (demoActive) Surface(Modifier.fillMaxSize()) {
+                if (!welcomeSplashFinished) Surface(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                        com.mukhtabir.android.ui.components.AppLaunchLayout {
+                            com.mukhtabir.android.ui.components.StartupBrand(
+                                modifier = Modifier.align(Alignment.CenterHorizontally), onFinished = { welcomeSplashFinished = true })
+                        }
+                    }
+                } else if (demoActive) Surface(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                         com.mukhtabir.android.ui.demo.DemoScreen(onExit = { demoActive = false })
                     }

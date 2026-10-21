@@ -86,6 +86,50 @@ APP_BASE_NAME=${0##*/}
 # Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
 APP_HOME=$( cd "${APP_HOME:-./}" > /dev/null && pwd -P ) || exit
 
+# Mukhtabir: keep wrapper/dependency/daemon, project, and build caches account-local.
+# A different checkout gets a different cache namespace under the same account.
+if command -v sha256sum >/dev/null 2>&1; then
+    mukhtabir_checkout_id=$(printf '%s' "$APP_HOME" | sha256sum | cut -c1-16)
+else
+    mukhtabir_checkout_id=$(printf '%s' "$APP_HOME" | shasum -a 256 | cut -c1-16) || exit 1
+fi
+mukhtabir_account_root="$HOME/.gradle/mukhtabir/$mukhtabir_checkout_id"
+# Ignore inherited shared GRADLE_USER_HOME; an explicit CLI -g can still override.
+set -- --gradle-user-home "$HOME/.gradle" --project-cache-dir "$mukhtabir_account_root/project-cache" "$@"
+
+mukhtabir_packaging=false
+mukhtabir_skip_version=false
+mukhtabir_code_override=false
+mukhtabir_name_override=false
+for mukhtabir_arg in "$@"; do
+    case "$mukhtabir_arg" in
+        --dry-run|-m|--help|-h|--version|-v|-Pmukhtabir.autoVersion=false) mukhtabir_skip_version=true ;;
+        -Pmukhtabir.versionCode=*) mukhtabir_code_override=true ;;
+        -Pmukhtabir.versionName=*) mukhtabir_name_override=true ;;
+        *)
+            case "${mukhtabir_arg##*:}" in
+                assemble|assemble*|bundle|bundle*|install|install*|package|package*|build|buildNeeded|buildDependents|export*Apk|export*Bundle) mukhtabir_packaging=true ;;
+            esac ;;
+    esac
+done
+if [ "$mukhtabir_code_override" != "$mukhtabir_name_override" ]; then
+    echo "Supply both mukhtabir.versionCode and mukhtabir.versionName, or neither." >&2
+    exit 1
+fi
+if [ "$mukhtabir_packaging" = true ] && [ "$mukhtabir_skip_version" = false ] && [ "$mukhtabir_code_override" = false ]; then
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "Python 3.9+ is required to reserve the app build version." >&2
+        exit 1
+    fi
+    mukhtabir_reserved=$(python3 "$APP_HOME/gradle/next_app_version.py" "$APP_HOME/gradle/app-version.properties") || exit 1
+    mukhtabir_version_code=${mukhtabir_reserved%% *}
+    mukhtabir_version_name=${mukhtabir_reserved#* }
+    set -- "-Pmukhtabir.versionCode=$mukhtabir_version_code" "-Pmukhtabir.versionName=$mukhtabir_version_name" "$@"
+    echo "Mukhtabir build: $mukhtabir_version_name (code $mukhtabir_version_code)" >&2
+fi
+unset mukhtabir_checkout_id mukhtabir_account_root mukhtabir_packaging mukhtabir_skip_version
+unset mukhtabir_code_override mukhtabir_name_override mukhtabir_arg mukhtabir_reserved mukhtabir_version_code mukhtabir_version_name
+
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 

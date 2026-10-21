@@ -49,101 +49,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 
-enum class QuizSource {
-    BOOK,
-    TAG,
-    CATEGORY,
-    BOOKMARKS,
-    SRS,
-    BLUEPRINT,
-}
-
-data class SavedSession(
-    val mode: TestMode,
-    val progress: SessionProgressDto,
-)
-
-data class QuizUiState(
-    val flaggedIndices: Set<Int> = emptySet(),
-    val flagError: Boolean = false,
-    val flagReadFailed: Boolean = false,
-    val launchPreset: QuizPreset? = null,
-    val downloaded: Boolean = false,
-    val queuedAnswers: Int = 0,
-    val syncRequired: Boolean = false,
-    val syncing: Boolean = false,
-    val syncError: Throwable? = null,
-    val locallyFinished: Boolean = false,
-    val syncConflict: SessionQuestionPageDto? = null,
-    val syncConflictAnswer: Int? = null,
-    val setupLoaded: Boolean = false,
-    val recoveryRequired: Boolean = false,
-    val pendingDraft: SessionDraft? = null,
-    val draftCanRetry: Boolean = false,
-    val draftStorageFailed: Boolean = false,
-    val mode: TestMode = TestMode.EXAM,
-    val source: QuizSource? = QuizSource.BOOK,
-    val categories: List<CategoryDto> = emptyList(),
-    val tags: List<TagDto> = emptyList(),
-    val books: List<SourceBookDto> = emptyList(),
-    val selectedBook: String? = null,
-    val bookFiltersFor: String? = null,
-    val bookCategories: List<CategoryDto> = emptyList(),
-    val bookTags: List<TagDto> = emptyList(),
-    val bookFiltersLoading: Boolean = false,
-    val bookFiltersError: Throwable? = null,
-    val blueprints: List<BlueprintDto> = emptyList(),
-    val metadataLoading: Boolean = false,
-    val metadataError: Throwable? = null,
-    val bookmarkCount: Int = 0,
-    val questionBookmarks: Map<Long, Boolean> = emptyMap(),
-    val bookmarkBusyIds: Set<Long> = emptySet(),
-    val bookmarkUncertainIds: Set<Long> = emptySet(),
-    val bookmarkErrors: Map<Long, String> = emptyMap(),
-    val srsDueCount: Int = 0,
-    val selectedCategoryIds: Set<Long> = emptySet(),
-    val selectedTags: Set<String> = emptySet(),
-    val selectedBlueprintId: Long? = null,
-    val additionalTags: String = "",
-    val difficulty: String? = null,
-    val verifiedOnly: Boolean = false,
-    val requestedCount: String = "10",
-    val selectionStrategy: String = "coverage",
-    val availableCount: Int = 0,
-    val maxQuizQuestions: Int = 200,
-    val isCountLoading: Boolean = false,
-    val countError: Throwable? = null,
-    val session: ExamSessionDto? = null,
-    val resumable: SavedSession? = null,
-    val questionPage: SessionQuestionPageDto? = null,
-    val selectedAnswer: Int? = null,
-    val confidence: Int? = 3,
-    val preAnswer: String = "",
-    val choicesRevealed: Boolean = true,
-    val explanation: String? = null,
-    val feedbackTranslations: JsonObject = JsonObject(emptyMap()),
-    val isCorrect: Boolean? = null,
-    val errorReason: String? = null,
-    val showFeedback: Boolean = false,
-    val answeredIndices: Set<Int> = emptySet(),
-    val autoAdvanceToken: Long = 0,
-    val confirmedSaveToken: Long = 0,
-    val timerSeconds: Int = 0,
-    val timerOvertime: Boolean = false,
-    val results: SessionResultsDto? = null,
-    val reviewLoading: Boolean = false,
-    val reviewFailed: Boolean = false,
-    val reviewError: String? = null,
-    val isLoading: Boolean = true,
-    val error: String? = null,
-    val hasUnknownError: Boolean = false,
-    val finishPending: Boolean = false,
-    val finishStatusChecked: Boolean = false,
-    val finishedSessionMissing: Boolean = false,
-    val finishRecovery: PendingSessionFinish? = null,
-    val finishStorageFailed: Boolean = false,
-)
-
 class QuizViewModel(
     private val questionService: QuestionService,
     private val sessionService: TestSessionService,
@@ -157,11 +62,12 @@ class QuizViewModel(
     private val preferences: com.mukhtabir.android.core.AppPreferences,
     private val imageRepository: com.mukhtabir.android.data.remote.ImageRepository,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(restoreSetup())
+    private val setupState = QuizSetupStateStore(savedStateHandle, userId, preferences)
+    private val _state = MutableStateFlow(setupState.restore(canUseBlueprint))
+    private val setup = QuizSetupController(_state, viewModelScope, questionService,
+        blueprintPermission = { canUseBlueprint }, persistSetup = { persistSetup() })
     val state = _state.asStateFlow()
     private var timerJob: Job? = null
-    private var countJob: Job? = null
-    private var bookFiltersJob: Job? = null
     private var initializationJob: Job? = null
     private var metadataJob: Job? = null
     private var downloadJob: Job? = null
@@ -232,7 +138,7 @@ class QuizViewModel(
         downloadJob?.cancel()
         _state.update {it.copy(metadataLoading=false)}
         timerJob?.cancel()
-        countJob?.cancel()
+        setup.cancelCount()
         val localDraft = _state.value.pendingDraft
         val localStorageFailed = _state.value.draftStorageFailed && localDraft != null
         val finishRead=draftStore.readFinish(userId)
@@ -383,174 +289,24 @@ class QuizViewModel(
         }
     }
 
-    fun setMode(mode: TestMode) {
-        if (_state.value.session != null || _state.value.isLoading || _state.value.recoveryRequired) return
-        updateSetup { it.copy(mode = mode) }
-    }
-
-    fun setSource(source: QuizSource) {
-        val current = _state.value
-        val pool = if (source == QuizSource.TAG || source == QuizSource.CATEGORY) QuizSource.BOOK else source
-        if (current.isLoading || current.recoveryRequired || current.session != null || current.source == pool) return
-        bookFiltersJob?.cancel()
-        updateSetup { it.copy(source = pool, selectedBook = null, selectedBlueprintId = null,
-            bookFiltersLoading = false, bookFiltersFor = null, bookFiltersError = null) }
-        queueAvailableCount()
-    }
-
-    /** Remove only the book restriction, keeping optional category/tag filters. */
-    fun useWholeBank() {
-        val current = _state.value
-        if (current.isLoading || current.recoveryRequired || current.session != null) return
-        if (current.source == QuizSource.BOOK && current.selectedBook == null) return
-        bookFiltersJob?.cancel()
-        updateSetup { it.copy(source = QuizSource.BOOK, selectedBook = null, selectedBlueprintId = null,
-            bookFiltersFor = null, bookFiltersLoading = false, bookFiltersError = null) }
-        queueAvailableCount()
-    }
-
-    fun selectBook(name: String) {
-        val current = _state.value
-        if (current.isLoading || current.recoveryRequired || current.session != null || current.source != QuizSource.BOOK ||
-            current.selectedBook == name || current.books.none { it.name == name }) return
-        updateSetup { it.copy(selectedBook = name, bookFiltersFor = null, bookFiltersError = null) }
-        refreshBookFilters()
-        queueAvailableCount()
-    }
-
-    fun clearActiveFilters() {
-        val current = _state.value
-        if (current.isLoading || current.recoveryRequired || current.session != null) return
-        bookFiltersJob?.cancel()
-        updateSetup { it.copy(selectedBook = null, selectedCategoryIds = emptySet(), selectedTags = emptySet(), additionalTags = "",
-            bookFiltersFor = null, bookFiltersLoading = false, bookFiltersError = null) }
-        queueAvailableCount()
-    }
-
-    fun clearFilters() {
-        val current = _state.value
-        if (current.isLoading || current.recoveryRequired || current.session != null) return
-        updateSetup { it.copy(selectedCategoryIds = emptySet(), selectedTags = emptySet(), additionalTags = "") }
-        queueAvailableCount()
-    }
-
-    fun removeCategoryFilter(id: Long) {
-        val current = _state.value
-        if (current.isLoading || current.recoveryRequired || current.session != null || id !in current.selectedCategoryIds) return
-        updateSetup { it.copy(selectedCategoryIds = it.selectedCategoryIds - id) }
-        queueAvailableCount()
-    }
-
-    fun removeTagFilter(name: String) {
-        val current = _state.value
-        if (current.isLoading || current.recoveryRequired || current.session != null) return
-        updateSetup { it.copy(selectedTags = it.selectedTags - name,
-            additionalTags = it.additionalTags.split(',').map(String::trim)
-                .filter { tag -> tag.isNotEmpty() && tag != name }.joinToString(", ")) }
-        queueAvailableCount()
-    }
-
-    fun refreshBookFilters() {
-        if (_state.value.session != null || _state.value.isLoading || _state.value.recoveryRequired) return
-        bookFiltersJob?.cancel()
-        val snapshot = _state.value
-        val name = snapshot.selectedBook?.takeIf { snapshot.source == QuizSource.BOOK } ?: run {
-            _state.update { it.copy(bookFiltersLoading = false) }
-            return
-        }
-        _state.update { it.copy(bookFiltersLoading = true, bookFiltersError = null) }
-        bookFiltersJob = viewModelScope.launch {
-            try {
-                val data = questionService.sourceBookFilters(name)
-                kotlin.coroutines.coroutineContext.ensureActive()
-                if (_state.value.selectedBook != name || _state.value.source != QuizSource.BOOK) return@launch
-                if (_state.value.session != null) {
-                    _state.update { it.copy(bookFiltersLoading = false) }
-                    return@launch
-                }
-                check(data.sourceDocument == name)
-                updateSetup { it.copy(bookCategories = data.categories, bookTags = data.tags,
-                    selectedCategoryIds = it.selectedCategoryIds.intersect(data.categories.map { c -> c.id }.toSet()),
-                    selectedTags = it.selectedTags.intersect(data.tags.map { tag -> tag.name }.toSet()),
-                    bookFiltersFor = name, bookFiltersLoading = false, bookFiltersError = null) }
-                if (!_state.value.isLoading && !_state.value.recoveryRequired) queueAvailableCount()
-            } catch (cancel: CancellationException) { throw cancel }
-            catch (failure: Exception) {
-                if (_state.value.selectedBook == name && _state.value.source == QuizSource.BOOK)
-                    _state.update { it.copy(bookFiltersLoading = false, bookFiltersError = failure) }
-            }
-        }
-    }
-
-    fun toggleTag(name: String) {
-        val snapshot = _state.value
-        if (snapshot.isLoading || snapshot.recoveryRequired || snapshot.session != null) return
-        if (snapshot.source == QuizSource.BOOK && snapshot.selectedBook != null && (snapshot.bookFiltersLoading || snapshot.bookFiltersFor != snapshot.selectedBook || snapshot.bookTags.none { it.name == name })) return
-        updateSetup { current ->
-            val selected = current.selectedTags.toMutableSet().apply {
-                if (!add(name)) remove(name)
-            }
-            current.copy(selectedTags = selected)
-        }
-        queueAvailableCount()
-    }
-
-    fun toggleCategory(id: Long) {
-        val snapshot = _state.value
-        if (snapshot.isLoading || snapshot.recoveryRequired || snapshot.session != null) return
-        if (snapshot.source == QuizSource.BOOK && snapshot.selectedBook != null && (snapshot.bookFiltersLoading || snapshot.bookFiltersFor != snapshot.selectedBook || snapshot.bookCategories.none { it.id == id })) return
-        updateSetup { current ->
-            val selected = current.selectedCategoryIds.toMutableSet().apply {
-                if (!add(id)) remove(id)
-            }
-            current.copy(selectedCategoryIds = selected)
-        }
-        queueAvailableCount()
-    }
-
-    fun selectBlueprint(id: Long) {
-        val current = _state.value
-        if (current.isLoading || current.recoveryRequired || current.session != null || !canUseBlueprint ||
-            current.blueprints.none { it.id == id && it.isActive }) return
-        updateSetup { it.copy(selectedBlueprintId = id) }
-        queueAvailableCount()
-    }
-
-    fun setSelectionStrategy(value: String) {
-        if (_state.value.isLoading || _state.value.recoveryRequired || _state.value.session != null) return
-        if (value in setOf("coverage", "balanced", "review")) updateSetup { it.copy(selectionStrategy = value) }
-    }
-
-    fun setDifficulty(value: String?) {
-        if (_state.value.isLoading || _state.value.recoveryRequired || _state.value.session != null ||
-            value !in setOf(null, "easy", "medium", "hard")) return
-        updateSetup { it.copy(difficulty = value) }
-        queueAvailableCount()
-    }
-
-    fun setVerifiedOnly(value: Boolean) {
-        if (_state.value.isLoading || _state.value.recoveryRequired || _state.value.session != null) return
-        updateSetup { it.copy(verifiedOnly = value) }
-        queueAvailableCount()
-    }
-
-    fun setAdditionalTags(value: String) {
-        if (_state.value.isLoading || _state.value.recoveryRequired || _state.value.session != null) return
-        updateSetup { it.copy(additionalTags = value) }
-        queueAvailableCount()
-    }
-
-    fun setRequestedCount(value: String) {
-        if (_state.value.isLoading || _state.value.recoveryRequired || _state.value.session != null) return
-        if (value.isEmpty() || value.all(Char::isDigit)) {
-            updateSetup { it.copy(requestedCount = value) }
-        }
-    }
-
-    fun applyMaxQuizQuestions(value: Int) {
-        val maximum = value.coerceAtLeast(1)
-        updateSetup { it.copy(maxQuizQuestions = maximum) }
-    }
+    fun setMode(mode: TestMode) { setup.setMode(mode) }
+    fun setSource(source: QuizSource) { setup.setSource(source) }
+    fun useWholeBank() { setup.useWholeBank() }
+    fun selectBook(name: String) { setup.selectBook(name) }
+    fun clearActiveFilters() { setup.clearActiveFilters() }
+    fun clearFilters() { setup.clearFilters() }
+    fun removeCategoryFilter(id: Long) { setup.removeCategoryFilter(id) }
+    fun removeTagFilter(name: String) { setup.removeTagFilter(name) }
+    fun refreshBookFilters() { setup.refreshBookFilters() }
+    fun toggleTag(name: String) { setup.toggleTag(name) }
+    fun toggleCategory(id: Long) { setup.toggleCategory(id) }
+    fun selectBlueprint(id: Long) { setup.selectBlueprint(id) }
+    fun setSelectionStrategy(value: String) { setup.setSelectionStrategy(value) }
+    fun setDifficulty(value: String?) { setup.setDifficulty(value) }
+    fun setVerifiedOnly(value: Boolean) { setup.setVerifiedOnly(value) }
+    fun setAdditionalTags(value: String) { setup.setAdditionalTags(value) }
+    fun setRequestedCount(value: String) { setup.setRequestedCount(value) }
+    fun applyMaxQuizQuestions(value: Int) { setup.applyMaxQuizQuestions(value) }
 
     fun start() {
         val snapshot = _state.value
@@ -1151,69 +907,9 @@ class QuizViewModel(
         queueAvailableCount()
     }
 
-    private fun queueAvailableCount() {
-        countJob?.cancel()
-        val snapshot = _state.value
-        if (snapshot.source == QuizSource.BOOK && snapshot.selectedBook != null && snapshot.bookFiltersFor != snapshot.selectedBook &&
-                !snapshot.bookFiltersLoading && snapshot.bookFiltersError == null) refreshBookFilters()
-        val selection = selectionFrom(_state.value)
-        if (selection == null) {
-            _state.update { it.copy(availableCount = 0, isCountLoading = false, countError = null) }
-            return
-        }
-        _state.update { it.copy(availableCount = 0, isCountLoading = true, countError = null) }
-        countJob = viewModelScope.launch {
-            delay(250)
-            try {
-                val count = questionService.availableCount(
-                    categoryIds = selection.categoryIds,
-                    difficulty = snapshot.difficulty,
-                    verifiedOnly = snapshot.verifiedOnly,
-                    useBookmarks = selection.useBookmarks,
-                    useSrs = selection.useSrs,
-                    tags = selection.tags,
-                    sourceDocument = selection.sourceDocument,
-                    blueprintId = selection.blueprintId,
-                )
-                kotlin.coroutines.coroutineContext.ensureActive()
-                updateSetup { it.copy(availableCount = count, isCountLoading = false, countError = null) }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Throwable) {
-                kotlin.coroutines.coroutineContext.ensureActive()
-                _state.update {
-                    it.copy(
-                        isCountLoading = false,
-                        availableCount = 0,
-                        countError = error,
-                    )
-                }
-            }
-        }
-    }
+    private fun queueAvailableCount() { setup.queueAvailableCount() }
 
-    private fun selectionFrom(state: QuizUiState): SetupSelection? {
-        val categories = state.selectedCategoryIds.toList()
-        val tags = (state.selectedTags + state.additionalTags.split(',').map { it.trim() }.filter { it.isNotEmpty() }).distinct()
-        return when (state.source) {
-            QuizSource.BOOK, QuizSource.TAG, QuizSource.CATEGORY -> {
-                val book = state.selectedBook
-                if (book != null && (state.books.none { it.name == book } ||
-                    ((categories.isNotEmpty() || state.selectedTags.isNotEmpty()) &&
-                        (state.bookFiltersFor != book || state.bookFiltersLoading || state.bookFiltersError != null)))) null
-                else SetupSelection(sourceDocument = book, categoryIds = categories, tags = tags, label = book)
-            }
-            QuizSource.BOOKMARKS -> if (state.bookmarkCount > 0)
-                SetupSelection(useBookmarks = true, categoryIds = categories, tags = tags, label = null) else null
-            QuizSource.SRS -> if (state.srsDueCount > 0)
-                SetupSelection(useSrs = true, categoryIds = categories, tags = tags, label = null) else null
-            QuizSource.BLUEPRINT -> state.selectedBlueprintId?.takeIf { id ->
-                canUseBlueprint && state.blueprints.any { it.id == id && it.isActive }
-            }?.let { id -> SetupSelection(blueprintId = id, categoryIds = categories, tags = tags,
-                label = state.blueprints.firstOrNull { it.id == id }?.name) }
-            null -> null
-        }
-    }
+    private fun selectionFrom(state: QuizUiState): SetupSelection? = setup.selectionFrom(state)
 
     private fun downloadedAnsweredIndices(value: DownloadedSession): Set<Int> =
         (value.pages.filter { it.savedAnswer != null }.map { it.index } + value.answers.map { it.index }).toSet()
@@ -1728,62 +1424,11 @@ class QuizViewModel(
 
     // Only lightweight navigation/setup values enter Android's saved-state Bundle.
     // Answers, recall text, question snapshots and results remain outside it.
-    private fun restoreSetup(): QuizUiState {
-        val saved = savedStateHandle.get<Bundle>("quiz_setup")
-            ?.takeIf { it.getLong("user_id", -1L) == userId }
-            ?: return QuizUiState(difficulty = preferences.display.value.difficulty.takeIf { it.isNotBlank() }).also { savedStateHandle.remove<Bundle>("quiz_setup") }
-        val source = saved.getString("source")?.let { name ->
-            QuizSource.values().firstOrNull { it.name == name }
-        }?.takeUnless { it == QuizSource.BLUEPRINT && !canUseBlueprint }
-        val pool = when (source) { null, QuizSource.TAG, QuizSource.CATEGORY -> QuizSource.BOOK; else -> source }
-        return QuizUiState(
-            mode = TestMode.values().firstOrNull { it.name == saved.getString("mode") } ?: TestMode.EXAM,
-            source = pool,
-            selectedCategoryIds = saved.getLongArray("categories")?.toSet().orEmpty(),
-            selectedTags = saved.getStringArrayList("tags")?.toSet().orEmpty(),
-            selectedBook = saved.getString("source_book").takeIf { pool == QuizSource.BOOK },
-            selectedBlueprintId = saved.getLong("blueprint", -1L).takeIf { it > 0 && canUseBlueprint },
-            additionalTags = saved.getString("additional_tags").orEmpty(),
-            difficulty = saved.getString("difficulty")?.takeIf { it in setOf("easy", "medium", "hard") },
-            verifiedOnly = saved.getBoolean("verified"),
-            requestedCount = saved.getString("count") ?: "10",
-            selectionStrategy = saved.getString("selection_strategy")?.takeIf { it in setOf("coverage", "balanced", "review") } ?: "coverage",
-            finishPending = saved.getBoolean("finish_pending") && !saved.getString("session_id").isNullOrBlank(),
-            recoveryRequired = saved.getBoolean("finish_pending") && !saved.getString("session_id").isNullOrBlank(),
-        )
-    }
-
-    private fun updateSetup(transform: (QuizUiState) -> QuizUiState) {
-        _state.update(transform)
-        persistSetup()
-    }
+    private fun updateSetup(transform: (QuizUiState) -> QuizUiState) { setup.updateSetup(transform) }
 
     private fun persistSetup(
         sessionId: String? = savedStateHandle.get<Bundle>("quiz_setup")?.getString("session_id"),
-    ) {
-        val current = _state.value
-        val previous = savedStateHandle.get<Bundle>("quiz_setup")
-        val sessionMode = current.session?.let { current.mode.name }
-            ?: current.resumable?.takeIf { it.progress.sessionId == sessionId }?.mode?.name
-            ?: previous?.takeIf { it.getString("session_id") == sessionId }?.getString("session_mode")
-        savedStateHandle["quiz_setup"] = Bundle().apply {
-            putLong("user_id", userId)
-            putString("mode", current.mode.name)
-            putString("source", current.source?.name)
-            putLongArray("categories", current.selectedCategoryIds.toLongArray())
-            putStringArrayList("tags", ArrayList(current.selectedTags))
-            putString("source_book", current.selectedBook)
-            current.selectedBlueprintId?.let { putLong("blueprint", it) }
-            putString("additional_tags", current.additionalTags)
-            putString("difficulty", current.difficulty)
-            putBoolean("verified", current.verifiedOnly)
-            putString("count", current.requestedCount)
-            putString("selection_strategy", current.selectionStrategy)
-            putString("session_id", sessionId)
-            putString("session_mode", sessionMode)
-            putBoolean("finish_pending",current.finishPending)
-        }
-    }
+    ) { setupState.persist(_state.value, sessionId) }
 
     private fun rememberDraft(kind: SessionDraftKind, reason: String? = _state.value.errorReason): Boolean {
         val current = _state.value
@@ -1908,7 +1553,7 @@ class QuizViewModel(
 
     override fun onCleared() {
         timerJob?.cancel()
-        countJob?.cancel()
+        setup.cancelCount()
         super.onCleared()
     }
 
@@ -1930,16 +1575,6 @@ class QuizViewModel(
         val blueprints: List<BlueprintDto>,
         val statuses: List<Pair<TestMode, SessionProgressDto?>>,
         val completed: SessionResultsDto? = null,
-    )
-
-    private data class SetupSelection(
-        val sourceDocument: String? = null,
-        val categoryIds: List<Long> = emptyList(),
-        val tags: List<String> = emptyList(),
-        val useBookmarks: Boolean = false,
-        val useSrs: Boolean = false,
-        val blueprintId: Long? = null,
-        val label: String?,
     )
 
     class Factory(

@@ -1,3 +1,6 @@
+import com.android.build.api.artifact.SingleArtifact
+import java.io.StringReader
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -5,6 +8,17 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+val appVersionProperties = Properties().apply {
+    load(StringReader(providers.fileContents(rootProject.layout.projectDirectory.file("gradle/app-version.properties")).asText.get()))
+}
+val codeOverride = providers.gradleProperty("mukhtabir.versionCode").orNull
+val nameOverride = providers.gradleProperty("mukhtabir.versionName").orNull
+require((codeOverride == null) == (nameOverride == null)) { "Supply both mukhtabir.versionCode and mukhtabir.versionName, or neither." }
+val buildVersionCode = (codeOverride ?: appVersionProperties.getProperty("versionCode")).toInt()
+val buildVersionName = nameOverride ?: appVersionProperties.getProperty("versionName")
+require(buildVersionCode in 1..2_100_000_000) { "Invalid app versionCode" }
+require(buildVersionName.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.[0-9]{8})?"))) { "Invalid app versionName" }
 
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
@@ -28,8 +42,8 @@ android {
         applicationId = "com.mukhtabir.android"
         minSdk = 23
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.1.3"
+        versionCode = buildVersionCode
+        versionName = buildVersionName
 
         vectorDrawables.useSupportLibrary = true
         buildConfigField(
@@ -122,4 +136,39 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.test:core:1.5.0")
+}
+
+// Successful package artifacts are exported; no stale-output glob after a failed build.
+val accountHome = file(System.getProperty("user.home"))
+val xdgConfig = providers.environmentVariable("XDG_CONFIG_HOME").orNull?.let(::File)
+    ?: File(accountHome, ".config")
+val xdgDesktop = File(xdgConfig, "user-dirs.dirs").takeIf { it.isFile }?.readLines()
+    ?.firstOrNull { it.trimStart().startsWith("XDG_DESKTOP_DIR=") }?.substringAfter('=')?.trim()
+    ?.removeSurrounding("\"")?.replace("\$HOME", accountHome.path)?.replace("\${HOME}", accountHome.path)
+val desktopDirectory = providers.gradleProperty("mukhtabir.desktopDir").orNull
+    ?: providers.environmentVariable("MUKHTABIR_DESKTOP_DIR").orNull
+    ?: xdgDesktop?.takeIf { File(it).isAbsolute && File(it) != accountHome }
+    ?: File(accountHome, "Desktop").path
+require(File(desktopDirectory).isAbsolute) { "Desktop export directory must be absolute." }
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        val suffix = variant.name.replaceFirstChar { it.uppercaseChar() }
+        val apkExport = tasks.register<Copy>("export${suffix}Apk") {
+            group = "build"
+            description = "Copy packaged APKs to this account's Desktop."
+            from(variant.artifacts.get(SingleArtifact.APK))
+            include("*.apk")
+            into(File(desktopDirectory, "Mukhtabir/${variant.name}"))
+            rename("^(.+\\.apk)$", "Mukhtabir-$buildVersionName-\$1")
+        }
+        val bundleExport = tasks.register<Copy>("export${suffix}Bundle") {
+            group = "build"
+            description = "Copy packaged AABs to this account's Desktop."
+            from(variant.artifacts.get(SingleArtifact.BUNDLE))
+            into(File(desktopDirectory, "Mukhtabir/bundles/${variant.name}"))
+            rename("^(.+\\.aab)$", "Mukhtabir-$buildVersionName-\$1")
+        }
+        tasks.matching { it.name == "assemble$suffix" || it.name == "install$suffix" }.configureEach { dependsOn(apkExport) }
+        tasks.matching { it.name == "bundle$suffix" }.configureEach { dependsOn(bundleExport) }
+    }
 }

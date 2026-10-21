@@ -2,6 +2,7 @@
 """Build existing Android variants through the project's Gradle wrapper."""
 
 import argparse
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -143,14 +144,16 @@ def main():
     result = subprocess.run(command, cwd=ROOT)
     if result.returncode:
         return result.returncode
-    folder = ROOT / "app/build/outputs" / ("apk" if args.format == "apk" else "bundle") / args.variant
+    checkout_id = hashlib.sha256(str(ROOT).encode("utf-8")).hexdigest()[:16]
+    build_root = Path.home() / ".gradle/mukhtabir" / checkout_id / "build/app"
+    folder = build_root / "outputs" / ("apk" if args.format == "apk" else "bundle") / args.variant
     artifacts = sorted(folder.glob("*." + args.format))
     if artifacts:
-        print("Build output:")
+        print("Build output (versioned copies are also exported to your Desktop):")
         for artifact in artifacts:
             print(artifact)
     else:
-        print("Gradle succeeded. Check app/build/outputs for artifacts.")
+        print("Gradle succeeded. Check", build_root / "outputs", "for artifacts.")
     return 0
 
 

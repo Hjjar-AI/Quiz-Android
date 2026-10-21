@@ -857,7 +857,7 @@
     <string name="transfer_summary_csv">ملخص المشاركين بصيغة CSV</string>
     <string name="transfer_matrix_csv">مصفوفة الأسئلة والمشاركين بصيغة CSV</string>
     <string name="transfer_exam_scope">اختر امتحاناً ظاهراً أو أدخل معرّفه. تُتحقّق صلاحية عرض نتائج هذا الامتحان؛ وهي مستقلة عن صلاحية أدوات تصدير بنك الأسئلة.</string>
-    <string name="font_default">خط التطبيق الافتراضي</string>
+    <string name="font_default">خط التطبيق الافتراضي (أميري)</string>
     <string name="font_system">خط الجهاز</string>
     <string name="account_generate_password">إنشاء كلمة مرور مؤقتة</string>
     <string name="account_generate_confirm">إنشاء كلمة مرور مؤقتة جديدة للحساب @%1$s؟ سيُستبدل بها كلمة المرور الحالية، ويجب تغييرها عند تسجيل الدخول التالي. لن تُستخدم كلمة المرور المكتوبة في الحقول أعلاه.</string>
@@ -1576,7 +1576,7 @@
     <string name="quiz_review_read_failed">تعذرت قراءة مراجعة الأسئلة. نتيجتك المكتملة ما زالت محفوظة.</string>
 
     <!-- Bundled, account-independent offline demonstration. -->
-    <string name="demo_open">جرّب العرض دون إنترنت</string>
+    <string name="demo_open">ابدأ التدريب التجريبي</string>
     <string name="demo_title">جلستك الأولى تبدأ هنا</string>
     <string name="demo_badge">عرض تجريبي دون إنترنت</string>
     <string name="demo_intro">اكتشف مُختبِر مع مجموعة علمية جاهزة. لا حاجة إلى حساب أو خادم أو تنزيل.</string>
@@ -1786,7 +1786,7 @@
     <string name="startup_hide_options">إخفاء الخيارات</string>
     <string name="show_password">إظهار كلمة المرور</string>
     <string name="hide_password">إخفاء كلمة المرور</string>
-    <string name="language_picker_selection">العربية / English · %1$s</string>
+    <string name="language_picker_selection">اللغة: %1$s</string>
     <string name="answer_status_correct">إجابة صحيحة</string>
     <string name="finish_session_action">إنهاء الجلسة</string>
     <string name="finish_exam_action">إنهاء الامتحان</string>
@@ -1818,8 +1818,9 @@
     <string name="launch_connect_server">الاتصال بخادم</string>
     <string name="launch_offline_title">التدريب دون اتصال</string>
     <string name="launch_downloaded_hint">تابع باستخدام المحتوى الذي سبق تنزيله على هذا الجهاز.</string>
-    <string name="launch_demo_hint">جرّب أسئلة علمية نموذجية. لا تحتاج إلى حساب أو تنزيل.</string>
+    <string name="launch_demo_hint">تدرّب بأسئلة علمية نموذجية، حتى دون اتصال. لا تحتاج إلى حساب.</string>
     <string name="launch_checking_session">جارٍ تجهيز تسجيل الدخول…</string>
     <string name="drawer_help_information">المساعدة والمعلومات</string>
     <string name="drawer_authoring">إنشاء المحتوى وإدارته</string>
+    <string name="launch_demo_title">تدريب تجريبي</string>
 </resources>

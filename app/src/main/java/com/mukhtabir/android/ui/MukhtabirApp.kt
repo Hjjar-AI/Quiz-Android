@@ -106,7 +106,7 @@ import com.mukhtabir.android.ui.knowledge.KnowledgeDetailRoute
 import com.mukhtabir.android.ui.knowledge.ClinicalCasesRoute
 import com.mukhtabir.android.ui.knowledge.ClinicalCaseDetailRoute
 import com.mukhtabir.android.ui.knowledge.CaseStemRoute
-import com.mukhtabir.android.ui.more.AppDrawerContent
+import com.mukhtabir.android.ui.navigation.AppDrawerContent
 import com.mukhtabir.android.ui.more.MoreScreen
 import com.mukhtabir.android.ui.components.AppTopBar
 import androidx.compose.material3.ModalNavigationDrawer

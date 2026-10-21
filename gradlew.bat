@@ -33,6 +33,12 @@ set APP_HOME=%DIRNAME%
 @rem Resolve any "." and ".." in APP_HOME to make it shorter.
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 
+@rem Prepare account-local paths/version properties before any Java/Gradle invocation.
+if "%MUKHTABIR_WRAPPER_PREPARED%"=="1" goto mukhtabirPrepared
+python "%APP_HOME%\gradle\windows_build.py" "%APP_HOME%" %*
+exit /b %ERRORLEVEL%
+:mukhtabirPrepared
+
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 

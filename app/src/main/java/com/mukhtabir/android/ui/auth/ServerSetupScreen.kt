@@ -3,7 +3,7 @@ package com.mukhtabir.android.ui.auth
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.ui.components.AppLaunchLayout
 import com.mukhtabir.android.ui.components.AppLaunchHeader
-import com.mukhtabir.android.ui.components.OfflineLaunchActions
+import com.mukhtabir.android.ui.components.DemoLaunchCard
 import com.mukhtabir.android.ui.components.AppCard
 import com.mukhtabir.android.ui.components.AppCardBody
 import com.mukhtabir.android.ui.components.AppSection
@@ -23,6 +23,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import com.mukhtabir.android.ui.components.AppButton as Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -59,17 +64,18 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
     if (!showSetup) {
         AppLaunchLayout {
             AppLaunchHeader()
+            onDemo?.let { DemoLaunchCard(onOpen = it) }
             AppCard(Modifier.fillMaxWidth()) {
                 AppCardBody(Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.launch_online_title), style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() })
-                    Text(stringResource(R.string.launch_online_hint), style = MaterialTheme.typography.bodyMedium)
+                        modifier = Modifier.fillMaxWidth().semantics { heading() }, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.launch_online_hint), Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                     Button({ showSetup = true }, Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.launch_connect_server))
                     }
                 }
             }
-            OfflineLaunchActions(onDemo = onDemo)
             SetupLanguageButton(language, onLanguageChange)
         }
         return
@@ -257,8 +263,12 @@ private fun SetupLanguageButton(language: String, onLanguageChange: (String) -> 
         "en" -> "English"
         else -> stringResource(R.string.system_default)
     }
-    TextButton({ open = true }, enabled = enabled) {
-        Text(stringResource(R.string.language_picker_selection, selectedLanguage))
+    AppOutlinedButton({ open = true }, Modifier.fillMaxWidth(), enabled = enabled) {
+        Icon(Icons.Filled.Language, contentDescription = null)
+        Text(stringResource(R.string.language_picker_selection,
+            androidx.core.text.BidiFormatter.getInstance().unicodeWrap(selectedLanguage)),
+            modifier = Modifier.padding(start = com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
+            textAlign = TextAlign.Center)
     }
     if (open) AlertDialog(
         onDismissRequest = { open = false },

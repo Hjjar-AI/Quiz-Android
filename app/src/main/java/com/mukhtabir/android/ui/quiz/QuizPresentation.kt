@@ -1,5 +1,7 @@
 package com.mukhtabir.android.ui.quiz
 
+import com.mukhtabir.android.data.remote.TestMode
+
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -213,4 +215,17 @@ internal fun ResultsOverview(results: SessionResultsDto) {
         if (results.confidenceFragile > 0) Text(stringResource(R.string.fragile_result_count, results.confidenceFragile),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@Composable
+internal fun quizModeLabel(mode: TestMode): String = stringResource(
+    when (mode) {
+        TestMode.EXAM -> R.string.exam
+        TestMode.STUDY -> R.string.study
+        TestMode.RECALL -> R.string.recall
+    },
+)
+
+internal fun formatDuration(seconds: Int): String {
+    return com.mukhtabir.android.util.formatSessionDuration(seconds.toLong())
 }

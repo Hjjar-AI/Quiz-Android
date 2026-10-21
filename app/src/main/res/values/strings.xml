@@ -858,7 +858,7 @@
     <string name="transfer_summary_csv">Participant summary CSV</string>
     <string name="transfer_matrix_csv">Question-by-participant matrix CSV</string>
     <string name="transfer_exam_scope">Select a visible exam or enter its ID. Result-view permissions are checked for this exam; access to the question-bank export tools is separate.</string>
-    <string name="font_default">App default</string>
+    <string name="font_default">App default (Amiri)</string>
     <string name="font_system">Device font</string>
     <string name="account_generate_password">Generate temporary password</string>
     <string name="account_generate_confirm">Generate a new temporary password for @%1$s? This replaces the current password and requires a change at the next login. Any password typed in the fields above is ignored.</string>
@@ -1577,7 +1577,7 @@
     <string name="quiz_review_read_failed">Could not read question review. Your completed result is still saved.</string>
 
     <!-- Bundled, account-independent offline demonstration. -->
-    <string name="demo_open">Try offline demo</string>
+    <string name="demo_open">Start sample practice</string>
     <string name="demo_title">Your first session starts here</string>
     <string name="demo_badge">OFFLINE DEMO</string>
     <string name="demo_intro">Explore Mukhtabir with a ready-to-use science collection. No account, server or download needed.</string>
@@ -1787,7 +1787,7 @@
     <string name="startup_hide_options">Hide options</string>
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
-    <string name="language_picker_selection">العربية / English · %1$s</string>
+    <string name="language_picker_selection">Language: %1$s</string>
     <string name="answer_status_correct">Correct answer</string>
     <string name="finish_session_action">Finish session</string>
     <string name="finish_exam_action">Finish exam</string>
@@ -1819,8 +1819,9 @@
     <string name="launch_connect_server">Connect to a server</string>
     <string name="launch_offline_title">Offline practice</string>
     <string name="launch_downloaded_hint">Continue with material already downloaded to this device.</string>
-    <string name="launch_demo_hint">Try sample science questions. No account or download needed.</string>
+    <string name="launch_demo_hint">Practise with sample science questions, even offline. No account needed.</string>
     <string name="launch_checking_session">Preparing your sign-in…</string>
     <string name="drawer_help_information">Help &amp; information</string>
     <string name="drawer_authoring">Create &amp; manage content</string>
+    <string name="launch_demo_title">Sample practice</string>
 </resources>

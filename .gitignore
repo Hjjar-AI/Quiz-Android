@@ -51,3 +51,9 @@ Thumbs.db
 # ── Kotlin / KSP caches ───────────────────────────────────────────
 .kotlin/
 suggested themes.txt
+
+__pycache__/
+
+# Temporary atomic-version files and the Windows coordination lock.
+gradle/.app-version-*
+gradle/.app-version.lock

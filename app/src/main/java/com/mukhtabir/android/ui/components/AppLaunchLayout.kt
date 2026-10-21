@@ -26,7 +26,7 @@ import com.mukhtabir.android.ui.theme.AppTheme
 
 /** One scroll owner, keyboard clearance and a readable form width for public entry screens. */
 @Composable
-fun AppLaunchLayout(centerVertically: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+fun AppLaunchLayout(centerVertically: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
         val viewportHeight = maxHeight
         Column(
@@ -47,25 +47,36 @@ fun AppLaunchHeader() {
         style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
 }
 
+/** Demo content is public sample practice, separate from account-owned downloads. */
+@Composable
+fun DemoLaunchCard(onOpen: () -> Unit, enabled: Boolean = true) {
+    AppCard(Modifier.fillMaxWidth()) {
+        AppCardBody(Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.launch_demo_title), style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.fillMaxWidth().semantics { heading() }, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.launch_demo_hint), Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            AppSecondaryButton(onOpen, Modifier.fillMaxWidth(), enabled = enabled) {
+                Text(stringResource(R.string.demo_open), textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
 /** Eligibility stays with each caller; downloaded practice can remain available during recovery. */
 @Composable
 fun OfflineLaunchActions(onDownloaded: (() -> Unit)? = null, onDemo: (() -> Unit)? = null,
     enabled: Boolean = true, downloadedEnabled: Boolean = enabled) {
-    if (onDownloaded == null && onDemo == null) return
-    AppCard(Modifier.fillMaxWidth()) {
-        AppCardBody(Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.launch_offline_title), style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() })
-            onDownloaded?.let { open ->
-                Text(stringResource(R.string.launch_downloaded_hint), style = MaterialTheme.typography.bodyMedium)
+    onDemo?.let { DemoLaunchCard(it, enabled = enabled) }
+    onDownloaded?.let { open ->
+        AppCard(Modifier.fillMaxWidth()) {
+            AppCardBody(Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.launch_offline_title), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.fillMaxWidth().semantics { heading() }, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.launch_downloaded_hint), Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 AppSecondaryButton(open, Modifier.fillMaxWidth(), enabled = downloadedEnabled) {
                     Text(stringResource(R.string.offline_open_cached), textAlign = TextAlign.Center)
-                }
-            }
-            onDemo?.let { open ->
-                Text(stringResource(R.string.launch_demo_hint), style = MaterialTheme.typography.bodyMedium)
-                AppSecondaryButton(open, Modifier.fillMaxWidth(), enabled = enabled) {
-                    Text(stringResource(R.string.demo_open), textAlign = TextAlign.Center)
                 }
             }
         }
