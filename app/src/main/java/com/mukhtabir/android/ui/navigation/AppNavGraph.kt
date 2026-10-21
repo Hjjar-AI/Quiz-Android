@@ -42,7 +42,6 @@ import com.mukhtabir.android.ui.profile.ProfileScreen
 import com.mukhtabir.android.ui.planner.PlannerRoute
 import com.mukhtabir.android.ui.quiz.QuizRoute
 import com.mukhtabir.android.ui.questions.QuestionImageRoute
-import com.mukhtabir.android.ui.questions.QuestionDetailRoute
 import com.mukhtabir.android.ui.questions.QuestionEditorRoute
 import com.mukhtabir.android.ui.questions.QuestionLibraryRoute
 import com.mukhtabir.android.ui.settings.SettingsRoute
@@ -290,19 +289,29 @@ internal fun androidx.navigation.NavGraphBuilder.registerAppDestinations(
             onDownloadOffline = { ids -> if(user.has("tests.start")) navController.navigate("more/offline?ids=${ids.joinToString(",")}") },
             onStartQuestions = startQuestions,
             navigationStore=container.sessionDraftStore,
+            detailStateOwner = container.apiBaseUrl,
+            detailContent = { id, select, lock ->
+                AppQuestionDetail(id, user, container, navController, questionBankRevision,
+                    onBusyChanged = {},
+                    onPaneLockChanged = { locked -> lock(locked); questionActionBusy = locked },
+                    startQuestions = startQuestions, shareLink = shareLink,
+                    onDuplicated = { copied -> questionBankRevision += 1; select(copied) },
+                    onDeleted = { removed ->
+                        removedQuestionIds = removedQuestionIds + removed
+                        questionBankRevision += 1
+                        select(null)
+                    })
+            },
         )
     }
     composable(
         route = AppRoutes.QUESTION_DETAIL,
         arguments = listOf(navArgument("questionId") { type = NavType.LongType }),
     ) { entry ->
-        QuestionDetailRoute(
-            onShare={id -> shareLink("questions",id)},
-            onMutationBusyChanged = { questionActionBusy = it },
-            bankRevision = questionBankRevision,
-            canDuplicate = user.has("questions.duplicate"),
-            canDeleteOwn = user.has("questions.delete_own"),
-            canDeleteAny = user.has("questions.delete_any"),
+        AppQuestionDetail(
+            questionId = requireNotNull(entry.arguments?.getLong("questionId")), user = user, container = container,
+            navController = navController, bankRevision = questionBankRevision,
+            onBusyChanged = { questionActionBusy = it }, startQuestions = startQuestions, shareLink = shareLink,
             onDuplicated = { id ->
                 questionBankRevision += 1
                 navController.navigate("more/questions/$id") {
@@ -319,22 +328,6 @@ internal fun androidx.navigation.NavGraphBuilder.registerAppDestinations(
                     }
                 }
             },
-            questionId = requireNotNull(entry.arguments?.getLong("questionId")),
-            questionService = container.questionService,
-            bookmarkService = container.bookmarkService,
-            store = container.sessionDraftStore,
-            imageRepository = container.imageRepository,
-            canStartSessions = user.has("tests.start"),
-            canEditAny = user.has("questions.edit_any"),
-            canEditOwn = user.has("questions.edit_own"),
-            userId = user.id,
-            onStart = startQuestions,
-            onEdit = { id -> navController.navigate("more/questions/$id/edit") },
-            canReviewQuestion = user.has("questions.verify") || user.has("questions.bulk_verify"),
-            canUploadImageOwn = user.has("questions.upload_image"),
-            onManageImage = { id -> navController.navigate("more/questions/$id/image") },
-            onOpenKnowledge={id -> navController.navigateContent("more/knowledge/$id")},
-            onOpenCase={key -> navController.navigateContent("more/cases/${android.net.Uri.encode(key)}")},
         )
     }
     if (user.has("questions.edit_any") || user.has("questions.upload_image")) {

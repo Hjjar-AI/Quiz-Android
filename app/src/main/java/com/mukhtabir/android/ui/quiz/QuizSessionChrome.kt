@@ -79,12 +79,19 @@ internal fun SessionHeader(ui: SessionPresentation, tools: @Composable () -> Uni
 internal fun SessionNavigation(ui: SessionPresentation, viewModel: QuizViewModel) {
     var confirmFinish by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
     var showQuestions by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
-    if (showQuestions) AlertDialog(
-        onDismissRequest = { showQuestions = false },
-        title = { Text(stringResource(R.string.session_question_navigation)) },
-        text = { SessionQuestionPicker(ui, viewModel, onSelected = { showQuestions = false }) },
-        confirmButton = { TextButton({ showQuestions = false }) { Text(stringResource(R.string.done)) } },
-    )
+    if (showQuestions) com.mukhtabir.android.ui.components.AppBottomSheet(
+        title = stringResource(R.string.session_question_navigation), onDismiss = { showQuestions = false },
+        actions = { TextButton({ showQuestions = false }) { Text(stringResource(R.string.done)) } },
+    ) {
+        Text(stringResource(R.string.flow_final_counts,
+            com.mukhtabir.android.util.formatNumber(ui.answered.size),
+            com.mukhtabir.android.util.formatNumber((ui.total - ui.answered.size).coerceAtLeast(0)),
+            com.mukhtabir.android.util.formatNumber(ui.flagged.size)))
+        Text(stringResource(R.string.flow_map_hint))
+        com.mukhtabir.android.ui.components.LearningQuestionChips(ui.index, ui.total, ui.answered, ui.flagged, ui.canNavigate) {
+            viewModel.goTo(it); showQuestions = false
+        }
+    }
     if (confirmFinish) AlertDialog(
         onDismissRequest = { confirmFinish = false },
         title = { Text(stringResource(R.string.finish_session_title)) },
@@ -93,7 +100,7 @@ internal fun SessionNavigation(ui: SessionPresentation, viewModel: QuizViewModel
             Text(stringResource(R.string.finish_session_message))
             SessionQuestionPicker(ui, viewModel, onSelected = { confirmFinish = false })
         } },
-        confirmButton = { TextButton({ confirmFinish = false; viewModel.next() }, enabled = ui.canNavigate && ui.canPause) { Text(stringResource(R.string.finish)) } },
+        confirmButton = { com.mukhtabir.android.ui.components.AppButton({ confirmFinish = false; viewModel.next() }, enabled = ui.canNavigate && ui.canPause) { Text(stringResource(R.string.finish)) } },
         dismissButton = { Column {
             if (ui.canFinishLocally) TextButton({ confirmFinish = false; viewModel.finishStudyLocally() }) {
                 Text(stringResource(R.string.offline_finish_device))

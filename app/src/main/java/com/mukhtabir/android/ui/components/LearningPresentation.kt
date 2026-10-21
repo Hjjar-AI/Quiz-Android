@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -195,7 +197,9 @@ fun LearningQuestionChips(current: Int, total: Int, answered: Set<Int>, flagged:
                     contentDescription = questionLabel
                     stateDescription = status
                 },
-                label = { Text(formatNumber(index + 1) + (if (isAnswered) " ✓" else "") + (if (isFlagged) " ⚑" else "")) })
+                label = { Text(formatNumber(index + 1)) },
+                leadingIcon = if (isAnswered) ({ Icon(Icons.Filled.Check, contentDescription = null) }) else null,
+                trailingIcon = if (isFlagged) ({ Icon(Icons.Filled.Flag, contentDescription = null) }) else null)
         }
     }
 }

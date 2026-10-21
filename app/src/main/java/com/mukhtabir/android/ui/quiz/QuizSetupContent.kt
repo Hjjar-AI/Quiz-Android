@@ -13,7 +13,6 @@ import com.mukhtabir.android.ui.components.AppDangerTextButton
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,7 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.mukhtabir.android.ui.components.AppButton as Button
 import com.mukhtabir.android.ui.components.AppCard as Card
-import androidx.compose.material3.Checkbox
+import com.mukhtabir.android.ui.components.AppSwitchRow
 import androidx.compose.material3.MaterialTheme
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -32,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
@@ -208,10 +206,8 @@ internal fun QuizSetupContent(
             DifficultyButton("medium", R.string.difficulty_medium, state, viewModel)
             DifficultyButton("hard", R.string.difficulty_hard, state, viewModel)
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = state.verifiedOnly, onCheckedChange = viewModel::setVerifiedOnly, enabled = !state.isLoading)
-            Text(stringResource(R.string.verified_only))
-        }
+        AppSwitchRow(stringResource(R.string.verified_only), state.verifiedOnly,
+            viewModel::setVerifiedOnly, enabled = !state.isLoading)
         if (state.source != QuizSource.SRS) {
             Text(stringResource(R.string.selection_strategy))
             QuizSelectionRow {
@@ -224,30 +220,9 @@ internal fun QuizSetupContent(
             }
         }
     }
-    val count = state.requestedCount.toIntOrNull()
-    val effectiveMaximum = minOf(state.availableCount, state.maxQuizQuestions)
-    val sourceReady = when (state.source) {
-        QuizSource.BOOK, QuizSource.TAG, QuizSource.CATEGORY -> bookExists
-        QuizSource.BOOKMARKS -> state.bookmarkCount > 0
-        QuizSource.SRS -> state.srsDueCount > 0
-        QuizSource.BLUEPRINT -> canUseBlueprint && state.blueprints.any { it.id == state.selectedBlueprintId && it.isActive }
-        null -> false
-    }
-    val countValid = count != null && count in 1..effectiveMaximum
-    val blockedHint = when {
-        state.recoveryRequired || state.pendingDraft != null || state.draftStorageFailed -> stringResource(R.string.session_recovery_required)
-        state.isLoading -> null
-        state.metadataError != null -> null // The pool section shows the failed read and Retry.
-        !bookExists -> stringResource(R.string.quiz_book_unavailable)
-        !sourceReady -> stringResource(R.string.quiz_select_pool_item)
-        !bookFiltersReady -> stringResource(R.string.quiz_filters_need_review)
-        state.isCountLoading -> stringResource(R.string.checking_available)
-        state.countError != null -> null // The count section owns its error and Retry.
-        state.error != null || state.hasUnknownError -> state.error ?: stringResource(R.string.error_unknown)
-        state.availableCount <= 0 -> stringResource(R.string.quiz_no_matching_questions)
-        !countValid -> stringResource(R.string.quiz_count_range, effectiveMaximum)
-        else -> null
-    }
+    val readiness = state.toSetupReadiness(canUseBlueprint)
+    val effectiveMaximum = readiness.maximum
+    val countValid = readiness.countValid
     SetupStepCard(stringResource(R.string.number_of_questions)) {
         state.countError?.let {
             ErrorState(throwable = it, onRetry = if (state.isLoading || state.isCountLoading) null else viewModel::refreshAvailableCount)
@@ -257,16 +232,18 @@ internal fun QuizSetupContent(
             supportingText = { if (state.countError == null && state.metadataError == null) Text(if (state.isCountLoading) stringResource(R.string.checking_available)
                 else stringResource(R.string.available_questions_with_limit, state.availableCount, state.maxQuizQuestions)) },
             isError = !state.isCountLoading && state.availableCount > 0 && !countValid,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = !state.isLoading,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = androidx.compose.ui.text.input.ImeAction.Done), enabled = !state.isLoading,
             singleLine = true, textStyle = com.mukhtabir.android.util.ltrInputStyle())
-        blockedHint?.let { Text(it, style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        Button(onClick = viewModel::start, modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isLoading && state.pendingDraft == null && !state.draftStorageFailed &&
-                !state.recoveryRequired && sourceReady && bookFiltersReady && !state.isCountLoading && state.countError == null && countValid) {
-            Text(stringResource(when (state.mode) { TestMode.EXAM -> R.string.start_exam;
-                TestMode.STUDY -> R.string.start_study; TestMode.RECALL -> R.string.start_recall }))
+        QuizSelectionRow {
+            (listOf(10, 20, 40).filter { it <= effectiveMaximum } + listOfNotNull(effectiveMaximum.takeIf { it > 0 })).distinct().forEach { amount ->
+                SetupChoiceChip(selected = state.requestedCount.toIntOrNull() == amount,
+                    enabled = !state.isLoading && !state.isCountLoading && state.countError == null,
+                    onClick = { viewModel.setRequestedCount(amount.toString()) },
+                    text = if (amount == effectiveMaximum) stringResource(R.string.ui_count_max, com.mukhtabir.android.util.formatNumber(amount))
+                        else com.mukhtabir.android.util.formatNumber(amount))
+            }
         }
+
     }
 }
 

@@ -2,6 +2,11 @@ package com.mukhtabir.android.ui.quiz
 
 import com.mukhtabir.android.ui.components.AppSection
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material3.Icon
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
@@ -53,10 +58,17 @@ internal fun QuizQuestionContent(
     QuestionLanguageSelector(page.question.translations, page.question.choices.size, readingLocale,
         { readingLocale = it }, hasCase = page.question.case?.stem?.isNotBlank() == true, caseTranslations = page.question.case?.translations ?: kotlinx.serialization.json.JsonObject(emptyMap()),
         explanationAvailable = showExplanation && (!state.explanation.isNullOrBlank() || !page.question.explanation.isNullOrBlank()),
-        explanationTranslated = !localized.explanation.isNullOrBlank(), action = { QuestionBookmark(state,viewModel) })
-    TextButton(viewModel::toggleFlag, enabled = !state.isLoading) {
-        Text(stringResource(if (page.index in state.flaggedIndices) R.string.flow_unflag else R.string.flow_flag))
-    }
+        explanationTranslated = !localized.explanation.isNullOrBlank(), action = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val flagged = page.index in state.flaggedIndices
+                val flagLabel = stringResource(if (flagged) R.string.flow_unflag else R.string.flow_flag)
+                com.mukhtabir.android.ui.components.AppIconButton(viewModel::toggleFlag, enabled = !state.isLoading,
+                    modifier = Modifier.semantics { selected = flagged; contentDescription = flagLabel }) {
+                    Icon(if (flagged) Icons.Filled.Flag else Icons.Outlined.Flag, contentDescription = null)
+                }
+                QuestionBookmark(state, viewModel)
+            }
+        })
     if (state.flagError) {
         Text(stringResource(R.string.flow_flag_error), color = MaterialTheme.colorScheme.error)
         TextButton(viewModel::retryFlags) { Text(stringResource(R.string.retry)) }
@@ -133,11 +145,12 @@ internal fun QuizQuestionContent(
     if (state.mode.isLearningMode() && state.selectedAnswer != null) {
         androidx.compose.runtime.key(page.question.id) {
             AppSection(stringResource(R.string.confidence_prompt),
-                subtitle = stringResource(when (state.confidence ?: 3) {
+                initiallyExpanded = state.confidence == null, revealError = state.confidence == null,
+                subtitle = state.confidence?.let { confidence -> stringResource(when (confidence) {
                     1 -> R.string.confidence_guessing
                     2 -> R.string.confidence_uncertain
                     else -> R.string.confidence_certain
-                })) {
+                }) }) {
                 QuizSelectionRow {
                     ConfidenceButton(1, R.string.confidence_guessing, state, viewModel)
                     ConfidenceButton(2, R.string.confidence_uncertain, state, viewModel)

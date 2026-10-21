@@ -1823,4 +1823,13 @@
     <string name="drawer_help_information">المساعدة والمعلومات</string>
     <string name="drawer_authoring">إنشاء المحتوى وإدارته</string>
     <string name="launch_demo_title">تدريب تجريبي</string>
+    <string name="analytics_chart_summary">الأحدث: %1$s · النطاق: %2$s–%3$s</string>
+    <string name="ui_or">أو</string>
+    <string name="ui_theme_live_preview">اختر سمة لمعاينتها فوراً.</string>
+    <string name="ui_search_options">البحث في %1$s</string>
+    <string name="ui_count_max">الحد الأقصى (%1$s)</string>
+    <string name="ui_setup_summary">%1$s · %2$s سؤالاً · %3$s</string>
+    <string name="ui_select_detail">اختر سؤالاً لقراءة تفاصيله هنا.</string>
+    <string name="ui_review_pick">اختر سؤالاً لمراجعة إجابته المحفوظة.</string>
+    <string name="ui_result_summary">%1$s إجابات صحيحة · %2$s تمت إجابتها · %3$s دون إجابة</string>
 </resources>

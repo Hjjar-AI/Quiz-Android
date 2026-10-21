@@ -3,6 +3,7 @@ package com.mukhtabir.android.ui.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -148,6 +149,21 @@ fun AppMetadataRow(values: List<String>, modifier: Modifier = Modifier) {
     }
 }
 
+/** Read-only metadata with no click handler or selected/toggle semantics. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun AppMetadataChips(values: List<String>, modifier: Modifier = Modifier) {
+    AppActionRow(modifier) {
+        values.filter(String::isNotBlank).forEach { value ->
+            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
+                Text(com.mukhtabir.android.util.bidi(value), Modifier.padding(AppLayoutTokens.denseCardInsets),
+                    style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
 /** Label/value rows grow vertically at narrow widths or enlarged text. */
 @Composable
 fun AppMetricRow(label: String, value: String, modifier: Modifier = Modifier) {
@@ -230,14 +246,19 @@ fun AppTileGrid(count: Int, modifier: Modifier = Modifier,
 fun AppMetricTile(value: String, label: String, modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null, accent: Color = MaterialTheme.colorScheme.primary,
     container: Color = AppTheme.questionSurfaces.choice,
-    valueStyle: TextStyle = MaterialTheme.typography.titleLarge) {
+    valueStyle: TextStyle = MaterialTheme.typography.titleLarge,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
     val body: @Composable () -> Unit = {
         Column(Modifier.fillMaxWidth().padding(AppLayoutTokens.denseCardInsets),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
+            icon?.let { Icon(it, contentDescription = null, tint = accent) }
             Text(value, style = valueStyle, color = accent, textAlign = TextAlign.Center)
             Text(label, style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            if (onClick != null) Icon(Icons.Filled.ChevronRight, contentDescription = null,
+                modifier = Modifier.size(AppLayoutTokens.secondaryIconSize).directionalIcon(),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     val border = BorderStroke(AppLayoutTokens.cardBorderWidth, AppTheme.questionSurfaces.border)

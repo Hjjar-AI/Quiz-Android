@@ -8,17 +8,10 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import com.mukhtabir.android.ui.components.AppButton as Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
@@ -31,8 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.selected
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.QuestionDto
@@ -42,7 +33,7 @@ import com.mukhtabir.android.ui.profile.AuthorRankBadge
 import com.mukhtabir.android.ui.components.ErrorState
 
 @Composable
-internal fun LibraryFiltersDialog(
+internal fun LibraryFiltersSheet(
     state: QuestionLibraryUiState,
     defaultPageSize: Int,
     onRetry: () -> Unit,
@@ -61,11 +52,17 @@ internal fun LibraryFiltersDialog(
         }
     }
     val any = stringResource(R.string.difficulty_any)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.library_filters)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+    com.mukhtabir.android.ui.components.AppBottomSheet(
+        title = stringResource(R.string.library_filters), onDismiss = onDismiss,
+        actions = {
+            com.mukhtabir.android.ui.components.AppActionRow {
+                Button({ onApply(category.toLongOrNull(), difficulty.takeIf(String::isNotBlank),
+                    tag.takeIf(String::isNotBlank), verified, size.toIntOrNull()) }) { Text(stringResource(R.string.library_apply)) }
+                TextButton(onDismiss) { Text(stringResource(R.string.cancel)) }
+            }
+        },
+    ) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
                 if (state.optionsLoading) AppLoadingIndicator()
                 state.optionsError?.let { ErrorState(throwable = it,
                     onRetry = if (state.optionsLoading) null else onRetry) }
@@ -83,29 +80,15 @@ internal fun LibraryFiltersDialog(
                     listOf("" to stringResource(R.string.library_default_page_size, defaultPageSize)) +
                         listOf(10, 20, 50, 100).map { it.toString() to it.toString() }) { size = it }
             }
-        },
-        confirmButton = { TextButton({ onApply(category.toLongOrNull(), difficulty.takeIf(String::isNotBlank),
-            tag.takeIf(String::isNotBlank), verified, size.toIntOrNull()) }) { Text(stringResource(R.string.library_apply)) } },
-        dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
+    }
+
 }
 
 @Composable
 private fun LibraryFilterChoice(label: String, value: String, options: List<Pair<String, String>>, onSelect: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        OutlinedButton({ expanded = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.library_filter_value, label,
-                options.firstOrNull { it.first == value }?.second ?: value))
-        }
-        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.heightIn(max = AppLayoutTokens.filterMenuMaxHeight)) {
-            options.forEach { (key, text) ->
-                DropdownMenuItem(text = { Text(if (key == value) "✓ $text" else text) },
-                    modifier = Modifier.semantics { selected = key == value },
-                    onClick = { onSelect(key); expanded = false })
-            }
-        }
-    }
+    com.mukhtabir.android.ui.components.AppFilterOptions(label, options, value,
+        onSelect = onSelect)
+
 }
 
 @Composable

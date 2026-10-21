@@ -3,7 +3,6 @@ package com.mukhtabir.android.ui.planner
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.ui.components.AppSection
 
-import com.mukhtabir.android.ui.components.AppPageHeading
 
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 
@@ -79,7 +78,6 @@ fun PlannerRoute(service: PlannerService, categoryService: CategoryService, ques
     val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(AppLayoutTokens.pageInsets),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
-        AppPageHeading(stringResource(R.string.nav_planner))
         if (state.loading) AppLoadingIndicator()
         storageError?.let { ErrorState(throwable = it, onRetry = if(!state.loading) vm::retryStorage else null) }
         if(pending || storageError != null) {
@@ -103,9 +101,13 @@ fun PlannerRoute(service: PlannerService, categoryService: CategoryService, ques
         if(state.loaded) state.planner?.let { plan ->
             AppSection(stringResource(R.string.planner_server_plan)) {
                 Text(stringResource(R.string.planner_server_target, plan.targetQuestionsPerDay))
-                Text(plan.startDate + " · " + plan.endDate.orEmpty())
-                Text(plan.targetTags.joinToString(" · "))
-                Text(plan.targetCategories.map { id -> state.categoryOptions.find { it.id==id }?.name ?: id.toString() }.joinToString(" · "))
+                Text(listOfNotNull(plan.startDate, plan.endDate).joinToString(" · ") {
+                    com.mukhtabir.android.util.formatCalendarDate(it)
+                })
+                com.mukhtabir.android.ui.components.AppMetadataChips(plan.targetTags)
+                com.mukhtabir.android.ui.components.AppMetadataChips(plan.targetCategories.map { id ->
+                    state.categoryOptions.find { it.id == id }?.name ?: com.mukhtabir.android.util.formatNumber(id)
+                })
             }
         }
         state.outcome?.let { Text(stringResource(if (it == PlannerOutcome.SAVED) R.string.saved else R.string.planner_deleted),

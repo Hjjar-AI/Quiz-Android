@@ -60,6 +60,7 @@ fun MarkdownText(
     interactive: Boolean = true,
     navigateHeadings: Boolean = false,
     compactBlocks: Boolean = false,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
     val context = LocalContext.current
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -71,7 +72,12 @@ fun MarkdownText(
     val highlight = MaterialTheme.colorScheme.tertiaryContainer.toArgb()
     val highlightText = MaterialTheme.colorScheme.onTertiaryContainer.toArgb()
     val border = MaterialTheme.colorScheme.outline.toArgb()
-    val markwon = remember(context, highlight, highlightText, border, compactBlocks, blockMargin, paragraphScale) {
+    val codeBackground = MaterialTheme.colorScheme.surfaceVariant.toArgb()
+    val codeText = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
+    val tableBackground = MaterialTheme.colorScheme.surface.toArgb()
+    val quoteColor = MaterialTheme.colorScheme.primary.toArgb()
+    val markwon = remember(context, highlight, highlightText, border, codeBackground, codeText,
+        tableBackground, quoteColor, compactBlocks, blockMargin, paragraphScale) {
         Markwon.builder(context)
             .usePlugin(HtmlPlugin.create { html ->
                 html.excludeDefaults(true).addHandler(UnderlineHandler())
@@ -83,10 +89,16 @@ fun MarkdownText(
                     arrayOf(BackgroundColorSpan(highlight), ForegroundColorSpan(highlightText))
                 }
             })
-            .usePlugin(TablePlugin.create(TableTheme.buildWithDefaults(context).tableBorderColor(border).build()))
+            .usePlugin(TablePlugin.create(TableTheme.buildWithDefaults(context).tableBorderColor(border)
+                .tableHeaderRowBackgroundColor(codeBackground)
+                .tableOddRowBackgroundColor(tableBackground)
+                .tableEvenRowBackgroundColor(codeBackground).build()))
             .usePlugin(MovementMethodPlugin.create(TableAwareMovementMethod.create()))
             .usePlugin(object : AbstractMarkwonPlugin() {
                 override fun configureTheme(builder: MarkwonTheme.Builder) {
+                    builder.codeBackgroundColor(codeBackground).codeTextColor(codeText)
+                        .codeBlockBackgroundColor(codeBackground).codeBlockTextColor(codeText)
+                        .blockQuoteColor(quoteColor).thematicBreakColor(border).headingBreakColor(border)
                     if (compactBlocks || paragraphScale != 1f) builder.blockMargin(blockMargin)
                     if (compactBlocks) builder.headingTextSizeMultipliers(floatArrayOf(1.35f, 1.25f, 1.15f, 1.1f, 1f, 1f))
                 }
@@ -150,6 +162,10 @@ fun MarkdownText(
                 nativeViewHolder[0] = textView
                 val interactionChanged = textView.interactive != interactive
                 textView.interactive = interactive
+                val lineLimit = maxLines.coerceAtLeast(1)
+                if (textView.maxLines != lineLimit) textView.maxLines = lineLimit
+                val overflow = if (maxLines == Int.MAX_VALUE) null else android.text.TextUtils.TruncateAt.END
+                if (textView.ellipsize != overflow) textView.ellipsize = overflow
                 textView.setTextIsSelectable(interactive)
                 textView.typeface = typeface
                 textView.setTextColor(color)

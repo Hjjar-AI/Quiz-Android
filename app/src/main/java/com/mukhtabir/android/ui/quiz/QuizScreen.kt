@@ -210,6 +210,10 @@ fun QuizRoute(
         }
     }
 
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+    val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val pinSetup = state.session == null && state.results == null && state.questionPage == null && state.setupLoaded &&
+        maxHeight >= AppLayoutTokens.sessionPinnedMinHeight * scale
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -371,13 +375,18 @@ fun QuizRoute(
                 state.questionPage != null -> QuizQuestionContent(state.copy(isLoading = state.isLoading || state.locallyFinished || state.recoveryRequired || state.pendingDraft != null || state.draftStorageFailed ||
                     (state.mode != TestMode.RECALL && !state.downloaded) ||
                     (state.syncConflict != null && state.syncConflict?.index == state.questionPage?.index)), imageRepository, viewModel)
-                state.setupLoaded -> QuizSetupContent(state.copy(isLoading = state.isLoading || state.recoveryRequired || state.draftStorageFailed), canUseBlueprint, viewModel)
+                state.setupLoaded -> {
+                    QuizSetupContent(state.copy(isLoading = state.isLoading || state.recoveryRequired || state.draftStorageFailed), canUseBlueprint, viewModel)
+                    if (!pinSetup) QuizSetupActions(state, canUseBlueprint, viewModel)
+                }
             }
         }
         if (state.isLoading && state.questionPage != null) {
             AppLoadingIndicator(Modifier.align(Alignment.TopEnd), compact = true)
         }
         }
+        if (pinSetup) QuizSetupActions(state, canUseBlueprint, viewModel)
         if (sessionActive && state.questionPage != null) SessionNavigation(sessionUi, viewModel)
+    }
     }
 }

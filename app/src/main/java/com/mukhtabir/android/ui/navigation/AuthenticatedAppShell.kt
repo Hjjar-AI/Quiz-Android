@@ -3,6 +3,16 @@ package com.mukhtabir.android.ui.navigation
 import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.ui.components.AppTextButton
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.LocalDensity
+import com.mukhtabir.android.ui.components.AppLayoutTokens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -20,6 +30,11 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import com.mukhtabir.android.core.ShellNavigation
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material.icons.outlined.Quiz
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
@@ -73,14 +88,15 @@ private data class TabItem(
     val route: String,
     val labelRes: Int,
     val icon: ImageVector,
+    val unselectedIcon: ImageVector,
     val capability: String? = null,
 )
 
 private val tabs = listOf(
-    TabItem(AppRoutes.HOME, R.string.home, Icons.Filled.Home),
-    TabItem(AppRoutes.MORE_QUESTIONS, R.string.nav_library_short, Icons.Filled.ListAlt),
-    TabItem(AppRoutes.QUIZZES, R.string.quizzes, Icons.Filled.Quiz, "tests.start"),
-    TabItem(AppRoutes.BOOKMARKS, R.string.bookmarks, Icons.Filled.Bookmark),
+    TabItem(AppRoutes.HOME, R.string.home, Icons.Filled.Home, Icons.Outlined.Home),
+    TabItem(AppRoutes.MORE_QUESTIONS, R.string.nav_library_short, Icons.Filled.ListAlt, Icons.Outlined.ListAlt),
+    TabItem(AppRoutes.QUIZZES, R.string.quizzes, Icons.Filled.Quiz, Icons.Outlined.Quiz, "tests.start"),
+    TabItem(AppRoutes.BOOKMARKS, R.string.bookmarks, Icons.Filled.Bookmark, Icons.Outlined.Bookmark),
 )
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
@@ -180,6 +196,9 @@ internal fun AuthenticatedAppShell(
             }
         },
     ) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val useRail = maxWidth >= AppLayoutTokens.navigationRailBreakpoint * scale && !focusedRoute && !quizSessionActive
     val pageBackground = com.mukhtabir.android.ui.theme.LocalAppBackground.current
     Scaffold(
         modifier = (if (pageBackground != null) Modifier.background(pageBackground) else Modifier).imePadding(),
@@ -188,8 +207,7 @@ internal fun AuthenticatedAppShell(
         topBar = {
             if (currentRoute != null && tabs.none { it.route == currentRoute }) {
                 val title = ShellNavigation.title(currentRoute)
-                AppBackBar(stringResource(title), enabled = !questionActionBusy,
-                    onMenu = openDrawer.takeIf { drawerNavigationAllowed }) {
+                AppBackBar(stringResource(title), enabled = !questionActionBusy) {
                     backDispatcher?.onBackPressed()
                 }
             } else if (!quizSessionActive) {
@@ -198,11 +216,14 @@ internal fun AuthenticatedAppShell(
             }
         },
         bottomBar = {
-            if (!quizSessionActive) AppNavigationBar(navController, user, enabled = !questionActionBusy, selectedTab = selectedTab)
+            if (!quizSessionActive && !useRail) AppNavigationBar(navController, user, enabled = !questionActionBusy, selectedTab = selectedTab)
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { contentPadding ->
-        Column(Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(contentPadding)) {
+        Row(Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(contentPadding)) {
+        if (useRail) AppNavigationRail(navController, user, enabled = !questionActionBusy,
+            selectedTab = selectedTab, scale = scale)
+        Column(Modifier.weight(1f).fillMaxHeight()) {
             if (pendingLink != null && currentRoute !in setOf(AppRoutes.HOME, AppRoutes.MORE)) {
                 Text(stringResource(R.string.link_pending), Modifier.fillMaxWidth().padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.pagePadding, vertical = 8.dp))
             }
@@ -231,6 +252,8 @@ internal fun AuthenticatedAppShell(
             )
         }
         }
+        }
+    }
     }
     BackHandler(drawerState.isOpen) { drawerScope.launch { drawerState.close() } }
     }
@@ -253,21 +276,42 @@ private fun AppNavigationBar(navController: NavHostController, user: UserDto, en
                     .padding(vertical=com.mukhtabir.android.ui.components.AppLayoutTokens.secondaryFrameInset)) {
                     Column(Modifier.fillMaxWidth()
                         .heightIn(min=com.mukhtabir.android.ui.components.AppLayoutTokens.secondaryVisualHeight)
-                        .background(if(selected) androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer
-                            else androidx.compose.ui.graphics.Color.Transparent,androidx.compose.material3.MaterialTheme.shapes.medium)
                         .padding(horizontal=4.dp,vertical=1.dp),
                         horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides
-                            if(selected) androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer
+                            if(selected) androidx.compose.material3.MaterialTheme.colorScheme.primary
                             else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant) {
-                            Icon(item.icon,contentDescription=null,
-                                modifier=Modifier.size(com.mukhtabir.android.ui.components.AppLayoutTokens.secondaryIconSize))
+                            Box(Modifier.background(if (selected) androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer
+                                else androidx.compose.ui.graphics.Color.Transparent, CircleShape)
+                                .padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.pagePadding),
+                                contentAlignment = Alignment.Center) {
+                                Icon(if (selected) item.icon else item.unselectedIcon, contentDescription = null,
+                                    tint = if (selected) androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer
+                                        else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(com.mukhtabir.android.ui.components.AppLayoutTokens.secondaryIconSize))
+                            }
                             Text(stringResource(item.labelRes),style=androidx.compose.material3.MaterialTheme.typography.labelSmall,
                                 textAlign=androidx.compose.ui.text.style.TextAlign.Center)
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/** Same destinations/gates/handlers as bottom tabs, with scrollable labels at large text. */
+@Composable
+private fun AppNavigationRail(navController: NavHostController, user: UserDto, enabled: Boolean,
+    selectedTab: String, scale: Float) {
+    NavigationRail(Modifier.width(AppLayoutTokens.navigationRailWidth * scale).fillMaxHeight()
+        .verticalScroll(rememberScrollState()), containerColor = MaterialTheme.colorScheme.surface) {
+        tabs.filter { item -> item.capability?.let(user::has) ?: true }.forEach { item ->
+            val selected = selectedTab == item.route
+            NavigationRailItem(selected = selected, enabled = enabled,
+                onClick = { if (enabled) navController.navigateTopLevel(item.route) },
+                icon = { Icon(if (selected) item.icon else item.unselectedIcon, contentDescription = null) },
+                label = { Text(stringResource(item.labelRes), textAlign = androidx.compose.ui.text.style.TextAlign.Center) })
         }
     }
 }

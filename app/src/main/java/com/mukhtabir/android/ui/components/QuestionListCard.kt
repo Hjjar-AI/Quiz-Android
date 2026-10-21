@@ -27,8 +27,8 @@ fun QuestionListCard(question: QuestionDto, imageRepository: ImageRepository, on
                 }
             }
             ClinicalCaseContext(display.case)
-            MarkdownText(display.question, Modifier.fillMaxWidth())
-            QuestionImage(question.imageUrl, imageRepository)
+            MarkdownText(display.question, Modifier.fillMaxWidth(), interactive = false, maxLines = 3)
+            QuestionImage(question.imageUrl, imageRepository, maxHeight = AppLayoutTokens.listImageMaxHeight)
             AppMetadataRow(listOfNotNull(question.categoryName, question.difficulty.takeIf(String::isNotBlank)?.let { difficultyLabel(it) },
                 stringResource(if (question.verified) R.string.verified else R.string.unverified)))
             QuestionContext(question)

@@ -78,6 +78,7 @@ fun QuestionDetailRoute(
     onDeleted: (Long) -> Unit,
     onMutationBusyChanged: (Boolean) -> Unit,
     onShare: ((Long) -> Unit)? = null,
+    onPaneLockChanged: (Boolean) -> Unit = {},
 ) {
     val viewModel: QuestionDetailViewModel = viewModel(
         key = "question-$userId-$questionId-$bankRevision",
@@ -89,6 +90,11 @@ fun QuestionDetailRoute(
     DisposableEffect(state.mutationBusy) {
         onMutationBusyChanged(state.mutationBusy)
         onDispose { onMutationBusyChanged(false) }
+    }
+    val paneLocked = state.mutationBusy || state.bookmarkBusy || recoveryBlocked
+    DisposableEffect(paneLocked) {
+        onPaneLockChanged(paneLocked)
+        onDispose { onPaneLockChanged(false) }
     }
     val detailSessionLabel = stringResource(R.string.question_details)
     var readingLocale by rememberSaveable(questionId) { mutableStateOf<String?>(null) }
@@ -222,7 +228,7 @@ fun QuestionDetailRoute(
                 item { QuestionFeedback(questionId, userId, questionService, store) }
                 item {
                     OutlinedButton(onClick = viewModel::toggleBookmark, enabled = !recoveryBlocked && !state.bookmarkBusy && !state.mutationBusy, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.toggle_bookmark))
+                        Text(stringResource(if (viewModel.hasPendingBookmark) R.string.quiz_bookmark_check else R.string.toggle_bookmark))
                     }
                     state.actionError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     state.bookmarkChange?.let { change ->

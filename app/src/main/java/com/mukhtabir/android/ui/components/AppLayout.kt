@@ -1,6 +1,9 @@
 package com.mukhtabir.android.ui.components
 
 import com.mukhtabir.android.ui.theme.AppTheme
+import androidx.compose.animation.animateContentSize
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
@@ -191,7 +194,8 @@ fun AppSection(title: String, modifier: Modifier = Modifier, initiallyExpanded: 
     androidx.compose.runtime.LaunchedEffect(revealError, revealRequest) { if (revealError) { savedExpanded = true; onExpandedChange?.invoke(true) } }
     val focusManager = LocalFocusManager.current
     val state = stringResource(if (expanded) R.string.ui_expanded else R.string.ui_collapsed)
-    AppCard(modifier.fillMaxWidth()) {
+    val motionEnabled = (rememberCoroutineScope().coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f) > 0f
+    AppCard(modifier.fillMaxWidth().then(if (motionEnabled) Modifier.animateContentSize() else Modifier)) {
         Row(Modifier.fillMaxWidth().heightIn(min = AppLayoutTokens.touchTarget).clickable(enabled = enabled, role = Role.Button) { if (expanded) focusManager.clearFocus(); savedExpanded = !expanded; onExpandedChange?.invoke(!expanded) }
             .semantics { stateDescription = state }.padding(AppLayoutTokens.cardInsets),
             horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap), verticalAlignment = Alignment.CenterVertically) {

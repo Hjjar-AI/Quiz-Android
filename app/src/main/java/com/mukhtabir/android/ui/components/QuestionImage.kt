@@ -37,7 +37,7 @@ import kotlin.math.roundToInt
 /** Caller retains reveal authority; local images never cause a network request. */
 @Composable
 fun QuestionImage(url: String?, repository: ImageRepository? = null, modifier: Modifier = Modifier,
-    downloadedImage: String? = null) {
+    downloadedImage: String? = null, maxHeight: androidx.compose.ui.unit.Dp = AppLayoutTokens.imageMaxHeight) {
     if (url.isNullOrBlank() && downloadedImage == null) return
     var state by remember(url, repository, downloadedImage) { mutableStateOf<ImageState>(ImageState.Loading) }
     var retry by remember(url, repository, downloadedImage) { mutableStateOf(0) }
@@ -57,7 +57,7 @@ fun QuestionImage(url: String?, repository: ImageRepository? = null, modifier: M
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val panelHeight = if (state is ImageState.Error) 96.dp else
-                (maxWidth / AppLayoutTokens.questionImageAspectRatio).coerceAtMost(AppLayoutTokens.imageMaxHeight)
+                (maxWidth / AppLayoutTokens.questionImageAspectRatio).coerceAtMost(maxHeight)
             Surface(Modifier.fillMaxWidth().height(panelHeight), color = AppTheme.questionSurfaces.choice,
                 shape = MaterialTheme.shapes.medium, border = BorderStroke(AppLayoutTokens.cardBorderWidth, AppTheme.questionSurfaces.border)) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

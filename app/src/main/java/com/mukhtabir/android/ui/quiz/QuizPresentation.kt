@@ -4,6 +4,8 @@ import com.mukhtabir.android.data.remote.TestMode
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.heightIn
@@ -161,7 +163,7 @@ internal fun QuestionBookmark(state: QuizUiState, viewModel: QuizViewModel) {
         saved == true -> R.string.quiz_bookmark_saved
         else -> R.string.quiz_bookmark_not_saved
     })
-    com.mukhtabir.android.ui.components.AppOutlinedButton(
+    com.mukhtabir.android.ui.components.AppIconButton(
         onClick = {
             if (saved == null || uncertain) viewModel.refreshQuestionBookmark(id, force = true)
             else viewModel.changeQuestionBookmark(id)
@@ -173,7 +175,6 @@ internal fun QuestionBookmark(state: QuizUiState, viewModel: QuizViewModel) {
                 contentDescription=null,tint=if(saved==true && !uncertain) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text(label,style=MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -209,11 +210,24 @@ internal fun ActiveFilterSummary(state: QuizUiState, viewModel: QuizViewModel, s
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ResultsOverview(results: SessionResultsDto) {
-    com.mukhtabir.android.ui.components.LearningResultsSummary(results.correctCount, results.totalQuestions,
-        results.answeredCount, results.accuracy) {
-        com.mukhtabir.android.ui.components.AppMetadataRow(listOf(stringResource(R.string.total_time, formatDuration(results.totalTime))))
-        if (results.confidenceFragile > 0) Text(stringResource(R.string.fragile_result_count, results.confidenceFragile),
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val accuracy = results.accuracy.takeIf { it.isFinite() }
+        ?: if (results.totalQuestions > 0) results.correctCount * 100.0 / results.totalQuestions else 0.0
+    com.mukhtabir.android.ui.components.AppHero {
+        com.mukhtabir.android.ui.components.AppHeroRow(decoration = {
+            com.mukhtabir.android.ui.components.AppProgressRing((accuracy / 100).toFloat(),
+                com.mukhtabir.android.util.bidi("${com.mukhtabir.android.util.formatDecimal(accuracy)}%"),
+                stringResource(R.string.quiz_metric_accuracy))
+        }) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                Text(com.mukhtabir.android.util.bidi("${formatNumber(results.correctCount)} / ${formatNumber(results.totalQuestions)}"),
+                    style = MaterialTheme.typography.headlineLarge)
+                Text(stringResource(R.string.ui_result_summary, formatNumber(results.correctCount),
+                    formatNumber(results.answeredCount), formatNumber((results.totalQuestions - results.answeredCount).coerceAtLeast(0))))
+                Text(stringResource(R.string.total_time, formatDuration(results.totalTime)), style = MaterialTheme.typography.bodySmall)
+                if (results.confidenceFragile > 0) Text(stringResource(R.string.fragile_result_count, results.confidenceFragile),
+                    style = MaterialTheme.typography.bodySmall)
+            }
+        }
     }
 }
 

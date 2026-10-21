@@ -1,7 +1,6 @@
 package com.mukhtabir.android.ui.profile
 
 import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppTextButton
 
 import com.mukhtabir.android.ui.components.AppSection
 
@@ -10,6 +9,13 @@ import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
+import com.mukhtabir.android.ui.components.AppIconButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -67,9 +73,12 @@ fun ProfileScreen(
             .padding(AppLayoutTokens.pageInsets),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
     ) {
-        AppTextButton(onRefresh,enabled=!refreshing) { Text(stringResource(R.string.profile_refresh)) }
+        AppPageHeading(stringResource(R.string.profile_title), action = {
+            AppIconButton(onRefresh, enabled = !refreshing) {
+                Icon(Icons.Filled.Refresh, stringResource(R.string.profile_refresh))
+            }
+        })
         refreshError?.let {com.mukhtabir.android.ui.components.ErrorState(throwable=it)}
-        AppPageHeading(stringResource(R.string.profile_title))
 
         // ── Identity card ──────────────────────────────────────────
         Card(modifier = Modifier.fillMaxWidth()) {
@@ -82,15 +91,16 @@ fun ProfileScreen(
             ) {
                 Surface(
                     color = MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.large,
+                    shape = CircleShape,
                 ) {
-                    Text(
-                        text = user.displayName.firstOrNull()?.uppercase() ?: "?",
-                        modifier = Modifier.padding(AppLayoutTokens.cardInsets),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Box(Modifier.size(AppLayoutTokens.profileAvatarSize), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = user.displayName.firstOrNull()?.uppercase() ?: "?",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
                     Text(
@@ -110,7 +120,7 @@ fun ProfileScreen(
         AppSection(stringResource(R.string.profile_details)) {
             StatRow(stringResource(R.string.profile_role), com.mukhtabir.android.util.roleLabel(user.role))
             StatRow(stringResource(R.string.profile_questions_count), com.mukhtabir.android.util.formatNumber(user.questionsCount))
-            StatRow(stringResource(R.string.profile_trust_score), "${"%.1f".format(user.trustScore)}%")
+            StatRow(stringResource(R.string.profile_trust_score), com.mukhtabir.android.util.bidi("${com.mukhtabir.android.util.formatDecimal(user.trustScore)}%"))
             StatRow(stringResource(R.string.profile_streak), stringResource(R.string.profile_streak_value, user.currentStreak, user.longestStreak))
             user.createdAt?.let { StatRow(stringResource(R.string.profile_joined), formatLongDate(it)) }
             user.lastLogin?.let { StatRow(stringResource(R.string.profile_last_login), formatLongDate(it)) }

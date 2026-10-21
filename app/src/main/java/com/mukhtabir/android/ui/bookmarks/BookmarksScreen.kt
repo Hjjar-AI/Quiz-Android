@@ -19,7 +19,6 @@ import com.mukhtabir.android.ui.components.RefreshOnResume
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -32,8 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -216,6 +213,7 @@ fun BookmarksRoute(
     val canAct = !busy && !state.recoveryRequired && state.error == null
     val sessionLabel = stringResource(R.string.bookmarks)
     var showPractice by rememberSaveable(userId) { mutableStateOf(false) }
+    var showFilters by rememberSaveable(userId) { mutableStateOf(false) }
     var query by androidx.compose.runtime.remember(userId, state.page, pageSize) { mutableStateOf("") }
     var category by androidx.compose.runtime.remember(userId, state.page, pageSize) { mutableStateOf<String?>(null) }
     var book by androidx.compose.runtime.remember(userId, state.page, pageSize) { mutableStateOf<String?>(null) }
@@ -237,24 +235,8 @@ fun BookmarksRoute(
             book?.let { value -> add(com.mukhtabir.android.ui.components.ActiveFilter("book", stringResource(R.string.quiz_filter_book, value), { book = null })) }
             tag?.let { value -> add(com.mukhtabir.android.ui.components.ActiveFilter("tag", stringResource(R.string.quiz_filter_tag, value), { tag = null })) }
         }, onClear = { query = ""; category = null; book = null; tag = null }, enabled = !busy)
-        com.mukhtabir.android.ui.components.AppSection(stringResource(R.string.ui_page_filters)) {
-            Text(stringResource(R.string.ux_filter_single_tag), style = MaterialTheme.typography.bodySmall)
-            Column(Modifier.heightIn(max = AppLayoutTokens.menuMaxHeight).verticalScroll(rememberScrollState())) {
-                com.mukhtabir.android.ui.components.AppActionRow {
-                    state.items.mapNotNull { it.categoryName }.distinct().forEach { value ->
-                        com.mukhtabir.android.ui.components.AppFilterChip(category == value, { category = if (category == value) null else value },
-                            enabled = !busy, label = { Text(stringResource(R.string.quiz_filter_category, value)) })
-                    }
-                    state.items.mapNotNull { it.sourceDocument?.takeIf(String::isNotBlank) }.distinct().forEach { value ->
-                        com.mukhtabir.android.ui.components.AppFilterChip(book == value, { book = if (book == value) null else value },
-                            enabled = !busy, label = { Text(stringResource(R.string.quiz_filter_book, value)) })
-                    }
-                    state.items.flatMap { it.tags }.distinct().forEach { value ->
-                        com.mukhtabir.android.ui.components.AppFilterChip(tag == value, { tag = if (tag == value) null else value },
-                            enabled = !busy, label = { Text(stringResource(R.string.quiz_filter_tag, value)) })
-                    }
-                }
-            }
+        OutlinedButton({ showFilters = true }, enabled = !busy) {
+            Text(stringResource(R.string.library_active_filters, listOf(category, book, tag).count { it != null }))
         }
         }
     }
@@ -314,6 +296,28 @@ fun BookmarksRoute(
             }
         }
     }
+    }
+    if (showFilters) com.mukhtabir.android.ui.components.AppBottomSheet(
+        stringResource(R.string.ui_page_filters), onDismiss = { showFilters = false }, actions = {
+            com.mukhtabir.android.ui.components.AppActionRow {
+                Button({ showFilters = false }) { Text(stringResource(R.string.done)) }
+                com.mukhtabir.android.ui.components.AppTextButton({ category = null; book = null; tag = null }, enabled = !busy) {
+                    Text(stringResource(R.string.ui_clear_all))
+                }
+            }
+        }) {
+        Text(stringResource(R.string.ui_page_filter_hint), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.ux_filter_single_tag), style = MaterialTheme.typography.bodySmall)
+        val any = "" to stringResource(R.string.difficulty_any)
+        com.mukhtabir.android.ui.components.AppFilterOptions(stringResource(R.string.source_categories),
+            listOf(any) + state.items.mapNotNull { it.categoryName }.distinct().map { it to it }, category.orEmpty(),
+            onSelect = { category = it.takeIf(String::isNotBlank) }, enabled = !busy)
+        com.mukhtabir.android.ui.components.AppFilterOptions(stringResource(R.string.select_source_book),
+            listOf(any) + state.items.mapNotNull { it.sourceDocument?.takeIf(String::isNotBlank) }.distinct().map { it to it }, book.orEmpty(),
+            onSelect = { book = it.takeIf(String::isNotBlank) }, enabled = !busy)
+        com.mukhtabir.android.ui.components.AppFilterOptions(stringResource(R.string.source_tags),
+            listOf(any) + state.items.flatMap { it.tags }.distinct().map { it to it }, tag.orEmpty(),
+            onSelect = { tag = it.takeIf(String::isNotBlank) }, enabled = !busy)
     }
     if (showPractice && canStartSessions) {
         val ids = androidx.compose.runtime.remember { filteredItems.map { it.id } }

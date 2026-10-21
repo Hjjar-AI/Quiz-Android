@@ -1824,4 +1824,13 @@
     <string name="drawer_help_information">Help &amp; information</string>
     <string name="drawer_authoring">Create &amp; manage content</string>
     <string name="launch_demo_title">Sample practice</string>
+    <string name="analytics_chart_summary">Latest: %1$s · Range: %2$s–%3$s</string>
+    <string name="ui_or">or</string>
+    <string name="ui_theme_live_preview">Choose a theme to preview it immediately.</string>
+    <string name="ui_search_options">Search %1$s</string>
+    <string name="ui_count_max">Max (%1$s)</string>
+    <string name="ui_setup_summary">%1$s · %2$s questions · %3$s</string>
+    <string name="ui_select_detail">Choose a question to read its details here.</string>
+    <string name="ui_review_pick">Choose a question to review its saved answer.</string>
+    <string name="ui_result_summary">%1$s correct · %2$s answered · %3$s unanswered</string>
 </resources>

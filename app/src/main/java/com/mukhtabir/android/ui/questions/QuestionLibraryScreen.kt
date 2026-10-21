@@ -14,6 +14,12 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 
 import com.mukhtabir.android.ui.components.AppActionRow
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -70,6 +76,8 @@ fun QuestionLibraryRoute(
     onStartQuestions: (TestMode, List<Long>, String) -> Unit,
     onDownloadOffline: ((List<Long>) -> Unit)? = null,
     navigationStore: com.mukhtabir.android.core.SessionDraftStore? = null,
+    detailContent: (@Composable (Long, (Long?) -> Unit, (Boolean) -> Unit) -> Unit)? = null,
+    detailStateOwner: String = "",
 ) {
     val viewModel: QuestionLibraryViewModel = viewModel(
         key = "question-library-$userId",
@@ -99,16 +107,36 @@ fun QuestionLibraryRoute(
     val defaultSessionLabel = stringResource(R.string.question_library)
     val last=recent.lastQuestionId?.takeUnless {it in removedQuestionIds}
     val sessionIds = if (state.selectedIds.isNotEmpty()) state.selectedIds.toList() else state.items.map { it.id }
-    val canLaunch = !state.isLoading && state.error == null && sessionIds.size in 1..maxQuestions
+    val detailSaver = remember(userId, detailStateOwner) {
+        androidx.compose.runtime.saveable.Saver<Long?, List<String>>(
+            save = { listOf(detailStateOwner, userId.toString(), it?.toString().orEmpty()) },
+            restore = { saved ->
+                if (saved.getOrNull(0) == detailStateOwner && saved.getOrNull(1) == userId.toString())
+                    saved.getOrNull(2)?.toLongOrNull()?.takeIf { it > 0 } else null
+            })
+    }
+    var detailId by rememberSaveable(userId, detailStateOwner, stateSaver = detailSaver) { mutableStateOf<Long?>(null) }
+    var detailLocked by remember(userId) { mutableStateOf(false) }
+    LaunchedEffect(removedQuestionIds) { if (detailId?.let { it in removedQuestionIds } == true) detailId = null }
+    BackHandler(enabled = detailId != null) { if (!detailLocked) detailId = null }
+    val canLaunch = !detailLocked && !state.isLoading && state.error == null && sessionIds.size in 1..maxQuestions
 
-    Column(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val split = detailContent != null && maxWidth >= AppLayoutTokens.detailPaneBreakpoint * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val openQuestion: (Long) -> Unit = { id ->
+        if (!detailLocked) {
+            if (split) detailId = id else onOpenQuestion(id)
+        }
+    }
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+    if (split || detailId == null) Column(Modifier.weight(if (split) AppLayoutTokens.detailListFraction else 1f).fillMaxHeight()) {
     Box(Modifier.weight(1f)) {
     com.mukhtabir.android.ui.components.PullToRefresh(state.isLoading, viewModel::retry) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(AppLayoutTokens.libraryPadding),
             verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.libraryGap)) {
             item {
                 AppPageHeading(stringResource(R.string.question_library),
-                    action = { if (canCreate) TextButton(onCreateQuestion) { Text(stringResource(R.string.create)) } })
+                    action = { if (canCreate) TextButton(onCreateQuestion, enabled = !detailLocked) { Text(stringResource(R.string.create)) } })
                 if (canReview) AppActionRow() {
                     FilterChip(state.mode == LibraryMode.ALL, { viewModel.setMode(LibraryMode.ALL) }, label = { Text(stringResource(R.string.all_questions)) })
                     FilterChip(state.mode == LibraryMode.REVIEW, { viewModel.setMode(LibraryMode.REVIEW) }, label = { Text(stringResource(R.string.review_queue)) })
@@ -129,7 +157,7 @@ fun QuestionLibraryRoute(
                             Text(stringResource(if (state.items.all { it.id in state.selectedIds }) R.string.deselect_page else R.string.select_page))
                         }
                         if (canStartSessions && (state.items.isNotEmpty() || state.selectedIds.isNotEmpty())) {
-                            Button({ showPractice = true }) { Text(stringResource(R.string.library_practice, sessionIds.size)) }
+                            Button({ showPractice = true }, enabled = canLaunch) { Text(stringResource(R.string.library_practice, sessionIds.size)) }
                         }
                     }
                     if (state.mode == LibraryMode.ALL) com.mukhtabir.android.ui.components.ActiveFilterSummary(
@@ -151,7 +179,7 @@ fun QuestionLibraryRoute(
             if (state.isLoading) item { AppLoadingIndicator(Modifier.fillMaxWidth()) }
             state.error?.let { error -> item { ErrorState(throwable = error, onRetry = if (state.isLoading) null else viewModel::retry) } }
             if(last!=null) item {
-                OutlinedButton({onOpenQuestion(last)},enabled=!state.isLoading){Text(stringResource(R.string.library_last_question,last))}
+                OutlinedButton({openQuestion(last)},enabled=!state.isLoading){Text(stringResource(R.string.library_last_question,last))}
                 TextButton({navigationScope.launch {
                     val cleared=kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {navigationStore?.recordLastQuestion(userId,null)?.isSuccess==true}
                     ensureActive();if(cleared) recent=recent.copy(lastQuestionId=null)
@@ -164,15 +192,18 @@ fun QuestionLibraryRoute(
                 ErrorState(throwable = failure, onRetry = if (ratings.loading || ratings.savingId != null) null else ratingsVm::refresh)
             } }
             items(state.items, key = { it.id }) { question ->
-                QuestionLibraryCard(question, imageRepository, onClick = { onOpenQuestion(question.id) },
+                Column(Modifier.fillMaxWidth().then(if (detailId == question.id) Modifier.border(
+                    AppLayoutTokens.selectedBorderWidth, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium) else Modifier)) {
+                QuestionLibraryCard(question, imageRepository, onClick = { openQuestion(question.id) },
                     onVerify = ({ viewModel.verify(question.id) }).takeIf { canReview && !question.verified },
-                    verifyEnabled = !state.isLoading && question.id !in state.verifyingIds,
+                    verifyEnabled = !detailLocked && !state.isLoading && question.id !in state.verifyingIds,
                     selected = question.id in state.selectedIds,
                     onSelect = ({ viewModel.toggleSelection(question.id) }).takeIf { canStartSessions },
                     selectionEnabled = !state.isLoading,
                     rating = ratings.rows[question.id],
                     ratingLoading = ratings.loading,
-                    onRating = { ratingQuestionId = question.id })
+                    onRating = ({ ratingQuestionId = question.id }).takeIf { !detailLocked })
+                }
             }
             if (state.totalPages > 1) item {
                 AppPagination(state.page, state.totalPages, onPrevious = viewModel::previousPage, onNext = viewModel::nextPage, previousEnabled = state.page > 1 && !state.isLoading, nextEnabled = state.page < state.totalPages && !state.isLoading, modifier = Modifier.fillMaxWidth())
@@ -192,16 +223,34 @@ fun QuestionLibraryRoute(
         }
     }
     }
+    if (detailContent != null && (split || detailId != null)) {
+        Column(Modifier.weight(if (split) 1f - AppLayoutTokens.detailListFraction else 1f).fillMaxHeight()) {
+            val activeId = detailId
+            if (activeId == null) EmptyState(stringResource(R.string.ui_select_detail))
+            else {
+                com.mukhtabir.android.ui.components.AppTextButton({ if (!detailLocked) detailId = null }, enabled = !detailLocked) {
+                    Text(stringResource(R.string.close))
+                }
+                Box(Modifier.weight(1f)) {
+                    androidx.compose.runtime.key(userId, activeId, bankRevision) {
+                        detailContent(activeId, { detailId = it }, { detailLocked = it })
+                    }
+                }
+            }
+        }
+    }
+    }
+    }
     if (showPractice && canStartSessions) {
         val ids = remember { sessionIds.toList() }
         val label = remember { state.query.ifBlank { defaultSessionLabel } }
         com.mukhtabir.android.ui.components.PracticeLauncher(label, ids, maxQuestions,
-            enabled = !state.isLoading && state.error == null, onDismiss = { showPractice = false },
-            onStart = { mode, selected, name -> showPractice = false; onStartQuestions(mode, selected, name) },
-            onDownload = onDownloadOffline?.let { download -> ({ selected -> showPractice = false; download(selected) }) })
+            enabled = !detailLocked && !state.isLoading && state.error == null, onDismiss = { showPractice = false },
+            onStart = { mode, selected, name -> if (!detailLocked) { showPractice = false; onStartQuestions(mode, selected, name) } },
+            onDownload = onDownloadOffline?.let { download -> ({ selected -> if (!detailLocked) { showPractice = false; download(selected) } }) })
     }
     ratingQuestionId?.let { id -> LibraryRatingDialog(id, ratings, ratingsVm) { ratingQuestionId = null } }
-    if (showFilters && state.mode == LibraryMode.ALL) LibraryFiltersDialog(
+    if (showFilters && state.mode == LibraryMode.ALL) LibraryFiltersSheet(
         state = state.copy(categories=state.categories.sortedBy {recent.categories.indexOf(it.id).takeIf {index->index>=0} ?: Int.MAX_VALUE},
             tags=state.tags.sortedBy {recent.tags.indexOf(it).takeIf {index->index>=0} ?: Int.MAX_VALUE}), defaultPageSize = pageSize, onRetry = viewModel::loadOptions,
         onDismiss = { showFilters = false },

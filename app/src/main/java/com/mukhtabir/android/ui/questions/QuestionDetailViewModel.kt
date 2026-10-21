@@ -31,6 +31,8 @@ internal class QuestionDetailViewModel(
     fun permissions(duplicate: Boolean, deleteOwn: Boolean, deleteAny: Boolean) {canDuplicate=duplicate;canDeleteOwn=deleteOwn;canDeleteAny=deleteAny}
     private var pendingBookmark: Boolean? = null
     private var duplicateOperation: String? = null
+    /** Existing retained intent; the UI offers status review instead of implying a fresh toggle. */
+    val hasPendingBookmark: Boolean get() = pendingBookmark != null
     val recovery = com.mukhtabir.android.core.EditorRecovery(viewModelScope, store, userId,
         "question_detail-$questionId", DetailRecovery.serializer())
     init { load() }
