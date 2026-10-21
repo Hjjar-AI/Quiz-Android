@@ -1,0 +1,147 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
+package com.mukhtabir.android.ui.questions
+
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
+import com.mukhtabir.android.ui.components.AppTextButton as TextButton
+import com.mukhtabir.android.ui.components.AppButton as Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import com.mukhtabir.android.R
+import com.mukhtabir.android.data.remote.ImageRepository
+import com.mukhtabir.android.data.remote.QuestionDto
+import com.mukhtabir.android.data.remote.QuestionRatingRowDto
+import com.mukhtabir.android.ui.profile.AuthorRank
+import com.mukhtabir.android.ui.profile.AuthorRankBadge
+import com.mukhtabir.android.ui.components.ErrorState
+
+@Composable
+internal fun LibraryFiltersDialog(
+    state: QuestionLibraryUiState,
+    defaultPageSize: Int,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+    onApply: (Long?, String?, String?, Boolean, Int?) -> Unit,
+) {
+    var category by remember { mutableStateOf(state.categoryId?.toString().orEmpty()) }
+    var difficulty by remember { mutableStateOf(state.difficulty.orEmpty()) }
+    var tag by remember { mutableStateOf(state.tag.orEmpty()) }
+    var verified by remember { mutableStateOf(state.verifiedOnly) }
+    var size by remember { mutableStateOf(state.customPageSize?.toString().orEmpty()) }
+    LaunchedEffect(state.categories,state.tags,state.optionsLoading,state.optionsError) {
+        if(!state.optionsLoading && state.optionsError==null) {
+            if(category.isNotEmpty() && state.categories.none {it.id.toString()==category}) category=""
+            if(tag.isNotEmpty() && tag !in state.tags) tag=""
+        }
+    }
+    val any = stringResource(R.string.difficulty_any)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.library_filters)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                if (state.optionsLoading) AppLoadingIndicator()
+                state.optionsError?.let { ErrorState(throwable = it,
+                    onRetry = if (state.optionsLoading) null else onRetry) }
+                LibraryFilterChoice(stringResource(R.string.source_categories), category,
+                    listOf("" to any) + state.categories.map { it.id.toString() to it.name }) { category = it }
+                LibraryFilterChoice(stringResource(R.string.difficulty), difficulty, listOf(
+                    "" to any, "easy" to stringResource(R.string.difficulty_easy),
+                    "medium" to stringResource(R.string.difficulty_medium),
+                    "hard" to stringResource(R.string.difficulty_hard))) { difficulty = it }
+                LibraryFilterChoice(stringResource(R.string.source_tags), tag,
+                    listOf("" to any) + state.tags.map { it to it }) { tag = it }
+                Text(stringResource(R.string.ux_filter_single_tag), style = MaterialTheme.typography.bodySmall)
+                com.mukhtabir.android.ui.components.AppCheckboxRow(stringResource(R.string.verified_only), verified, { verified = it })
+                LibraryFilterChoice(stringResource(R.string.library_page_size), size,
+                    listOf("" to stringResource(R.string.library_default_page_size, defaultPageSize)) +
+                        listOf(10, 20, 50, 100).map { it.toString() to it.toString() }) { size = it }
+            }
+        },
+        confirmButton = { TextButton({ onApply(category.toLongOrNull(), difficulty.takeIf(String::isNotBlank),
+            tag.takeIf(String::isNotBlank), verified, size.toIntOrNull()) }) { Text(stringResource(R.string.library_apply)) } },
+        dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun LibraryFilterChoice(label: String, value: String, options: List<Pair<String, String>>, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton({ expanded = true }, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.library_filter_value, label,
+                options.firstOrNull { it.first == value }?.second ?: value))
+        }
+        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.heightIn(max = AppLayoutTokens.filterMenuMaxHeight)) {
+            options.forEach { (key, text) ->
+                DropdownMenuItem(text = { Text(if (key == value) "✓ $text" else text) },
+                    modifier = Modifier.semantics { selected = key == value },
+                    onClick = { onSelect(key); expanded = false })
+            }
+        }
+    }
+}
+
+@Composable
+internal fun QuestionLibraryCard(
+    question: QuestionDto,
+    imageRepository: ImageRepository,
+    onClick: () -> Unit,
+    onVerify: (() -> Unit)? = null,
+    verifyEnabled: Boolean = true,
+    selected: Boolean = false,
+    onSelect: (() -> Unit)? = null,
+    selectionEnabled: Boolean = true,
+    rating: QuestionRatingRowDto? = null,
+    ratingLoading: Boolean = false,
+    onRating: (() -> Unit)? = null,
+) {
+    com.mukhtabir.android.ui.components.QuestionListCard(question, imageRepository, onOpen = onClick,
+        selected = selected, onSelect = onSelect, selectionEnabled = selectionEnabled) {
+            question.authoredByUsername?.takeIf(String::isNotBlank)?.let { author ->
+                Row(horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.library_question_author, author), modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall)
+                    val rank = AuthorRank.fromKey(question.authoredByRank?.key)
+                    AuthorRankBadge(rank)
+                    if (rank == null) question.authoredByRank?.label?.takeIf(String::isNotBlank)?.let {
+                        Text(it, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            onRating?.let { open ->
+                rating?.let { value ->
+                    Text(if (value.count == 0) stringResource(R.string.no_ratings)
+                        else stringResource(R.string.rating_average, value.average, value.count), style = MaterialTheme.typography.bodySmall)
+                }
+                TextButton(open, enabled = !ratingLoading) { Text(stringResource(R.string.your_rating)) }
+            }
+            onVerify?.let { Button(it, enabled = verifyEnabled) { Text(stringResource(R.string.verify_question)) } }
+    }
+}
