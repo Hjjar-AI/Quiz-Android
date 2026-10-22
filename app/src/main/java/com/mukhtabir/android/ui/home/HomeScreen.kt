@@ -438,7 +438,7 @@ private fun HomeActivity(activity: StreakHistoryDto) {
 
 @Composable
 private fun HomeLink(label: String, onClick: () -> Unit) {
-    AppListRow(Modifier.clickable(role = androidx.compose.ui.semantics.Role.AppButton, onClick = onClick)) {
+    AppListRow(Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
         androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.ChevronRight,
             modifier = Modifier.directionalIcon(),

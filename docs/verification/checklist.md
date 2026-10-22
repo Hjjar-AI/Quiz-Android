@@ -9,7 +9,7 @@ Canonical record consolidating the former `checking.md` and UI review. Reusable 
 | Production source | Kotlin lexical/delimiter/import, shared-control argument, resource-reference and whitespace checks passed. Compilation/runtime remain unverified. |
 | Resources/APIs | 1,817 translatable English/Arabic keys/placeholders match; bundled font and installed Compose/icon metadata inspected. Translation quality, clipping and device font behavior remain unverified. |
 | Native contrast | Source calculations across 17 concrete themes reached 4.5:1 for adjusted feedback/error ink on checked surfaces and 3:1 for unselected question/choice borders. No rendered/disabled/selected/image contrast claim. |
-| Build/runtime | Earlier user-reported debug build 0.1.6.20261022 (code 7) succeeded before current UI corrections. Current corrections have no build, suite, device or live API result. Earlier Gradle deprecations remain unspecified. |
+| Build/runtime | Supplied `assembleDebug` for 0.1.8.20261022 (code 9) failed on keyboard/layout opt-ins and `Role.AppButton`. Both field overloads and session navigation now opt in at function scope; Home uses `Role.Button`. Source fixes checked, not rebuilt: user explicitly requested no build. Device/suite/live API verification and unspecified Gradle deprecations remain pending. |
 | Documentation | Local links/heading anchors and whitespace checked; no build needed for documentation edits. |
 
 ## Review disposition

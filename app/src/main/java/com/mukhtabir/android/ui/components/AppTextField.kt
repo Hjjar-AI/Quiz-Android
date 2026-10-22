@@ -34,7 +34,7 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.util.ltrInputStyle
 
 /** Shared geometry; multiline editors retain Enter while single-line forms default to Next. */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun AppTextField(
     value: String,
@@ -72,7 +72,7 @@ fun AppTextField(
         shape = MaterialTheme.shapes.medium)
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun AppTextField(
     value: androidx.compose.ui.text.input.TextFieldValue,

@@ -80,6 +80,7 @@ internal fun SessionHeader(ui: SessionPresentation, clock: kotlinx.coroutines.fl
         ui.examDurationSeconds?.let { time.seconds.toLong() * 10 <= it } == true, tools)
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun SessionNavigation(ui: SessionPresentation, viewModel: QuizViewModel) {
     var confirmFinish by rememberSaveable(ui.sessionId) { mutableStateOf(false) }

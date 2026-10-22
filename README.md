@@ -22,7 +22,7 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 
 ## Verification
 
-Current UI corrections have passed production-source/resource/contrast checks; they have not been compiled or device-verified. A supplied earlier debug build succeeded before those corrections. See the [current evidence and remaining checks](docs/verification/checklist.md).
+The latest supplied debug build failed on missing keyboard/layout API opt-ins and an invalid button role. Those source errors are corrected but have not been rebuilt, as requested. Earlier source/resource/contrast checks do not establish compilation or device behavior. See the [current evidence and remaining checks](docs/verification/checklist.md).
 
 Relevant focused checks and debug builds are permitted under the [toolchain policy](Agents.md#efficient-verification). Reuse installed tools and persistent caches, preserve versions for verification and ask before installing missing requirements. Documentation-only changes need link/consistency checks, not a build.
 
