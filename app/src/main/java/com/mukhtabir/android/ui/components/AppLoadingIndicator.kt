@@ -10,9 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -34,13 +32,13 @@ fun AppLoadingIndicator(
     color: Color = MaterialTheme.colorScheme.primary,
 ) {
     val label = stringResource(R.string.loading)
-    val motionEnabled = (rememberCoroutineScope().coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f) > 0f
+    val motionEnabled = rememberMotionEnabled()
     val phase = if (motionEnabled) {
         rememberInfiniteTransition(label = "Loading dots").animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1400, easing = LinearEasing),
+                animation = tween(durationMillis = AppMotion.loadingCycleMillis, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart,
             ),
             label = "Loading pulse",

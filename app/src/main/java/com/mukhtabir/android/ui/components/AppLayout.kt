@@ -1,52 +1,50 @@
 package com.mukhtabir.android.ui.components
 
-import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.compose.animation.animateContentSize
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.MotionDurationScale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.graphics.Color
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
 private fun appCardBorder() = BorderStroke(AppLayoutTokens.cardBorderWidth, MaterialTheme.colorScheme.outlineVariant.copy(alpha = AppControlTokens.cardBorderAlpha))
@@ -141,7 +139,7 @@ fun AppCard(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean
     content: @Composable ColumnScope.() -> Unit) {
     Card(onClick = onClick, modifier = modifier, enabled = enabled, shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = appCardBorder(), content = content)
+        border = BorderStroke(AppLayoutTokens.cardBorderWidth, MaterialTheme.colorScheme.outline), content = content)
 }
 
 @Composable
@@ -194,7 +192,7 @@ fun AppSection(title: String, modifier: Modifier = Modifier, initiallyExpanded: 
     androidx.compose.runtime.LaunchedEffect(revealError, revealRequest) { if (revealError) { savedExpanded = true; onExpandedChange?.invoke(true) } }
     val focusManager = LocalFocusManager.current
     val state = stringResource(if (expanded) R.string.ui_expanded else R.string.ui_collapsed)
-    val motionEnabled = (rememberCoroutineScope().coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f) > 0f
+    val motionEnabled = rememberMotionEnabled()
     AppCard(modifier.fillMaxWidth().then(if (motionEnabled) Modifier.animateContentSize() else Modifier)) {
         Row(Modifier.fillMaxWidth().heightIn(min = AppLayoutTokens.touchTarget).clickable(enabled = enabled, role = Role.Button) { if (expanded) focusManager.clearFocus(); savedExpanded = !expanded; onExpandedChange?.invoke(!expanded) }
             .semantics { stateDescription = state }.padding(AppLayoutTokens.cardInsets),

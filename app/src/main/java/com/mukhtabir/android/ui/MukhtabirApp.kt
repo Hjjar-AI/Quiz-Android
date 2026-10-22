@@ -1,55 +1,54 @@
 package com.mukhtabir.android.ui
 
-import com.mukhtabir.android.ui.components.AppLaunchLayout
-import com.mukhtabir.android.ui.components.AppLaunchHeader
-import com.mukhtabir.android.ui.components.OfflineLaunchActions
-import com.mukhtabir.android.ui.components.AppCard
-import com.mukhtabir.android.ui.components.AppCardBody
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import androidx.lifecycle.repeatOnLifecycle
-
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.fillMaxWidth
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.AppContainer
 import com.mukhtabir.android.data.remote.PublicConfigDto
 import com.mukhtabir.android.ui.about.LearnerInformation
-import kotlinx.coroutines.delay
-import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.saveable.rememberSaveable
 import com.mukhtabir.android.ui.auth.AuthViewModel
 import com.mukhtabir.android.ui.auth.ChangePasswordScreen
 import com.mukhtabir.android.ui.auth.LoginScreen
-
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCardBody
+import com.mukhtabir.android.ui.components.AppLaunchHeader
+import com.mukhtabir.android.ui.components.AppLaunchLayout
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.OfflineLaunchActions
+import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.StartupBrand
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.navigation.AuthenticatedAppShell
+import kotlinx.coroutines.delay
 
 @Composable
 fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
@@ -58,10 +57,10 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.Factory(container.authRepository),
     )
-    val authState by authViewModel.state.collectAsState()
+    val authState by authViewModel.state.collectAsLifecycleState()
     var startupFinished by remember(container) { mutableStateOf(false) }
     LaunchedEffect(authState.isRestoring) { if(authState.isRestoring) startupFinished=false }
-    com.mukhtabir.android.ui.components.RefreshOnResume { authViewModel.refreshUser(force=false) }
+    RefreshOnResume { authViewModel.refreshUser(force=false) }
     val profileLifecycle=androidx.compose.ui.platform.LocalLifecycleOwner.current
     LaunchedEffect(container,authState.user?.id,profileLifecycle) {
         if(authState.user!=null) profileLifecycle.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
@@ -127,14 +126,14 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
                     OfflineLaunchActions(
                         onDownloaded = cachedOwner?.let { owner -> ({ localOfflineOwner = owner }) },
                         onDemo = onDemo, enabled = !authState.isLoading, downloadedEnabled = true)
-                    com.mukhtabir.android.ui.components.AppSection(stringResource(R.string.startup_more_options),
+                    AppSection(stringResource(R.string.startup_more_options),
                         enabled = !authState.isLoading, expandedOverride = showRecoveryOptions,
                         onExpandedChange = { showRecoveryOptions = it }) {
-                        OutlinedButton(authViewModel::logout, enabled = !authState.isLoading) {
+                        AppOutlinedButton(authViewModel::logout, enabled = !authState.isLoading) {
                             Text(stringResource(R.string.sign_out))
                         }
                         onChangeServer?.let { change ->
-                            OutlinedButton(change,enabled=!authState.isLoading) { Text(stringResource(R.string.server_change)) }
+                            AppOutlinedButton(change,enabled=!authState.isLoading) { Text(stringResource(R.string.server_change)) }
                         }
                     }
                 }
@@ -190,7 +189,7 @@ private fun StartupScreen(onFinished: () -> Unit, onOffline: (() -> Unit)? = nul
     AppLaunchLayout(centerVertically = true) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.theme.AppTheme.spacing.content)) {
-            com.mukhtabir.android.ui.components.StartupBrand(onFinished = onFinished)
+            StartupBrand(onFinished = onFinished)
             AppLoadingIndicator()
             Text(stringResource(R.string.launch_checking_session),
                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)

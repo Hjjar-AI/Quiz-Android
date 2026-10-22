@@ -17,8 +17,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
-import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.util.formatDecimal
 
 /** Detailed date/value rows remain beside the chart in AnalyticsScreen. */
@@ -42,9 +42,9 @@ internal fun AnalyticsLineChart(values: List<Double>) {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Column {
         ChartSummary(finite)
-        Canvas(Modifier.fillMaxWidth().height(AppLayoutTokens.chartLineHeight).clearAndSetSemantics { }) {
-            val stroke = AppLayoutTokens.chartStroke.toPx()
-            val radius = AppLayoutTokens.chartMarkerRadius.toPx()
+        Canvas(Modifier.fillMaxWidth().height(AnalyticsChartsGeometry.chartLineHeight).clearAndSetSemantics { }) {
+            val stroke = AnalyticsChartsGeometry.chartStroke.toPx()
+            val radius = AnalyticsChartsGeometry.chartMarkerRadius.toPx()
             val inset = radius.coerceAtMost(minOf(size.width, size.height) / 2)
             val width = (size.width - inset * 2).coerceAtLeast(0f)
             val height = (size.height - inset * 2).coerceAtLeast(0f)
@@ -80,8 +80,8 @@ internal fun AnalyticsBarChart(values: List<Double>) {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Column {
         ChartSummary(finite)
-        Canvas(Modifier.fillMaxWidth().height(AppLayoutTokens.chartBarHeight).clearAndSetSemantics { }) {
-            val stroke = AppLayoutTokens.chartStroke.toPx()
+        Canvas(Modifier.fillMaxWidth().height(AnalyticsChartsGeometry.chartBarHeight).clearAndSetSemantics { }) {
+            val stroke = AnalyticsChartsGeometry.chartStroke.toPx()
             val lower = minOf(0.0, finite.minOrNull() ?: 0.0)
             val upper = maxOf(1.0, finite.maxOrNull() ?: 1.0)
             val height = (size.height - stroke).coerceAtLeast(0f)
@@ -89,7 +89,7 @@ internal fun AnalyticsBarChart(values: List<Double>) {
             val baseline = y(0.0)
             drawLine(grid, Offset(0f, baseline), Offset(size.width, baseline), strokeWidth = stroke)
             val slot = size.width / values.size
-            val gap = AppLayoutTokens.chartGap.toPx().coerceAtMost(slot / 2)
+            val gap = AnalyticsChartsGeometry.chartGap.toPx().coerceAtMost(slot / 2)
             val barWidth = (slot - gap).coerceAtLeast(0f)
             values.forEachIndexed { index, value ->
                 if (!value.isFinite()) return@forEachIndexed
@@ -101,4 +101,12 @@ internal fun AnalyticsBarChart(values: List<Double>) {
             }
         }
     }
+}
+
+private object AnalyticsChartsGeometry {
+    val chartBarHeight = 90.dp
+    val chartGap = 2.dp
+    val chartLineHeight = 120.dp
+    val chartMarkerRadius = 3.dp
+    val chartStroke = 2.dp
 }

@@ -1,26 +1,24 @@
 package com.mukhtabir.android.ui.components
 
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.EditorRecovery
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
 
 @Composable
 internal fun <T> editorRecoveryBlocked(recovery: EditorRecovery<T>): Boolean {
-    val pending by recovery.pending.collectAsState()
-    val error by recovery.error.collectAsState()
-    val ready by recovery.ready.collectAsState()
+    val pending by recovery.pending.collectAsLifecycleState()
+    val error by recovery.error.collectAsLifecycleState()
+    val ready by recovery.ready.collectAsLifecycleState()
     return !ready || pending != null || error != null
 }
 
@@ -28,9 +26,9 @@ internal fun <T> editorRecoveryBlocked(recovery: EditorRecovery<T>): Boolean {
 @OptIn(ExperimentalLayoutApi::class)
 internal fun <T> EditorRecoveryControls(recovery: EditorRecovery<T>, busy: Boolean, restore: (T) -> Unit) {
     var confirming by remember { mutableStateOf(false) }
-    val pending by recovery.pending.collectAsState()
-    val error by recovery.error.collectAsState()
-    val ready by recovery.ready.collectAsState()
+    val pending by recovery.pending.collectAsLifecycleState()
+    val error by recovery.error.collectAsLifecycleState()
+    val ready by recovery.ready.collectAsLifecycleState()
     if (pending != null) {
         Text(stringResource(R.string.recovery_draft_available))
         AppActionRow() {
@@ -38,9 +36,9 @@ internal fun <T> EditorRecoveryControls(recovery: EditorRecovery<T>, busy: Boole
             AppDangerOutlinedButton({confirming=true}, enabled = !busy) { Text(stringResource(R.string.ux_discard_local_recovery)) }
         }
     }
-    if(confirming) AlertDialog(onDismissRequest={confirming=false},
+    if(confirming) AppConfirmationDialog(onDismissRequest={confirming=false},
         title={Text(stringResource(R.string.ux_discard_local_recovery))},text={Text(stringResource(R.string.recovery_discard_confirm))},
         confirmButton={AppDangerTextButton({confirming=false;recovery.discard()},enabled=!busy) {Text(stringResource(R.string.ux_discard_local_recovery))}},
-        dismissButton={TextButton({confirming=false}) {Text(stringResource(R.string.cancel))}})
+        dismissButton={AppTextButton({confirming=false}) {Text(stringResource(R.string.cancel))}})
     error?.let { ErrorState(throwable = it, onRetry = if (busy) null else recovery::reload) }
 }

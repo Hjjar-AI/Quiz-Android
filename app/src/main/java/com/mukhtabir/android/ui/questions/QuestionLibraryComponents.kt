@@ -2,25 +2,18 @@
 
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
-import com.mukhtabir.android.ui.components.AppButton as Button
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,9 +21,18 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.QuestionRatingRowDto
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppBottomSheet
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCheckboxRow
+import com.mukhtabir.android.ui.components.AppFilterOptions
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.QuestionListCard
 import com.mukhtabir.android.ui.profile.AuthorRank
 import com.mukhtabir.android.ui.profile.AuthorRankBadge
-import com.mukhtabir.android.ui.components.ErrorState
 
 @Composable
 internal fun LibraryFiltersSheet(
@@ -52,17 +54,17 @@ internal fun LibraryFiltersSheet(
         }
     }
     val any = stringResource(R.string.difficulty_any)
-    com.mukhtabir.android.ui.components.AppBottomSheet(
+    AppBottomSheet(
         title = stringResource(R.string.library_filters), onDismiss = onDismiss,
         actions = {
-            com.mukhtabir.android.ui.components.AppActionRow {
-                Button({ onApply(category.toLongOrNull(), difficulty.takeIf(String::isNotBlank),
+            AppActionRow {
+                AppButton({ onApply(category.toLongOrNull(), difficulty.takeIf(String::isNotBlank),
                     tag.takeIf(String::isNotBlank), verified, size.toIntOrNull()) }) { Text(stringResource(R.string.library_apply)) }
-                TextButton(onDismiss) { Text(stringResource(R.string.cancel)) }
+                AppTextButton(onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         },
     ) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 if (state.optionsLoading) AppLoadingIndicator()
                 state.optionsError?.let { ErrorState(throwable = it,
                     onRetry = if (state.optionsLoading) null else onRetry) }
@@ -75,9 +77,9 @@ internal fun LibraryFiltersSheet(
                 LibraryFilterChoice(stringResource(R.string.source_tags), tag,
                     listOf("" to any) + state.tags.map { it to it }) { tag = it }
                 Text(stringResource(R.string.ux_filter_single_tag), style = MaterialTheme.typography.bodySmall)
-                com.mukhtabir.android.ui.components.AppCheckboxRow(stringResource(R.string.verified_only), verified, { verified = it })
+                AppCheckboxRow(stringResource(R.string.verified_only), verified, { verified = it })
                 LibraryFilterChoice(stringResource(R.string.library_page_size), size,
-                    listOf("" to stringResource(R.string.library_default_page_size, defaultPageSize)) +
+                    listOf("" to stringResource(R.string.library_default_page_size, com.mukhtabir.android.util.formatNumber(defaultPageSize))) +
                         listOf(10, 20, 50, 100).map { it.toString() to it.toString() }) { size = it }
             }
     }
@@ -86,7 +88,7 @@ internal fun LibraryFiltersSheet(
 
 @Composable
 private fun LibraryFilterChoice(label: String, value: String, options: List<Pair<String, String>>, onSelect: (String) -> Unit) {
-    com.mukhtabir.android.ui.components.AppFilterOptions(label, options, value,
+    AppFilterOptions(label, options, value,
         onSelect = onSelect)
 
 }
@@ -105,10 +107,10 @@ internal fun QuestionLibraryCard(
     ratingLoading: Boolean = false,
     onRating: (() -> Unit)? = null,
 ) {
-    com.mukhtabir.android.ui.components.QuestionListCard(question, imageRepository, onOpen = onClick,
+    QuestionListCard(question, imageRepository, onOpen = onClick,
         selected = selected, onSelect = onSelect, selectionEnabled = selectionEnabled) {
             question.authoredByUsername?.takeIf(String::isNotBlank)?.let { author ->
-                Row(horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap), verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.library_question_author, author), modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall)
                     val rank = AuthorRank.fromKey(question.authoredByRank?.key)
@@ -121,10 +123,10 @@ internal fun QuestionLibraryCard(
             onRating?.let { open ->
                 rating?.let { value ->
                     Text(if (value.count == 0) stringResource(R.string.no_ratings)
-                        else stringResource(R.string.rating_average, value.average, value.count), style = MaterialTheme.typography.bodySmall)
+                        else stringResource(R.string.rating_average, value.average, com.mukhtabir.android.util.formatNumber(value.count)), style = MaterialTheme.typography.bodySmall)
                 }
-                TextButton(open, enabled = !ratingLoading) { Text(stringResource(R.string.your_rating)) }
+                AppTextButton(open, enabled = !ratingLoading) { Text(stringResource(R.string.your_rating)) }
             }
-            onVerify?.let { Button(it, enabled = verifyEnabled) { Text(stringResource(R.string.verify_question)) } }
+            onVerify?.let { AppButton(it, enabled = verifyEnabled) { Text(stringResource(R.string.verify_question)) } }
     }
 }

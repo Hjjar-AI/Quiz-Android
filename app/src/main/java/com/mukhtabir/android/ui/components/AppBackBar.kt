@@ -2,14 +2,13 @@ package com.mukhtabir.android.ui.components
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import com.mukhtabir.android.ui.components.AppIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,13 +20,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.components.AppIconButton
 
 @Composable
 fun AppBackBar(title: String, enabled: Boolean, onMenu: (() -> Unit)? = null, onBack: () -> Unit) {
     Surface {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = AppLayoutTokens.shellHorizontalPadding, vertical = AppLayoutTokens.shellVerticalPadding), verticalAlignment = Alignment.CenterVertically) {
-            onMenu?.let { action -> IconButton(action, enabled = enabled) { Icon(Icons.Filled.Menu, stringResource(R.string.drawer_open)) } }
-            IconButton(onClick = onBack, enabled = enabled, modifier = Modifier) {
+            onMenu?.let { action -> AppIconButton(action, enabled = enabled) { Icon(Icons.Filled.Menu, stringResource(R.string.drawer_open)) } }
+            AppIconButton(onClick = onBack, enabled = enabled, modifier = Modifier) {
                 Icon(Icons.Filled.ArrowBack, stringResource(R.string.back),
                     Modifier.directionalIcon())
             }
@@ -42,13 +42,13 @@ fun AppTopBar(title: String, enabled: Boolean, onMenu: () -> Unit, onSettings: (
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = AppLayoutTokens.shellHorizontalPadding, vertical = AppLayoutTokens.shellVerticalPadding),
             verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onMenu, enabled = enabled, modifier = Modifier) {
+            AppIconButton(onMenu, enabled = enabled, modifier = Modifier) {
                 Icon(Icons.Filled.Menu, stringResource(R.string.drawer_open))
             }
             Text(title, style = MaterialTheme.typography.titleLarge, softWrap = true, maxLines = 2,
                 overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = AppLayoutTokens.shellHorizontalPadding).semantics { heading() })
             onSettings?.let { action ->
-                IconButton(action, enabled = enabled) {
+                AppIconButton(action, enabled = enabled) {
                     Icon(Icons.Filled.Settings, stringResource(R.string.nav_settings))
                 }
             }

@@ -1,51 +1,48 @@
 package com.mukhtabir.android.ui.masterexams
 
-import com.mukhtabir.android.ui.components.ExplanationCard
-
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppSuccessText
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
 import android.content.Context
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSuccessText
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.EmptyState
+import com.mukhtabir.android.ui.components.ExplanationCard
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 
@@ -199,7 +196,7 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
     if (!(if (preview) user.has("master_exams.preview") else canExportExamResults(user))) { Text(stringResource(R.string.error_forbidden)); return }
     val context = androidx.compose.ui.platform.LocalContext.current
     val vm: ExamReviewViewModel = viewModel(key = "exam-review-${user.id}-$id-$preview", factory = ExamReviewViewModel.Factory(id, user, service, transfer, preview, context))
-    val s by vm.state.collectAsState()
+    val s by vm.state.collectAsLifecycleState()
     val owner=androidx.compose.ui.platform.LocalLifecycleOwner.current
     LaunchedEffect(owner,vm) {
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -211,11 +208,11 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
     DisposableEffect(s.busy) {onBusyChanged(s.busy);onDispose {onBusyChanged(false)}}
     var confirmation by remember {mutableStateOf<String?>(null)}
     androidx.activity.compose.BackHandler {if(!s.busy) {if(preview && s.rehearsal.isNotEmpty() || s.publishUnknown) confirmation="leave" else onBack()}}
-    confirmation?.let {action->AlertDialog(onDismissRequest={confirmation=null},
+    confirmation?.let {action->AppConfirmationDialog(onDismissRequest={confirmation=null},
         title={Text(stringResource(if(action=="publish") R.string.exam_publish_bank else R.string.confirm))},
         text={Text(stringResource(when(action) {"publish"->R.string.exam_bank_warning;"refresh"->R.string.preview_restart_warning;else->if(s.publishUnknown) R.string.content_unknown else R.string.preview_leave_warning}))},
-        confirmButton={TextButton({confirmation=null;when(action){"publish"->vm.publish();"refresh"->vm.load();else->onBack()}},enabled=!s.busy){Text(stringResource(R.string.confirm))}},
-        dismissButton={TextButton({confirmation=null}){Text(stringResource(R.string.cancel))}})}
+        confirmButton={AppTextButton({confirmation=null;when(action){"publish"->vm.publish();"refresh"->vm.load();else->onBack()}},enabled=!s.busy){Text(stringResource(R.string.confirm))}},
+        dismissButton={AppTextButton({confirmation=null}){Text(stringResource(R.string.cancel))}})}
     var readingLocale by rememberSaveable(user.id,id,preview) { mutableStateOf<String?>(null) }
     var position by rememberSaveable(user.id,id,preview) { mutableStateOf(0) }
     var reveal by rememberSaveable(user.id,id,preview) { mutableStateOf(false) }
@@ -247,14 +244,14 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
                     val index = position.coerceIn(0, questions.lastIndex)
                     val original = questions[index].question()
                     val q = original.localizedForDisplay(readingLocale ?: java.util.Locale.getDefault().toLanguageTag())
-                    com.mukhtabir.android.ui.components.QuestionLanguageSelector(original.translations, original.choices.size,
+                    QuestionLanguageSelector(original.translations, original.choices.size,
                         readingLocale, { readingLocale = it }, hasCase = original.case?.stem?.isNotBlank() == true, caseTranslations = original.case?.translations ?: kotlinx.serialization.json.JsonObject(emptyMap()),
                         explanationAvailable = reveal && !original.explanation.isNullOrBlank(),
                         explanationTranslated = !q.explanation.isNullOrBlank())
                     val answer=s.rehearsal[q.id] ?: PreviewAnswer()
-                    Text(stringResource(R.string.report_page, index + 1, questions.size))
+                    Text(stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(index + 1), com.mukhtabir.android.util.formatNumber(questions.size)))
                     ClinicalCaseContext(q.case)
-                    com.mukhtabir.android.ui.components.QuestionTextCard(q.question)
+                    QuestionTextCard(q.question)
                     QuestionImage(q.imageUrl, images)
                     q.choices.forEachIndexed { choice, text ->
                         com.mukhtabir.android.ui.quiz.SelectableButton(
@@ -274,7 +271,7 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
                             AppActionRow {
                                 listOf(1 to R.string.confidence_guessing, 2 to R.string.confidence_uncertain,
                                     3 to R.string.confidence_certain).forEach { (value, label) ->
-                                    FilterChip(answer.confidence == value, { vm.confidence(q.id, value) },
+                                    AppFilterChip(answer.confidence == value, { vm.confidence(q.id, value) },
                                         enabled = !s.busy, label = { Text(stringResource(label)) })
                                 }
                             }
@@ -285,7 +282,7 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
                         Text(stringResource(if(answer.answer==q.correctAnswer) R.string.correct_answer else R.string.incorrect_answer))
                         ExplanationCard(q.explanation.orEmpty())
                     }
-                    Text(stringResource(R.string.preview_answered_count,s.rehearsal.values.count {it.submitted},questions.size))
+                    Text(stringResource(R.string.preview_answered_count, com.mukhtabir.android.util.formatNumber(s.rehearsal.values.count {it.submitted}), com.mukhtabir.android.util.formatNumber(questions.size)))
                     AppOutlinedButton({confirmation="leave"},enabled=!s.busy){Text(stringResource(R.string.preview_finish))}
                     AppOutlinedButton({ reveal = !reveal }) { Text(stringResource(if (reveal) R.string.exam_preview_hide else R.string.exam_preview_reveal)) }
                     if (reveal) ExplanationCard(q.explanation.orEmpty())
@@ -326,19 +323,19 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
                         val people = matrix.drop(1)
                         val pages = ((people.size - 1).coerceAtLeast(0) / 20) + 1
                         val page = participantPage.coerceIn(1, pages)
-                        if (people.isEmpty()) Text(stringResource(R.string.master_empty))
+                        if (people.isEmpty()) EmptyState(stringResource(R.string.master_empty))
                         // Each cell carries its column label; RTL and TalkBack do not depend on physical alignment.
                         people.drop((page - 1) * 20).take(20).forEach { row -> AppCard(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {
+                            Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
                                 Text(row[0], style = MaterialTheme.typography.titleMedium)
                                 Text(row[1])
-                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                                     row.drop(2).forEachIndexed { column, value -> Text(matrix[0][column + 2] + ": " + value) }
                                 }
                             }
                         } }
                         if (pages > 1) {
-                            Text(stringResource(R.string.report_page, page, pages))
+                            Text(stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
                             AppOutlinedButton({ participantPage = page - 1 }, enabled = page > 1) { Text(stringResource(R.string.previous)) }
                             AppOutlinedButton({ participantPage = page + 1 }, enabled = page < pages) { Text(stringResource(R.string.next)) }
                         }

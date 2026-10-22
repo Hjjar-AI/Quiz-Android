@@ -3,16 +3,15 @@ package com.mukhtabir.android.ui.settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +23,7 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.core.ServerConnectionFile
 import com.mukhtabir.android.core.ServerSettings
 import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppTextField
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,7 +59,7 @@ internal fun ServerConnectionExport(serverUrl: String, canExport: Boolean, busy:
         }
     }
     Text(stringResource(R.string.server_export_hint))
-    OutlinedTextField(address, { address = it; message = null }, enabled = canExport && !busy && pending == null,
+    AppTextField(address, { address = it; message = null }, enabled = canExport && !busy && pending == null,
         label = { Text(stringResource(R.string.server_address)) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )

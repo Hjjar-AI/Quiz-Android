@@ -1,17 +1,17 @@
 package com.mukhtabir.android.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -19,13 +19,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Alignment
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -52,26 +52,13 @@ object AppLayoutTokens {
     val homeColumnMinWidth = 360.dp
     val reviewListMaxHeight = 480.dp
     val sheetViewportFraction = .85f
-    val progressRingSize = 112.dp
-    val progressRingStroke = 6.dp
     val heroElevation = 2.dp
-    val themePreviewHeight = 72.dp
-    val brandHeight = 96.dp
     val comparisonBreakpoint = 600.dp
     val headingBreakpoint = 360.dp
     val sessionHeaderBreakpoint = 300.dp
     val sessionPinnedMinHeight = 420.dp
     val drawerPinnedMinHeight = 360.dp
-    val profileAvatarSize = 64.dp
-    val listImageMaxHeight = 120.dp
-    val chartStroke = 2.dp
-    val chartGap = 2.dp
-    val chartMarkerRadius = 3.dp
-    val chartLineHeight = 120.dp
-    val chartBarHeight = 90.dp
     val imageMaxHeight = 360.dp
-    val imageControlsMaxHeight = 160.dp
-    const val questionImageAspectRatio = 1.6f
     val menuMaxHeight = 360.dp
     val filterMenuMaxHeight = 280.dp
     val shellHorizontalPadding = pagePadding
@@ -83,11 +70,11 @@ object AppLayoutTokens {
     val denseCardVerticalPadding: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.denseCardVertical
     val cardInsets: PaddingValues @Composable get() = PaddingValues(horizontal = cardPadding, vertical = cardVerticalPadding)
     val denseCardInsets: PaddingValues @Composable get() = PaddingValues(horizontal = denseCardPadding, vertical = denseCardVerticalPadding)
-    val tightGap: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.tight
+    val tightGap: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.content
     val shellVerticalPadding = 0.dp
     val bottomNavigationHeight = 48.dp
     val libraryPadding = 12.dp
-    val libraryCardPadding: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.libraryCard
+    val libraryCardPadding: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.denseCard
     val libraryGap: androidx.compose.ui.unit.Dp
         @Composable get() = AppTheme.spacing.content
     val touchTarget = 48.dp
@@ -96,13 +83,8 @@ object AppLayoutTokens {
     val selectedBorderWidth = 2.dp
     val answerFeedbackBorderWidth = 1.dp
     val questionBorderWidth = 1.5.dp
-    val tileMinWidth = 112.dp
-    const val tileMaxColumns = 3
-    val tileWidthAllowance = .5.dp
     val secondaryVisualHeight = 36.dp
     val secondaryFrameInset = 6.dp
-    val choiceNumberWidth = 24.dp
-    val heatmapCellSize = 24.dp
     val secondaryVerticalPadding: androidx.compose.ui.unit.Dp @Composable get() =
         (AppTheme.spacing.denseCardVertical - 1.dp).coerceAtLeast(1.dp)
     val secondaryContentPadding: PaddingValues @Composable get() =
@@ -148,14 +130,13 @@ fun AppDangerOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppActionRow(modifier: Modifier = Modifier, fillWidth: Boolean = true, content: @Composable FlowRowScope.() -> Unit) {
-    FlowRow(if (fillWidth) modifier.fillMaxWidth() else modifier, horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
+    FlowRow(if (fillWidth) modifier.fillMaxWidth() else modifier, horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
         verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap), content = content)
 }
 
 @Composable
 fun AppSuccessText(message: String, modifier: Modifier = Modifier) {
-    Text(message, modifier.semantics { liveRegion = LiveRegionMode.Polite },
-        style = MaterialTheme.typography.bodyMedium, color = AppTheme.feedback.success)
+    AppStatus(message, modifier, kind = AppStatusKind.SUCCESS)
 }
 
 

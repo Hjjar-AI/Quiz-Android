@@ -21,7 +21,7 @@ fun AppFilterOptions(label: String, options: List<Pair<String, String>>, selecte
     onSelect: (String) -> Unit, enabled: Boolean = true) {
     var query by remember(label) { mutableStateOf("") }
     Text(label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
-    if (options.size > 8) OutlinedTextField(query, { query = it }, enabled = enabled,
+    if (options.size > 8) AppTextField(query, { query = it }, enabled = enabled,
         modifier = Modifier.fillMaxWidth(), singleLine = true,
         label = { Text(stringResource(R.string.ui_search_options, label)) })
     Column(Modifier.fillMaxWidth().heightIn(max = AppLayoutTokens.filterMenuMaxHeight)

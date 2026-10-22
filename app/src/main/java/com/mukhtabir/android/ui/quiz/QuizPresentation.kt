@@ -1,28 +1,25 @@
 package com.mukhtabir.android.ui.quiz
 
-import com.mukhtabir.android.data.remote.TestMode
-
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Sync
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,50 +27,54 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.MotionDurationScale
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import com.mukhtabir.android.R
-import com.mukhtabir.android.data.remote.SessionResultsDto
 import com.mukhtabir.android.core.AppPreferences
+import com.mukhtabir.android.data.remote.SessionResultsDto
+import com.mukhtabir.android.data.remote.TestMode
+import com.mukhtabir.android.ui.components.ActiveFilter
+import com.mukhtabir.android.ui.components.ActiveFilterSummary
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppHero
+import com.mukhtabir.android.ui.components.AppHeroRow
 import com.mukhtabir.android.ui.components.AppIconButton
 import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppMotion
+import com.mukhtabir.android.ui.components.AppProgressRing
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ExplanationCard
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.LearningSaveState
+import com.mukhtabir.android.ui.components.LearningSaveStatus
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.components.performAppHaptic
+import com.mukhtabir.android.ui.components.rememberMotionEnabled
 import com.mukhtabir.android.util.formatNumber
 
 /** Short status at rest; the tools menu retains deadline/synchronization guidance. */
 @Composable
 internal fun SessionSyncStatus(state: QuizUiState, viewModel: QuizViewModel) {
-    val status = when {
-        state.draftStorageFailed -> R.string.quiz_save_unconfirmed
-        state.syncConflict != null || state.recoveryRequired -> R.string.ui_needs_review
-        state.syncing -> R.string.quiz_syncing
-        state.syncError != null -> R.string.quiz_sync_failed
-        state.queuedAnswers > 0 -> R.string.quiz_saved_pending
-        state.syncRequired -> R.string.quiz_sync_needed
-        state.answeredIndices.isNotEmpty() -> R.string.quiz_synced
-        else -> R.string.quiz_download_ready
+    val (saveState, status) = when {
+        state.draftStorageFailed -> LearningSaveState.REVIEW to R.string.quiz_save_unconfirmed
+        state.syncConflict != null || state.recoveryRequired -> LearningSaveState.REVIEW to R.string.ui_needs_review
+        state.syncing -> LearningSaveState.SYNCING to R.string.quiz_syncing
+        state.syncError != null -> LearningSaveState.REVIEW to R.string.quiz_sync_failed
+        state.queuedAnswers > 0 -> LearningSaveState.WAITING to R.string.quiz_saved_pending
+        state.syncRequired -> LearningSaveState.WAITING to R.string.quiz_sync_needed
+        state.answeredIndices.isNotEmpty() -> LearningSaveState.SERVER to R.string.quiz_synced
+        else -> LearningSaveState.DEVICE to R.string.quiz_download_ready
     }
-    com.mukhtabir.android.ui.components.LearningSaveStatus(when {
-        state.draftStorageFailed || state.syncError != null || state.syncConflict != null || state.recoveryRequired -> com.mukhtabir.android.ui.components.LearningSaveState.REVIEW
-        state.syncing -> com.mukhtabir.android.ui.components.LearningSaveState.SYNCING
-        state.queuedAnswers > 0 || state.syncRequired -> com.mukhtabir.android.ui.components.LearningSaveState.WAITING
-        state.answeredIndices.isNotEmpty() -> com.mukhtabir.android.ui.components.LearningSaveState.SERVER
-        else -> com.mukhtabir.android.ui.components.LearningSaveState.DEVICE
-    }, detail = stringResource(status,formatNumber(state.queuedAnswers))) {
+    LearningSaveStatus(saveState, detail = stringResource(status, formatNumber(state.queuedAnswers))) {
         if (state.syncRequired || state.queuedAnswers > 0) AppTextButton(
             onClick = viewModel::syncDownloadedAnswers,
             enabled = !state.isLoading && !state.syncing && !state.draftStorageFailed && state.syncConflict == null) {
@@ -90,9 +91,9 @@ internal fun SessionToolsMenu(state: QuizUiState, ui: SessionPresentation, viewM
     preferences: AppPreferences, onPause: () -> Unit) {
     var expanded by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
     var showDetails by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
-    val display by preferences.display.collectAsState()
+    val display by preferences.display.collectAsLifecycleState()
     val menuColors = MenuDefaults.itemColors(disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f))
-    if (showDetails) AlertDialog(
+    if (showDetails) AppConfirmationDialog(
         onDismissRequest = { showDetails = false },
         title = { Text(stringResource(R.string.quiz_download_details)) },
         text = { Text(stringResource(if (state.queuedAnswers > 0) R.string.session_local_answers
@@ -140,7 +141,7 @@ internal fun ConfirmedAnswerHaptics(token: Long, enabled: Boolean, foreground: B
     LaunchedEffect(token, foreground) {
         if (token > handled) {
             handled = token
-            if (enabled && foreground) com.mukhtabir.android.ui.components.performAppHaptic(view,confirmed=true)
+            if (enabled && foreground) performAppHaptic(view,confirmed=true)
         }
     }
 }
@@ -163,7 +164,7 @@ internal fun QuestionBookmark(state: QuizUiState, viewModel: QuizViewModel) {
         saved == true -> R.string.quiz_bookmark_saved
         else -> R.string.quiz_bookmark_not_saved
     })
-    com.mukhtabir.android.ui.components.AppIconButton(
+    AppIconButton(
         onClick = {
             if (saved == null || uncertain) viewModel.refreshQuestionBookmark(id, force = true)
             else viewModel.changeQuestionBookmark(id)
@@ -182,11 +183,11 @@ internal fun QuestionBookmark(state: QuizUiState, viewModel: QuizViewModel) {
 @Composable
 internal fun StudyExplanation(text: String, questionId: Long, alreadyRevealed: Boolean, onRevealed: () -> Unit) {
     key(questionId) {
-        val motionEnabled = (rememberCoroutineScope().coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f) > 0f
+        val motionEnabled = rememberMotionEnabled()
         var revealed by remember { mutableStateOf(alreadyRevealed) }
         LaunchedEffect(Unit) { revealed = true; onRevealed() }
         val opacity = animateFloatAsState(targetValue = if (revealed || !motionEnabled) 1f else 0f,
-            animationSpec = tween(durationMillis = if (motionEnabled) 180 else 0), label = "Study explanation fade")
+            animationSpec = tween(durationMillis = if (motionEnabled) AppMotion.revealMillis else 0), label = "Study explanation fade")
         ExplanationCard(text, title = stringResource(R.string.explanation),
             modifier = Modifier.graphicsLayer { alpha = if (motionEnabled) opacity.value else 1f })
     }
@@ -197,14 +198,14 @@ internal fun StudyExplanation(text: String, questionId: Long, alreadyRevealed: B
 internal fun ActiveFilterSummary(state: QuizUiState, viewModel: QuizViewModel, selectedBook: String?) {
     val tags = (state.selectedTags + state.additionalTags.split(',').map(String::trim).filter(String::isNotEmpty)).distinct()
     val filters = buildList {
-        selectedBook?.let { book -> add(com.mukhtabir.android.ui.components.ActiveFilter("book", stringResource(R.string.quiz_filter_book, book), viewModel::useWholeBank)) }
+        selectedBook?.let { book -> add(ActiveFilter("book", stringResource(R.string.quiz_filter_book, book), viewModel::useWholeBank)) }
         state.selectedCategoryIds.forEach { id ->
             val name = (state.categories + state.bookCategories).firstOrNull { it.id == id }?.name ?: formatNumber(id)
-            add(com.mukhtabir.android.ui.components.ActiveFilter("category-$id", stringResource(R.string.quiz_filter_category, name), { viewModel.removeCategoryFilter(id) }))
+            add(ActiveFilter("category-$id", stringResource(R.string.quiz_filter_category, name), { viewModel.removeCategoryFilter(id) }))
         }
-        tags.forEach { name -> add(com.mukhtabir.android.ui.components.ActiveFilter("tag-$name", stringResource(R.string.quiz_filter_tag, name), { viewModel.removeTagFilter(name) })) }
+        tags.forEach { name -> add(ActiveFilter("tag-$name", stringResource(R.string.quiz_filter_tag, name), { viewModel.removeTagFilter(name) })) }
     }
-    com.mukhtabir.android.ui.components.ActiveFilterSummary(filters, onClear = viewModel::clearActiveFilters, enabled = !state.isLoading)
+    ActiveFilterSummary(filters, onClear = viewModel::clearActiveFilters, enabled = !state.isLoading)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -212,9 +213,9 @@ internal fun ActiveFilterSummary(state: QuizUiState, viewModel: QuizViewModel, s
 internal fun ResultsOverview(results: SessionResultsDto) {
     val accuracy = results.accuracy.takeIf { it.isFinite() }
         ?: if (results.totalQuestions > 0) results.correctCount * 100.0 / results.totalQuestions else 0.0
-    com.mukhtabir.android.ui.components.AppHero {
-        com.mukhtabir.android.ui.components.AppHeroRow(decoration = {
-            com.mukhtabir.android.ui.components.AppProgressRing((accuracy / 100).toFloat(),
+    AppHero {
+        AppHeroRow(decoration = {
+            AppProgressRing((accuracy / 100).toFloat(),
                 com.mukhtabir.android.util.bidi("${com.mukhtabir.android.util.formatDecimal(accuracy)}%"),
                 stringResource(R.string.quiz_metric_accuracy))
         }) {
@@ -224,7 +225,7 @@ internal fun ResultsOverview(results: SessionResultsDto) {
                 Text(stringResource(R.string.ui_result_summary, formatNumber(results.correctCount),
                     formatNumber(results.answeredCount), formatNumber((results.totalQuestions - results.answeredCount).coerceAtLeast(0))))
                 Text(stringResource(R.string.total_time, formatDuration(results.totalTime)), style = MaterialTheme.typography.bodySmall)
-                if (results.confidenceFragile > 0) Text(stringResource(R.string.fragile_result_count, results.confidenceFragile),
+                if (results.confidenceFragile > 0) Text(stringResource(R.string.fragile_result_count, com.mukhtabir.android.util.formatNumber(results.confidenceFragile)),
                     style = MaterialTheme.typography.bodySmall)
             }
         }

@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 
 /** Only confirmed progress is passed here; the caller owns freshness and score authority. */
 @Composable
@@ -21,11 +22,11 @@ fun AppProgressRing(progress: Float, value: String, label: String, modifier: Mod
     val accent = MaterialTheme.colorScheme.primary
     val track = MaterialTheme.colorScheme.outlineVariant
     val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    Box(modifier.size(AppLayoutTokens.progressRingSize * scale).semantics(mergeDescendants = true) {
+    Box(modifier.size(AppHeroGeometry.progressRingSize * scale).semantics(mergeDescendants = true) {
         progressBarRangeInfo = ProgressBarRangeInfo(amount, 0f..1f)
     }, contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize().clearAndSetSemantics { }) {
-            val stroke = AppLayoutTokens.progressRingStroke.toPx()
+            val stroke = AppHeroGeometry.progressRingStroke.toPx()
             val inset = stroke / 2
             val diameter = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
             drawArc(track, -90f, 360f, false, androidx.compose.ui.geometry.Offset(inset, inset), diameter,
@@ -66,4 +67,9 @@ fun AppHeroRow(decoration: @Composable () -> Unit, content: @Composable () -> Un
             Box(Modifier.weight(1f)) { content() }
         }
     }
+}
+
+private object AppHeroGeometry {
+    val progressRingSize = 112.dp
+    val progressRingStroke = 6.dp
 }

@@ -3,30 +3,32 @@ package com.mukhtabir.android
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import com.mukhtabir.android.core.AppPreferences
 import com.mukhtabir.android.core.ThemePreference
 import com.mukhtabir.android.ui.MukhtabirApp
 import com.mukhtabir.android.ui.auth.ServerSetupScreen
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
+import com.mukhtabir.android.ui.components.AppLaunchLayout
+import com.mukhtabir.android.ui.components.StartupBrand
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.MukhtabirTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,9 +49,9 @@ class MainActivity : ComponentActivity() {
         val app = application as MukhtabirApplication
         val preferences = app.preferences
         setContent {
-            val theme by preferences.theme.collectAsState()
-            val display by preferences.display.collectAsState()
-            val language by preferences.language.collectAsState()
+            val theme by preferences.theme.collectAsLifecycleState()
+            val display by preferences.display.collectAsLifecycleState()
+            val language by preferences.language.collectAsLifecycleState()
             var editingServer by rememberSaveable { mutableStateOf(app.serverSettings.read()==null) }
             var demoActive by rememberSaveable { mutableStateOf(false) }
             // Unconfigured installs do not enter MukhtabirApp's saved-login splash.
@@ -73,8 +75,8 @@ class MainActivity : ComponentActivity() {
                 }
                 if (!welcomeSplashFinished) Surface(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                        com.mukhtabir.android.ui.components.AppLaunchLayout {
-                            com.mukhtabir.android.ui.components.StartupBrand(
+                        AppLaunchLayout {
+                            StartupBrand(
                                 modifier = Modifier.align(Alignment.CenterHorizontally), onFinished = { welcomeSplashFinished = true })
                         }
                     }

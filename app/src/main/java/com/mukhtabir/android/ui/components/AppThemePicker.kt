@@ -13,16 +13,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.AppPreferences
 import com.mukhtabir.android.core.ThemePreference
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.previewThemeColors
 import com.mukhtabir.android.ui.theme.themeLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppThemePicker(preferences: AppPreferences, enabled: Boolean = true, iconOnly: Boolean = false) {
-    val theme by preferences.theme.collectAsState()
+    val theme by preferences.theme.collectAsLifecycleState()
     var open by rememberSaveable { mutableStateOf(false) }
     val systemDark = isSystemInDarkTheme()
     val menuState = stringResource(if (open) R.string.ui_expanded else R.string.ui_collapsed)
@@ -57,7 +59,7 @@ fun AppThemePicker(preferences: AppPreferences, enabled: Boolean = true, iconOnl
                         if (theme == option) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
                     Column(Modifier.padding(AppLayoutTokens.denseCardInsets),
                         verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                        Surface(Modifier.fillMaxWidth().heightIn(min = AppLayoutTokens.themePreviewHeight).clearAndSetSemantics { },
+                        Surface(Modifier.fillMaxWidth().heightIn(min = AppThemePickerGeometry.themePreviewHeight).clearAndSetSemantics { },
                             color = colors.background, contentColor = colors.onBackground, shape = MaterialTheme.shapes.small) {
                             Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
                                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
@@ -80,4 +82,8 @@ fun AppThemePicker(preferences: AppPreferences, enabled: Boolean = true, iconOnl
             }
         }
     }
+}
+
+private object AppThemePickerGeometry {
+    val themePreviewHeight = 72.dp
 }

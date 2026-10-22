@@ -1,14 +1,5 @@
 package com.mukhtabir.android.ui.knowledge
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,11 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,9 +20,17 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.KnowledgeDetailDto
 import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.data.remote.localizedForDisplay
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
 fun KnowledgeDetailRoute(id: Long,userId: Long,service: QuestionService,canStart: Boolean,maxQuestions: Int,
@@ -44,8 +40,8 @@ fun KnowledgeDetailRoute(id: Long,userId: Long,service: QuestionService,canStart
     // The detail's question_count includes drafts. Use only public IDs returned by the mastery map.
     val links: ContentReader<List<Long>> = viewModel(key="knowledge-links-$userId-$id",
         factory=ContentReader.Factory { service.knowledgeMap().items.firstOrNull { it.id==id }?.questionIds.orEmpty().distinct() })
-    val state by vm.state.collectAsState()
-    val linked by links.state.collectAsState()
+    val state by vm.state.collectAsLifecycleState()
+    val linked by links.state.collectAsLifecycleState()
     RefreshOnResume { vm.refresh();links.refresh() }
     val data=state.data?.localizedForDisplay()
     val ids=linked.data.orEmpty()
@@ -53,8 +49,8 @@ fun KnowledgeDetailRoute(id: Long,userId: Long,service: QuestionService,canStart
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(R.string.explore_knowledge_detail))
-            TextButton(onBack){Text(stringResource(R.string.back))}
-            OutlinedButton({vm.refresh();links.refresh()},enabled=!state.loading && !linked.loading){Text(stringResource(R.string.refresh))}
+            AppTextButton(onBack){Text(stringResource(R.string.back))}
+            AppOutlinedButton({vm.refresh();links.refresh()},enabled=!state.loading && !linked.loading){Text(stringResource(R.string.refresh))}
             if(state.loading) AppLoadingIndicator()
             state.error?.let { ErrorState(throwable=it,onRetry=vm::refresh) }
             if(state.error!=null && data!=null) Text(stringResource(R.string.explore_stale))
@@ -84,7 +80,7 @@ fun KnowledgeDetailRoute(id: Long,userId: Long,service: QuestionService,canStart
             knowledge.sourceDocument?.takeIf(String::isNotBlank)?.let { document -> item {
                 ContentHeading(stringResource(R.string.editor_source_document));Text(document)
             } }
-            knowledge.sourcePage?.let { page -> item { Text(stringResource(R.string.question_page,page)) } }
+            knowledge.sourcePage?.let { page -> item { Text(stringResource(R.string.question_page, com.mukhtabir.android.util.formatNumber(page))) } }
             item {
                 ContentHeading(stringResource(R.string.explore_linked_questions))
                 Text(stringResource(R.string.explore_public_links))
@@ -93,14 +89,14 @@ fun KnowledgeDetailRoute(id: Long,userId: Long,service: QuestionService,canStart
                 if(linked.error!=null && linked.data!=null) Text(stringResource(R.string.explore_stale))
                 if(linked.data!=null && ids.isEmpty() && linked.error==null && !linked.loading) Text(stringResource(R.string.no_questions_found))
                 if(canStart && ids.isNotEmpty()) {
-                    OutlinedButton({onReview(ids.take(limit),knowledge.title)},enabled=!state.loading && state.error==null && !linked.loading && linked.error==null) {
+                    AppOutlinedButton({onReview(ids.take(limit),knowledge.title)},enabled=!state.loading && state.error==null && !linked.loading && linked.error==null) {
                         Text(stringResource(R.string.review))
                     }
-                    if(ids.size>limit) Text(stringResource(R.string.explore_practice_limit,limit))
+                    if(ids.size>limit) Text(stringResource(R.string.explore_practice_limit, com.mukhtabir.android.util.formatNumber(limit)))
                 }
             }
             items(ids,key={it}) { questionId ->
-                OutlinedButton({onOpenQuestion(questionId)},enabled=!linked.loading && linked.error==null && state.error==null,
+                AppOutlinedButton({onOpenQuestion(questionId)},enabled=!linked.loading && linked.error==null && state.error==null,
                     modifier=Modifier.fillMaxWidth()) { Text(stringResource(R.string.explore_question_id,questionId)) }
             }
         }

@@ -1,14 +1,5 @@
 package com.mukhtabir.android.ui.history
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPagination
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,31 +10,43 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.HistoryService
 import com.mukhtabir.android.data.remote.ImageRepository
+import com.mukhtabir.android.ui.components.ActiveFilter
+import com.mukhtabir.android.ui.components.ActiveFilterSummary
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppMetadataRow
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.EmptyState
-import com.mukhtabir.android.ui.components.SessionResultReview
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.LearningResultsSummary
+import com.mukhtabir.android.ui.components.PullToRefresh
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ResultReviewFilters
+import com.mukhtabir.android.ui.components.ReviewFilter
+import com.mukhtabir.android.ui.components.SessionResultReview
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
 fun HistoryRoute(
@@ -58,12 +61,12 @@ fun HistoryRoute(
         key = "history-${scope.name.lowercase()}-$signedInUserId",
         factory = HistoryViewModel.Factory(service, scope, signedInUserId, pageSize),
     )
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsLifecycleState()
     LaunchedEffect(pageSize) { viewModel.applyPageSize(pageSize) }
     RefreshOnResume(viewModel::retry)
     val showAllUsers = scope == HistoryScope.ALL
 
-    com.mukhtabir.android.ui.components.PullToRefresh(state.isLoading,viewModel::retry,enabled=!state.detailLoading) {
+    PullToRefresh(state.isLoading,viewModel::retry,enabled=!state.detailLoading) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -75,9 +78,9 @@ fun HistoryRoute(
         if (showAllUsers) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
+                horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
             ) {
-                OutlinedTextField(
+                AppTextField(
                     value = state.userFilter,
                     onValueChange = viewModel::setUserFilter,
                     modifier = Modifier.weight(1f),
@@ -92,15 +95,15 @@ fun HistoryRoute(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
-                Button(
+                AppButton(
                     onClick = viewModel::applyUserFilter,
                     enabled = !state.isLoading,
                 ) {
                     Text(stringResource(R.string.search))
                 }
             }
-            com.mukhtabir.android.ui.components.ActiveFilterSummary(
-                if (state.appliedUserFilter.isBlank()) emptyList() else listOf(com.mukhtabir.android.ui.components.ActiveFilter(
+            ActiveFilterSummary(
+                if (state.appliedUserFilter.isBlank()) emptyList() else listOf(ActiveFilter(
                     "user", stringResource(R.string.history_filter_user, state.appliedUserFilter), viewModel::clearUserFilter)),
                 onClear = viewModel::clearUserFilter, enabled = !state.isLoading)
 
@@ -122,23 +125,23 @@ fun HistoryRoute(
             }
             state.items.isNotEmpty() -> LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
+                verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
             ) {
                 items(state.items, key = { it.id }) { item ->
                     val expanded = state.expandedId == item.id
                     val detailState = stringResource(if (expanded) R.string.history_expanded else R.string.history_collapsed)
-                    val detailAction = stringResource(if (expanded) R.string.history_collapse else R.string.history_expand, item.id)
-                    Card(
+                    val detailAction = stringResource(if (expanded) R.string.history_collapse else R.string.history_expand, com.mukhtabir.android.util.formatNumber(item.id))
+                    AppCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .semantics { stateDescription = detailState }
-                            .clickable(enabled = !state.isLoading, onClickLabel = detailAction) {
+                            .clickable(role = androidx.compose.ui.semantics.Role.Button, enabled = !state.isLoading, onClickLabel = detailAction) {
                                 viewModel.toggleDetails(item.id)
                             },
                     ) {
                         Column(
-                            modifier = Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets),
-                            verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
+                            modifier = Modifier.padding(AppLayoutTokens.denseCardInsets),
+                            verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
                         ) {
                             if (showAllUsers) {
                                 val userName = item.fullName?.takeIf(String::isNotBlank)
@@ -157,19 +160,17 @@ fun HistoryRoute(
                                 stringResource(
                                     R.string.completed_session,
                                     item.mode,
-                                    item.accuracy,
-                                    item.correctCount,
-                                    item.totalQuestions,
+                                    item.accuracy, com.mukhtabir.android.util.formatNumber(item.correctCount), com.mukhtabir.android.util.formatNumber(item.totalQuestions),
                                 ),
                             )
                             item.masterMetadata.weightedScore?.let { score ->
                                 Text(stringResource(R.string.report_weighted_score) + ": " + com.mukhtabir.android.util.formatDecimal(score) + "%")
                             }
-                            com.mukhtabir.android.ui.components.AppMetadataRow(listOf(item.completedAt))
+                            AppMetadataRow(listOf(item.completedAt))
                             if (state.expandedId == item.id) {
-                                com.mukhtabir.android.ui.components.AppMetadataRow(listOfNotNull(
+                                AppMetadataRow(listOfNotNull(
                                     item.tag?.let { stringResource(R.string.history_tag,it) },
-                                    stringResource(R.string.history_answered,item.answeredCount,item.totalQuestions),
+                                    stringResource(R.string.history_answered, com.mukhtabir.android.util.formatNumber(item.answeredCount), com.mukhtabir.android.util.formatNumber(item.totalQuestions)),
                                     stringResource(R.string.history_duration,formatDuration(item.timeSpent)),
                                     stringResource(R.string.history_record_id,item.id)))
                                 if (state.detailLoading) AppLoadingIndicator()
@@ -179,14 +180,14 @@ fun HistoryRoute(
                                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                                 }
                                 state.detail?.let { detail ->
-                                    com.mukhtabir.android.ui.components.LearningResultsSummary(detail.correctCount, detail.totalQuestions,
+                                    LearningResultsSummary(detail.correctCount, detail.totalQuestions,
                                         detail.answeredCount, detail.accuracy)
                                     val rows = detail.results
                                     var reviewFilter by androidx.compose.runtime.saveable.rememberSaveable(item.id) {
-                                        androidx.compose.runtime.mutableStateOf(com.mukhtabir.android.ui.components.ReviewFilter.ALL)
+                                        androidx.compose.runtime.mutableStateOf(ReviewFilter.ALL)
                                     }
                                     val visible = rows.withIndex().filter { (_, result) -> reviewFilter.includes(result.userAnswer != null, result.isCorrect) }
-                                    com.mukhtabir.android.ui.components.ResultReviewFilters(reviewFilter, { reviewFilter = it }, visible.size, rows.size)
+                                    ResultReviewFilters(reviewFilter, { reviewFilter = it }, visible.size, rows.size)
                                     visible.forEach { (index, result) -> SessionResultReview(index + 1, result, imageRepository) }
                                 }
                             } else {

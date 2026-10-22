@@ -1,21 +1,11 @@
 package com.mukhtabir.android.ui.masterexams
 
-import com.mukhtabir.android.ui.components.ExplanationCard
-
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,10 +19,20 @@ import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.MasterExamDraftWrite
 import com.mukhtabir.android.data.remote.localizedForDisplay
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.ExplanationCard
 import com.mukhtabir.android.ui.components.MarkdownText
+import com.mukhtabir.android.ui.components.QuestionChoiceCard
+import com.mukhtabir.android.ui.components.QuestionTextCard
 import com.mukhtabir.android.ui.questions.QuestionChoiceDraft
+import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
 import java.util.Locale
 
@@ -122,15 +122,15 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
             else vm.closeEmbeddedDraft()
         }
     }
-    if (confirmClose) AlertDialog(onDismissRequest = { confirmClose = false },
+    if (confirmClose) AppConfirmationDialog(onDismissRequest = { confirmClose = false },
         title = { Text(stringResource(R.string.exam_author_leave_title)) },
         text = { Text(stringResource(if (draft.uncertain) R.string.exam_draft_close_uncertain else R.string.exam_draft_discard)) },
         confirmButton = { AppDangerTextButton({ confirmClose = false; vm.closeEmbeddedDraft() }, enabled = canClose) { Text(stringResource(R.string.ux_discard_question_draft)) } },
-        dismissButton = { TextButton({ confirmClose = false }) { Text(stringResource(R.string.keep_editing)) } })
-    AlertDialog(onDismissRequest = close,
+        dismissButton = { AppTextButton({ confirmClose = false }) { Text(stringResource(R.string.keep_editing)) } })
+    AppConfirmationDialog(onDismissRequest = close,
         title = { Text(stringResource(R.string.exam_draft_create)) },
         text = {
-            LazyColumn(Modifier.heightIn(max = com.mukhtabir.android.ui.components.AppLayoutTokens.pickerMaxHeight), state = listState, verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
+            LazyColumn(Modifier.heightIn(max = AppLayoutTokens.pickerMaxHeight), state = listState, verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
                 item {
                     Text(stringResource(R.string.exam_draft_scope))
                     if (s.busy) AppLoadingIndicator()
@@ -143,7 +143,7 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
                     if (draft.uncertain) Text(stringResource(R.string.exam_draft_uncertain))
                     draft.createdId?.let { Text(stringResource(R.string.exam_draft_created_id, formatNumber(it))) }
                     if (draft.uncertain || draft.createdId != null) {
-                        OutlinedButton(vm::refresh, enabled = !s.busy) { Text(stringResource(R.string.refresh)) }
+                        AppOutlinedButton(vm::refresh, enabled = !s.busy) { Text(stringResource(R.string.refresh)) }
                         Text(stringResource(R.string.exam_draft_review))
                         s.questionError?.let { ErrorState(throwable = it, onRetry = if (s.busy) null else vm::retryQuestions) }
                     }
@@ -153,11 +153,11 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
                         Text(stringResource(R.string.exam_draft_created_id, formatNumber(id)))
                         s.questions[id]?.let { question ->
                             ClinicalCaseContext(question.localizedForDisplay().case)
-                            com.mukhtabir.android.ui.components.QuestionTextCard(question.question)
+                            QuestionTextCard(question.question)
                             question.choices.forEachIndexed { index, text ->
-                                com.mukhtabir.android.ui.components.QuestionChoiceCard {
+                                QuestionChoiceCard {
                                     Column(Modifier.weight(1f)) {
-                                        Text(stringResource(R.string.choice_number, index + 1))
+                                        Text(stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)))
                                         MarkdownText(text)
                                         if (question.correctAnswer == index + 1) Text(stringResource(R.string.correct_answer))
                                     }
@@ -185,6 +185,6 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
                         }, change = vm::editEmbeddedDraft, validation = validation)
                 }
             }
-        }, confirmButton = { TextButton(vm::createEmbeddedDraft, enabled = enabled) { Text(stringResource(R.string.exam_draft_create)) } },
-        dismissButton = { TextButton(close, enabled = canClose) { Text(stringResource(if (draft.createdId != null) R.string.back else R.string.cancel)) } })
+        }, confirmButton = { AppTextButton(vm::createEmbeddedDraft, enabled = enabled) { Text(stringResource(R.string.exam_draft_create)) } },
+        dismissButton = { AppTextButton(close, enabled = canClose) { Text(stringResource(if (draft.createdId != null) R.string.back else R.string.cancel)) } })
 }

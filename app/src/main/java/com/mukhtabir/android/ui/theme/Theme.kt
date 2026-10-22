@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.theme
 
-import androidx.core.os.ConfigurationCompat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -12,10 +11,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.ConfigurationCompat
 
 val LocalNativeTypeface = staticCompositionLocalOf<android.graphics.Typeface> { android.graphics.Typeface.DEFAULT }
 
@@ -70,8 +70,6 @@ data class AppSpacing(
     val card: androidx.compose.ui.unit.Dp = 6.dp,
     val denseCard: androidx.compose.ui.unit.Dp = 4.dp,
     val content: androidx.compose.ui.unit.Dp = 3.dp,
-    val tight: androidx.compose.ui.unit.Dp = 3.dp,
-    val libraryCard: androidx.compose.ui.unit.Dp = 4.dp,
     val cardVertical: androidx.compose.ui.unit.Dp = 3.dp,
     val denseCardVertical: androidx.compose.ui.unit.Dp = 2.dp,
 )
@@ -84,20 +82,23 @@ object AppTheme {
         val colors = MaterialTheme.colorScheme
         // Related opaque shades of the current background, in either mode.
         // Avoid default Material container colors leaking across named themes.
-        return QuestionSurfaces(
-            question = lerp(colors.background, colors.onBackground, .11f),
-            choice = lerp(colors.background, colors.onBackground, .055f),
-            border = lerp(colors.background, colors.outline, .45f),
-        )
+        return androidx.compose.runtime.remember(colors) {
+            val question = lerp(colors.background, colors.onBackground, .11f)
+            val choice = lerp(colors.background, colors.onBackground, .055f)
+            QuestionSurfaces(question, choice,
+                contrastInk(lerp(colors.background, colors.outline, .45f), listOf(question, choice), 3.0))
+        }
     }
 }
 
 private fun TextStyle.readable(arabic: Boolean, minimumRatio: Float = 1.6f): TextStyle = copy(
+    fontSynthesis = androidx.compose.ui.text.font.FontSynthesis.None,
     platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
     lineHeight = if (arabic) maxOf(lineHeight.value, fontSize.value * minimumRatio).sp else lineHeight,
 )
 
 private fun TextStyle.readableHeading(arabic: Boolean): TextStyle = copy(
+    fontSynthesis = androidx.compose.ui.text.font.FontSynthesis.None,
     platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
     lineHeight = if (arabic) maxOf(lineHeight.value, fontSize.value * 1.3f).sp else lineHeight,
 )
@@ -118,24 +119,17 @@ fun MukhtabirTheme(darkTheme: Boolean = isSystemInDarkTheme(), preference: com.m
         else -> 0
     }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val nativeTypeface = androidx.compose.runtime.remember(fontRes, context) { if (fontRes == 0) android.graphics.Typeface.DEFAULT else androidx.core.content.res.ResourcesCompat.getFont(context, fontRes) ?: android.graphics.Typeface.DEFAULT }
-    val family = when (resolvedFont) {
-        "noto-arabic" -> androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.mukhtabir.android.R.font.noto_arabic))
-        "inter" -> androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.mukhtabir.android.R.font.inter))
-        "outfit" -> androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.mukhtabir.android.R.font.outfit))
-        "tajawal" -> androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.mukhtabir.android.R.font.tajawal))
-        "cairo" -> androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.mukhtabir.android.R.font.cairo))
-        "ibm-plex-arabic" -> androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.mukhtabir.android.R.font.ibm_plex_arabic))
-        "amiri" -> androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.mukhtabir.android.R.font.amiri))
-        else -> androidx.compose.ui.text.font.FontFamily.Default
-    }
+    val nativeTypeface = androidx.compose.runtime.remember(fontRes, context, resolvedFont) { nativeReadingTypeface(context, fontRes, resolvedFont) }
+    val family = androidx.compose.runtime.remember(fontRes, resolvedFont) { appFontFamily(fontRes, resolvedFont) }
     val original = Typography()
+    val headingWeight = if (resolvedFont in setOf("amiri", "tajawal", "ibm-plex-arabic")) FontWeight.Normal else FontWeight.SemiBold
+    val labelWeight = if (resolvedFont in setOf("amiri", "tajawal", "ibm-plex-arabic")) FontWeight.Normal else FontWeight.Medium
     val base = Typography(
         displayLarge = original.displayLarge.copy(fontFamily = family), displayMedium = original.displayMedium.copy(fontFamily = family), displaySmall = original.displaySmall.copy(fontFamily = family),
-        headlineLarge = original.headlineLarge.copy(fontFamily = family), headlineMedium = original.headlineMedium.copy(fontFamily = family), headlineSmall = original.headlineSmall.copy(fontFamily = family, fontSize = 26.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
-        titleLarge = original.titleLarge.copy(fontFamily = family, fontSize = 22.sp, lineHeight = 30.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp), titleMedium = original.titleMedium.copy(fontFamily = family, fontSize = 17.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp), titleSmall = original.titleSmall.copy(fontFamily = family, fontSize = 15.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
-        bodyLarge = original.bodyLarge.copy(fontFamily = family, fontSize = 16.sp, lineHeight = 25.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.sp), bodyMedium = original.bodyMedium.copy(fontFamily = family, fontSize = 14.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.sp), bodySmall = original.bodySmall.copy(fontFamily = family, fontSize = 12.sp, lineHeight = 19.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.sp),
-        labelLarge = original.labelLarge.copy(fontFamily = family, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.sp), labelMedium = original.labelMedium.copy(fontFamily = family, fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.sp), labelSmall = original.labelSmall.copy(fontFamily = family, fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.sp))
+        headlineLarge = original.headlineLarge.copy(fontFamily = family), headlineMedium = original.headlineMedium.copy(fontFamily = family), headlineSmall = original.headlineSmall.copy(fontFamily = family, fontSize = 26.sp, lineHeight = 34.sp, fontWeight = headingWeight, letterSpacing = 0.sp),
+        titleLarge = original.titleLarge.copy(fontFamily = family, fontSize = 22.sp, lineHeight = 30.sp, fontWeight = headingWeight, letterSpacing = 0.sp), titleMedium = original.titleMedium.copy(fontFamily = family, fontSize = 17.sp, lineHeight = 25.sp, fontWeight = headingWeight, letterSpacing = 0.sp), titleSmall = original.titleSmall.copy(fontFamily = family, fontSize = 17.sp, lineHeight = 25.sp, fontWeight = headingWeight, letterSpacing = 0.sp),
+        bodyLarge = original.bodyLarge.copy(fontFamily = family, fontSize = 16.sp, lineHeight = 25.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.sp), bodyMedium = original.bodyMedium.copy(fontFamily = family, fontSize = 14.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.sp), bodySmall = original.bodySmall.copy(fontFamily = family, fontSize = 13.sp, lineHeight = 21.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.sp),
+        labelLarge = original.labelLarge.copy(fontFamily = family, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = labelWeight, letterSpacing = 0.sp), labelMedium = original.labelMedium.copy(fontFamily = family, fontSize = 13.sp, lineHeight = 20.sp, fontWeight = labelWeight, letterSpacing = 0.sp), labelSmall = original.labelSmall.copy(fontFamily = family, fontSize = 13.sp, lineHeight = 20.sp, fontWeight = labelWeight, letterSpacing = 0.sp))
     val labelMinimumRatio = androidx.compose.runtime.remember(nativeTypeface) {
         val paint = android.graphics.Paint().apply { typeface = nativeTypeface; textSize = 100f }
         val metrics = paint.fontMetrics
@@ -151,12 +145,28 @@ fun MukhtabirTheme(darkTheme: Boolean = isSystemInDarkTheme(), preference: com.m
     val shapes = themeShapes(preference)
     val background = if (preference == com.mukhtabir.android.core.ThemePreference.WEATHER)
         androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF1A2A6C), Color(0xFF384D9F))) else null
-    val feedback = if (preference == com.mukhtabir.android.core.ThemePreference.WEATHER)
+    val feedbackSeed = if (preference == com.mukhtabir.android.core.ThemePreference.WEATHER)
         FeedbackColors(Color(0xFFB6F2CD), Color(0xFFFFE0A3), Color(0xFFC7EDFF))
     else if (darkTheme) FeedbackColors(Color(0xFF6BB98D), Color(0xFFE6CF45), Color(0xFF67B2D5)) else LocalFeedback.current
-    val spacing = if (display.compact) AppSpacing(section = 3.dp, card = 4.dp, denseCard = 3.dp, content = 2.dp, tight = 2.dp, libraryCard = 3.dp, cardVertical = 2.dp, denseCardVertical = 1.dp) else AppSpacing()
+    val palette = themedColors(if (darkTheme) DarkColors else LightColors, preference)
+    val textSurfaces = androidx.compose.runtime.remember(palette, background) {
+        listOf(palette.background, palette.surface, palette.surfaceVariant,
+            palette.primaryContainer, palette.secondaryContainer, palette.tertiaryContainer,
+            lerp(palette.background, palette.onBackground, .11f),
+            lerp(palette.background, palette.onBackground, .055f)) +
+            if (background != null) listOf(Color(0xFF384D9F)) else emptyList()
+    }
+    val feedback = androidx.compose.runtime.remember(feedbackSeed, textSurfaces) {
+        FeedbackColors(contrastInk(feedbackSeed.success, textSurfaces, 4.5),
+            contrastInk(feedbackSeed.warning, textSurfaces, 4.5),
+            contrastInk(feedbackSeed.info, textSurfaces, 4.5))
+    }
+    val accessiblePalette = androidx.compose.runtime.remember(palette, textSurfaces) {
+        palette.copy(error = contrastInk(palette.error, textSurfaces + palette.errorContainer, 4.5))
+    }
+    val spacing = if (display.compact) AppSpacing(section = 3.dp, card = 4.dp, denseCard = 3.dp, content = 2.dp, cardVertical = 2.dp, denseCardVertical = 1.dp) else AppSpacing()
     CompositionLocalProvider(LocalSpacing provides spacing, LocalAppBackground provides background, LocalFeedback provides feedback, LocalNativeTypeface provides nativeTypeface, LocalReadingComfort provides display) {
-        MaterialTheme(colorScheme = themedColors(if (darkTheme) DarkColors else LightColors, preference), typography = typography,
+        MaterialTheme(colorScheme = accessiblePalette, typography = typography,
             shapes = shapes,
             content = content)
     }

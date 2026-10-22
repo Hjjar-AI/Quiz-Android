@@ -21,9 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
-import com.mukhtabir.android.core.AppPreferences
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,18 +30,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import com.mukhtabir.android.R
+import com.mukhtabir.android.core.AppPreferences
 import com.mukhtabir.android.core.MoreSection
 import com.mukhtabir.android.core.NavigationCatalog
 import com.mukhtabir.android.data.remote.UserDto
 import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppListRow
+import com.mukhtabir.android.ui.components.AppThemePicker
 import com.mukhtabir.android.ui.components.iconFor
 
 @Composable
@@ -76,7 +78,7 @@ fun AppDrawerContent(user: UserDto, currentRoute: String?, enabled: Boolean, pre
                         var expanded by rememberSaveable(user.id, section.name) { mutableStateOf(everyday || containsSelection) }
                         LaunchedEffect(selectedRoute) { if (containsSelection) expanded = true }
                         val description = stringResource(if (expanded) R.string.ui_expanded else R.string.ui_collapsed)
-                        com.mukhtabir.android.ui.components.AppListRow(Modifier
+                        AppListRow(Modifier
                             .clickable(enabled = enabled, role = Role.Button) { expanded = !expanded }
                             .semantics { stateDescription = description }) {
                             Text(stringResource(section.titleRes), style = MaterialTheme.typography.titleSmall,
@@ -103,7 +105,7 @@ private fun DrawerHeader(user: UserDto, preferences: AppPreferences?, enabled: B
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
             Text(stringResource(R.string.app_name), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-            preferences?.let { com.mukhtabir.android.ui.components.AppThemePicker(it, enabled, iconOnly = true) }
+            preferences?.let { AppThemePicker(it, enabled, iconOnly = true) }
         }
         Text(user.displayName, style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)

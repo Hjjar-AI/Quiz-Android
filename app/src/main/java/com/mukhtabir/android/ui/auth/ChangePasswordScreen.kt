@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.auth
 
-import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,12 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import com.mukhtabir.android.ui.components.AppButton as Button
 import androidx.compose.material3.LocalContentColor
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -32,11 +27,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.mukhtabir.android.R
+import com.mukhtabir.android.core.userMessage
 import com.mukhtabir.android.data.auth.AuthRepository
 import com.mukhtabir.android.data.remote.ApiException
-import com.mukhtabir.android.core.userMessage
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPasswordField
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.BlockedBackHandler
+import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -74,7 +76,7 @@ fun ChangePasswordScreen(
     var gateStillRequired by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
-    com.mukhtabir.android.ui.components.BlockedBackHandler(enabled = isLoading || uncertain)
+    BlockedBackHandler(enabled = isLoading || uncertain)
     DisposableEffect(isLoading, uncertain) {
         onBusyChanged(isLoading || uncertain)
         onDispose { onBusyChanged(false) }
@@ -119,7 +121,7 @@ fun ChangePasswordScreen(
             .fillMaxSize()
             .imePadding()
             .verticalScroll(rememberScrollState())
-            .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.authInsets),
+            .padding(AppLayoutTokens.authInsets),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
     ) {
         if (forced) {
@@ -139,52 +141,48 @@ fun ChangePasswordScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap))
+        Spacer(modifier = Modifier.height(AppLayoutTokens.controlGap))
 
-        OutlinedTextField(
+        AppPasswordField(
             value = currentPassword,
             onValueChange = { currentPassword = it; failure = null },
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.current_password)) },
             enabled = !isLoading && !uncertain,
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
 
-        OutlinedTextField(
+        AppPasswordField(
             value = newPassword,
             onValueChange = { newPassword = it; failure = null },
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.new_password)) },
             enabled = !isLoading && !uncertain,
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             supportingText = {
                 if (newPassword.isNotEmpty() && newPassword.length < minLength) {
-                    Text(stringResource(R.string.password_too_short, minLength))
+                    Text(stringResource(R.string.password_too_short, com.mukhtabir.android.util.formatNumber(minLength)))
                 }
             },
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
 
-        OutlinedTextField(
+        AppPasswordField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it; failure = null },
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.confirm_password)) },
             enabled = !isLoading && !uncertain,
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { submit() }),
             supportingText = {
                 if (confirmPassword.isNotEmpty() && confirmPassword != newPassword) {
-                    Text(
+                    AppStatus(
                         text = stringResource(R.string.password_mismatch),
-                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
@@ -192,16 +190,15 @@ fun ChangePasswordScreen(
             )
 
         failure?.let {
-            Text(
+            AppStatus(
                 text = it.userMessage(),
-                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
 
         if (uncertain) {
             Text(stringResource(R.string.password_change_uncertain))
-            if (forced) OutlinedButton({
+            if (forced) AppOutlinedButton({
                 if (!isLoading) {
                     isLoading = true
                     failure = null
@@ -222,12 +219,12 @@ fun ChangePasswordScreen(
                 }
             }, enabled = !isLoading) { Text(stringResource(R.string.password_change_check)) }
             if (gateStillRequired) Text(stringResource(R.string.password_change_still_required))
-            OutlinedButton(onSignOut, enabled = !isLoading) { Text(stringResource(R.string.sign_out)) }
+            AppOutlinedButton(onSignOut, enabled = !isLoading) { Text(stringResource(R.string.sign_out)) }
         }
 
-        Spacer(modifier = Modifier.height(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap))
+        Spacer(modifier = Modifier.height(AppLayoutTokens.controlGap))
 
-        Button(
+        AppButton(
             onClick = ::submit,
             modifier = Modifier.fillMaxWidth(),
             enabled = canSubmit,

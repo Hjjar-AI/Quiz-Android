@@ -1,17 +1,8 @@
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.AppSuccessText
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -22,6 +13,13 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ApiException
 import com.mukhtabir.android.data.remote.QuestionRatingRowDto
 import com.mukhtabir.android.data.remote.QuestionService
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppSuccessText
+import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.util.formatNumber
 import kotlinx.coroutines.CancellationException
@@ -136,18 +134,18 @@ fun LibraryRatingDialog(id: Long, state: LibraryRatingsState, vm: LibraryRatings
     val selected = state.drafts[id] ?: row?.userRating ?: 0
     val busy = state.loading || state.savingId != null
     val uncertain = id in state.uncertain
-    AlertDialog(
+    AppConfirmationDialog(
         onDismissRequest = { if (state.savingId != id) dismiss() },
-        title = { Text(stringResource(R.string.select_question_number, id)) },
+        title = { Text(stringResource(R.string.select_question_number, com.mukhtabir.android.util.formatNumber(id))) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 row?.let { Text(if (it.count == 0) stringResource(R.string.no_ratings)
-                    else stringResource(R.string.rating_average, it.average, it.count)) }
+                    else stringResource(R.string.rating_average, it.average, com.mukhtabir.android.util.formatNumber(it.count))) }
                 if (busy) AppLoadingIndicator()
                 if (!busy && row == null) Text(stringResource(R.string.library_rating_unavailable))
                 Text(stringResource(R.string.your_rating))
                 AppActionRow() {
-                    (1..5).forEach { value -> FilterChip(selected == value, { vm.select(id, value) },
+                    (1..5).forEach { value -> AppFilterChip(selected == value, { vm.select(id, value) },
                         enabled = !busy && !uncertain && row != null,
                         label = { Text(stringResource(R.string.library_rating_value, formatNumber(value))) }) }
                 }
@@ -155,16 +153,16 @@ fun LibraryRatingDialog(id: Long, state: LibraryRatingsState, vm: LibraryRatings
                 if (uncertain) Text(stringResource(R.string.library_rating_unknown))
                 state.writeErrors[id]?.let { ErrorState(throwable = it) }
                 state.error?.let { ErrorState(throwable = it) }
-                TextButton(vm::refresh, enabled = !busy) { Text(stringResource(R.string.refresh_rating)) }
-                if (uncertain && id in state.reviewed) TextButton({ vm.acknowledge(id) }, enabled = !busy) {
+                AppTextButton(vm::refresh, enabled = !busy) { Text(stringResource(R.string.refresh_rating)) }
+                if (uncertain && id in state.reviewed) AppTextButton({ vm.acknowledge(id) }, enabled = !busy) {
                     Text(stringResource(R.string.content_reviewed))
                 }
             }
         },
         confirmButton = {
-            TextButton({ vm.save(id) }, enabled = !busy && !uncertain && row != null && selected in 1..5 &&
+            AppTextButton({ vm.save(id) }, enabled = !busy && !uncertain && row != null && selected in 1..5 &&
                 selected != (state.saved[id] ?: row.userRating)) { Text(stringResource(R.string.save_rating)) }
         },
-        dismissButton = { TextButton(dismiss, enabled = state.savingId != id) { Text(stringResource(R.string.close)) } },
+        dismissButton = { AppTextButton(dismiss, enabled = state.savingId != id) { Text(stringResource(R.string.close)) } },
     )
 }

@@ -1,66 +1,67 @@
 package com.mukhtabir.android.ui.navigation
 
-import androidx.compose.ui.semantics.semantics
-import com.mukhtabir.android.ui.components.AppTextButton
-
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.platform.LocalDensity
-import com.mukhtabir.android.ui.components.AppLayoutTokens
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
-import com.mukhtabir.android.core.ShellNavigation
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Quiz
-import androidx.compose.material.icons.outlined.Bookmark
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.ListAlt
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
-import com.mukhtabir.android.ui.components.AppBackBar
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -68,20 +69,20 @@ import androidx.navigation.compose.rememberNavController
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.AppContainer
 import com.mukhtabir.android.core.QuizPreset
+import com.mukhtabir.android.core.ShellNavigation
 import com.mukhtabir.android.core.has
-import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.data.remote.PublicConfigDto
+import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.data.remote.UserDto
-import kotlinx.coroutines.delay
-import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.mukhtabir.android.ui.navigation.AppDrawerContent
+import com.mukhtabir.android.ui.components.AppBackBar
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTopBar
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.rememberCoroutineScope
+import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.navigation.AppDrawerContent
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private data class TabItem(
@@ -114,7 +115,7 @@ internal fun AuthenticatedAppShell(
     snackbarHostState: SnackbarHostState,
     pendingLink: com.mukhtabir.android.core.AppLink?, onConsumeLink: () -> Unit,
 ) {
-    val displayPreferences by container.preferences.display.collectAsState()
+    val displayPreferences by container.preferences.display.collectAsLifecycleState()
 
     val navController = rememberNavController()
     val appContext = androidx.compose.ui.platform.LocalContext.current
@@ -151,14 +152,14 @@ internal fun AuthenticatedAppShell(
             currentRoute?.startsWith("more/master_exams/open/")!=true)
         onDispose { }
     }
-    com.mukhtabir.android.ui.components.RefreshOnResume { onProfileRefresh() }
+    RefreshOnResume { onProfileRefresh() }
     LaunchedEffect(currentRoute) {
         if(!questionActionBusy && !quizSessionActive && !ShellNavigation.preservesDraft(currentRoute)) onProfileRefresh()
     }
     val drawerNavigationAllowed = !questionActionBusy && !quizSessionActive && !focusedRoute
     LaunchedEffect(drawerNavigationAllowed) { if (!drawerNavigationAllowed) drawerState.close() }
     val openDrawer: () -> Unit = { if (drawerNavigationAllowed) drawerScope.launch { drawerState.open() } }
-    val isOnline by container.networkMonitor.isOnline.collectAsState()
+    val isOnline by container.networkMonitor.isOnline.collectAsLifecycleState()
     val expiryDays by produceState(user.remainingDays(), user) {
         while (true) { value=user.remainingDays(); delay(60_000) }
     }
@@ -172,7 +173,7 @@ internal fun AuthenticatedAppShell(
 
     if (pendingLink != null && currentRoute in setOf(AppRoutes.HOME, AppRoutes.MORE) && !questionActionBusy && !quizSessionActive) {
         val sameServer = pendingLink.server == container.apiBaseUrl
-        com.mukhtabir.android.ui.components.AppConfirmationDialog(onDismissRequest=onConsumeLink,
+        AppConfirmationDialog(onDismissRequest=onConsumeLink,
             title={Text(stringResource(R.string.link_title))},
             text={Text(stringResource(if(sameServer) R.string.link_open_confirm else R.string.link_wrong_server, pendingLink.id))},
             confirmButton={if(sameServer) AppTextButton({
@@ -225,15 +226,15 @@ internal fun AuthenticatedAppShell(
             selectedTab = selectedTab, scale = scale)
         Column(Modifier.weight(1f).fillMaxHeight()) {
             if (pendingLink != null && currentRoute !in setOf(AppRoutes.HOME, AppRoutes.MORE)) {
-                Text(stringResource(R.string.link_pending), Modifier.fillMaxWidth().padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.pagePadding, vertical = 8.dp))
+                Text(stringResource(R.string.link_pending), Modifier.fillMaxWidth().padding(horizontal = AppLayoutTokens.pagePadding, vertical = 8.dp))
             }
             if (!isOnline) Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.errorContainer) {
-                Text(stringResource(R.string.offline_banner), Modifier.fillMaxWidth().padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.pagePadding, vertical = 8.dp))
+                Text(stringResource(R.string.offline_banner), Modifier.fillMaxWidth().padding(horizontal = AppLayoutTokens.pagePadding, vertical = 8.dp))
             }
             if (expiryDays != null && requireNotNull(expiryDays) <= 7) {
                 Surface(color=androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer) {
-                    Text(stringResource(R.string.account_expiry_warning, requireNotNull(expiryDays).coerceAtLeast(0)),
-                        Modifier.fillMaxWidth().padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.pagePadding, vertical = 8.dp))
+                    Text(stringResource(R.string.account_expiry_warning, com.mukhtabir.android.util.formatNumber(requireNotNull(expiryDays).coerceAtLeast(0))),
+                        Modifier.fillMaxWidth().padding(horizontal = AppLayoutTokens.pagePadding, vertical = 8.dp))
                 }
             }
         NavHost(
@@ -266,16 +267,16 @@ private fun AppNavigationBar(navController: NavHostController, user: UserDto, en
     if (ShellNavigation.isFocused(currentRoute)) return
     Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.surface) {
         Row(Modifier.fillMaxWidth().windowInsetsPadding(androidx.compose.material3.NavigationBarDefaults.windowInsets)
-            .selectableGroup().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            .selectableGroup().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
             tabs.filter { item -> item.capability?.let(user::has) ?: true }.forEach { item ->
                 val selected = selectedTab == item.route
                 Box(Modifier.weight(1f)
-                    .heightIn(min=com.mukhtabir.android.ui.components.AppLayoutTokens.bottomNavigationHeight)
+                    .heightIn(min=AppLayoutTokens.bottomNavigationHeight)
                     .selectable(selected=selected,enabled=enabled,role=androidx.compose.ui.semantics.Role.Tab,
                         onClick={navController.navigateTopLevel(item.route)})
-                    .padding(vertical=com.mukhtabir.android.ui.components.AppLayoutTokens.secondaryFrameInset)) {
+                    .padding(vertical=AppLayoutTokens.secondaryFrameInset)) {
                     Column(Modifier.fillMaxWidth()
-                        .heightIn(min=com.mukhtabir.android.ui.components.AppLayoutTokens.secondaryVisualHeight)
+                        .heightIn(min=AppLayoutTokens.secondaryVisualHeight)
                         .padding(horizontal=4.dp,vertical=1.dp),
                         horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides
@@ -283,12 +284,12 @@ private fun AppNavigationBar(navController: NavHostController, user: UserDto, en
                             else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant) {
                             Box(Modifier.background(if (selected) androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer
                                 else androidx.compose.ui.graphics.Color.Transparent, CircleShape)
-                                .padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.pagePadding),
+                                .padding(horizontal = AppLayoutTokens.pagePadding),
                                 contentAlignment = Alignment.Center) {
                                 Icon(if (selected) item.icon else item.unselectedIcon, contentDescription = null,
                                     tint = if (selected) androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer
                                         else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(com.mukhtabir.android.ui.components.AppLayoutTokens.secondaryIconSize))
+                                    modifier = Modifier.size(AppLayoutTokens.secondaryIconSize))
                             }
                             Text(stringResource(item.labelRes),style=androidx.compose.material3.MaterialTheme.typography.labelSmall,
                                 textAlign=androidx.compose.ui.text.style.TextAlign.Center)

@@ -2,18 +2,6 @@
 
 package com.mukhtabir.android.ui.analytics
 
-import com.mukhtabir.android.ui.theme.AppTheme
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -21,23 +9,33 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import com.mukhtabir.android.ui.components.AppButton as Button
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.AnalyticsService
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppMetricRow
+import com.mukhtabir.android.ui.components.AppMetricTile
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppProgressBar
+import com.mukhtabir.android.ui.components.AppProgressMetric
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppTileGrid
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
-import com.mukhtabir.android.util.formatNumber
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatDecimal
+import com.mukhtabir.android.util.formatNumber
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +47,7 @@ fun AnalyticsRoute(
     @Suppress("UNUSED_PARAMETER") onBack: () -> Unit,
 ) {
     val viewModel: AnalyticsViewModel = viewModel(key = "analytics-$userId-$canViewAll-$canViewActiveUsers", factory = AnalyticsViewModel.Factory(service, canViewAll, canViewActiveUsers, userId))
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsLifecycleState()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),
@@ -58,7 +56,7 @@ fun AnalyticsRoute(
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 AppPageHeading(stringResource(R.string.analytics))
-                Button(onClick = viewModel::load, enabled = !state.isLoading) {
+                AppButton(onClick = viewModel::load, enabled = !state.isLoading) {
                     Text(stringResource(R.string.refresh))
                 }
             }
@@ -67,7 +65,7 @@ fun AnalyticsRoute(
         item {
             AppActionRow() {
                 listOf(7, 30, 90).forEach { days ->
-                    FilterChip(selected = state.days == days, onClick = { viewModel.selectDays(days) },
+                    AppFilterChip(selected = state.days == days, onClick = { viewModel.selectDays(days) },
                         label = { Text(stringResource(R.string.activity_days, formatNumber(days))) })
                 }
             }
@@ -92,7 +90,7 @@ fun AnalyticsRoute(
                         AnalyticsLineChart(summary.userPerformance.map { it.accuracy })
                         AppSection(stringResource(R.string.analytics_daily_values)) {
                             summary.userPerformance.forEach { point ->
-                                com.mukhtabir.android.ui.components.AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(point.date), stringResource(R.string.analytics_daily_performance, point.accuracy, formatNumber(point.questionsAnswered)))
+                                AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(point.date), stringResource(R.string.analytics_daily_performance, point.accuracy, formatNumber(point.questionsAnswered)))
                             }
                         }
                     }
@@ -102,11 +100,11 @@ fun AnalyticsRoute(
             item {
                 val confidence = summary.confidenceStats
                 AnalyticsCard(stringResource(R.string.confidence)) {
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.total_attempted), formatNumber(confidence.totalAttempted))
-                    com.mukhtabir.android.ui.components.AppProgressMetric(stringResource(R.string.confident_correct), confidence.correctConfident, confidence.totalAttempted)
-                    com.mukhtabir.android.ui.components.AppProgressMetric(stringResource(R.string.fragile_answers), confidence.correctFragile, confidence.totalAttempted)
-                    com.mukhtabir.android.ui.components.AppProgressMetric(stringResource(R.string.open_mistakes), confidence.wrongOpen, confidence.totalAttempted)
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.fragile_ratio), "${"%.1f".format(confidence.fragileRatio)}%")
+                    AppMetricRow(stringResource(R.string.total_attempted), formatNumber(confidence.totalAttempted))
+                    AppProgressMetric(stringResource(R.string.confident_correct), confidence.correctConfident, confidence.totalAttempted)
+                    AppProgressMetric(stringResource(R.string.fragile_answers), confidence.correctFragile, confidence.totalAttempted)
+                    AppProgressMetric(stringResource(R.string.open_mistakes), confidence.wrongOpen, confidence.totalAttempted)
+                    AppMetricRow(stringResource(R.string.fragile_ratio), "${"%.1f".format(confidence.fragileRatio)}%")
                 }
             }
 
@@ -116,7 +114,7 @@ fun AnalyticsRoute(
                         summary.weakCategories.forEach { row ->
                             val name = row["category_name"]?.toString()?.trim('"') ?: "—"
                             val accuracy = row["accuracy"]?.toString()?.toDoubleOrNull() ?: 0.0
-                            com.mukhtabir.android.ui.components.AppMetricRow(name, "${"%.1f".format(accuracy)}%")
+                            AppMetricRow(name, "${"%.1f".format(accuracy)}%")
                         }
                     }
                 }
@@ -133,7 +131,7 @@ fun AnalyticsRoute(
                     AnalyticsLineChart(points.map { it.activeUsers.toDouble() })
                     AppSection(stringResource(R.string.analytics_daily_values)) {
                         points.forEach { point ->
-                            com.mukhtabir.android.ui.components.AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(point.date), stringResource(R.string.active_users_metric, point.activeUsers, point.newUsers, point.totalSessions))
+                            AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(point.date), stringResource(R.string.active_users_metric, com.mukhtabir.android.util.formatNumber(point.activeUsers), com.mukhtabir.android.util.formatNumber(point.newUsers), com.mukhtabir.android.util.formatNumber(point.totalSessions)))
                         }
                     }
                 }
@@ -146,12 +144,12 @@ fun AnalyticsRoute(
                     if (mastery.categories.isEmpty() && !state.isLoading && state.errors.isEmpty()) EmptyState(stringResource(R.string.no_items))
                     mastery.categories.forEach { category ->
                         Text(category.categoryName, style = MaterialTheme.typography.titleSmall)
-                        LinearProgressIndicator(
+                        AppProgressBar(
                             progress = (category.masteryScore / 100.0).toFloat().coerceIn(0f, 1f),
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        com.mukhtabir.android.ui.components.AppMetricRow(
-                            stringResource(R.string.mastery_details, category.attempts, category.distinctQuestions),
+                        AppMetricRow(
+                            stringResource(R.string.mastery_details, com.mukhtabir.android.util.formatNumber(category.attempts), com.mukhtabir.android.util.formatNumber(category.distinctQuestions)),
                             "${"%.1f".format(category.masteryScore)}%",
                         )
                     }
@@ -165,19 +163,19 @@ fun AnalyticsRoute(
                     val labels=listOf(stringResource(R.string.current_streak),stringResource(R.string.longest_streak),
                         stringResource(R.string.active_days))
                     val values=listOf(streak.currentStreak,streak.longestStreak,streak.activeDays)
-                    com.mukhtabir.android.ui.components.AppTileGrid(values.size) { index,tileModifier ->
-                        com.mukhtabir.android.ui.components.AppMetricTile(formatNumber(values[index]),labels[index],tileModifier)
+                    AppTileGrid(values.size) { index,tileModifier ->
+                        AppMetricTile(formatNumber(values[index]),labels[index],tileModifier)
                     }
                     AnalyticsBarChart(streak.days.map { it.questions.toDouble() })
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.sessions), formatNumber(streak.totalSessions))
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.questions), formatNumber(streak.totalQuestions))
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.unique_questions), formatNumber(streak.uniqueQuestions))
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.unique_concepts), formatNumber(streak.uniqueConcepts))
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.due_reviews_completed), formatNumber(streak.dueReviews))
-                    com.mukhtabir.android.ui.components.AppMetricRow(stringResource(R.string.mastery_change), formatDecimal(streak.masteryGain))
+                    AppMetricRow(stringResource(R.string.sessions), formatNumber(streak.totalSessions))
+                    AppMetricRow(stringResource(R.string.questions), formatNumber(streak.totalQuestions))
+                    AppMetricRow(stringResource(R.string.unique_questions), formatNumber(streak.uniqueQuestions))
+                    AppMetricRow(stringResource(R.string.unique_concepts), formatNumber(streak.uniqueConcepts))
+                    AppMetricRow(stringResource(R.string.due_reviews_completed), formatNumber(streak.dueReviews))
+                    AppMetricRow(stringResource(R.string.mastery_change), formatDecimal(streak.masteryGain))
                     AppSection(stringResource(R.string.analytics_daily_values)) {
                         streak.days.forEach { day ->
-                            com.mukhtabir.android.ui.components.AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(day.date), stringResource(R.string.analytics_daily_activity, formatNumber(day.questions), formatNumber(day.sessions)))
+                            AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(day.date), stringResource(R.string.analytics_daily_activity, formatNumber(day.questions), formatNumber(day.sessions)))
                         }
                     }
                 }
@@ -188,7 +186,7 @@ fun AnalyticsRoute(
             item {
                 AnalyticsCard(stringResource(R.string.category_coverage)) {
                     summary.categoryCoverage.forEach { category ->
-                        com.mukhtabir.android.ui.components.AppProgressMetric(category.categoryName, category.verified, category.total)
+                        AppProgressMetric(category.categoryName, category.verified, category.total)
                     }
                 }
             }
@@ -197,7 +195,7 @@ fun AnalyticsRoute(
             item {
                 AnalyticsCard(stringResource(R.string.tag_coverage)) {
                     summary.tagCoverage.forEach { tag ->
-                        com.mukhtabir.android.ui.components.AppProgressMetric(tag.tagName, tag.verifiedCount, tag.count)
+                        AppProgressMetric(tag.tagName, tag.verifiedCount, tag.count)
                     }
                 }
             }
@@ -206,11 +204,10 @@ fun AnalyticsRoute(
             item {
                 AnalyticsCard(stringResource(R.string.difficulty_breakdown)) {
                     summary.difficultyStats.forEach { difficulty ->
-                        com.mukhtabir.android.ui.components.AppMetricRow(
+                        AppMetricRow(
                             analyticsDifficultyLabel(difficulty.difficulty),
                             stringResource(
-                                R.string.difficulty_metric,
-                                difficulty.count,
+                                R.string.difficulty_metric, com.mukhtabir.android.util.formatNumber(difficulty.count),
                                 difficulty.averageCorrectRate * 100,
                             ),
                         )

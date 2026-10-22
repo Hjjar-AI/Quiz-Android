@@ -1,20 +1,12 @@
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +17,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.KnowledgeAssociationDto
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppStatusKind
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownText
 
@@ -49,48 +50,48 @@ internal fun QuestionKnowledgeCreator(s: QuestionEditorState,vm: QuestionEditorV
     val draft=s.knowledgeCreation ?: return
     var discard by rememberSaveable { mutableStateOf(false) }
     val close={if(!s.loading) { if(draft.hasDraft) discard=true else vm.closeKnowledgeCreator() }}
-    AlertDialog(
+    AppConfirmationDialog(
         onDismissRequest=close,
         title={Text(stringResource(R.string.knowledge_create_title))},
-        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
             Text(stringResource(R.string.knowledge_create_hint))
-            OutlinedTextField(draft.title,{vm.knowledgeCreationField("title",it)},enabled=!s.loading,
+            AppTextField(draft.title,{vm.knowledgeCreationField("title",it)},enabled=!s.loading,
                 label={Text(stringResource(R.string.knowledge_create_name))},singleLine=true,modifier=Modifier.fillMaxWidth())
-            OutlinedTextField(draft.objective,{vm.knowledgeCreationField("objective",it)},enabled=!s.loading,
+            AppTextField(draft.objective,{vm.knowledgeCreationField("objective",it)},enabled=!s.loading,
                 label={Text(stringResource(R.string.explore_objective))},minLines=2,modifier=Modifier.fillMaxWidth())
-            OutlinedTextField(draft.answer,{vm.knowledgeCreationField("answer",it)},enabled=!s.loading,
+            AppTextField(draft.answer,{vm.knowledgeCreationField("answer",it)},enabled=!s.loading,
                 label={Text(stringResource(R.string.explore_reference_answer))},minLines=2,modifier=Modifier.fillMaxWidth())
-            OutlinedTextField(draft.facts,{vm.knowledgeCreationField("facts",it)},enabled=!s.loading,
+            AppTextField(draft.facts,{vm.knowledgeCreationField("facts",it)},enabled=!s.loading,
                 label={Text(stringResource(R.string.knowledge_create_facts))},minLines=2,modifier=Modifier.fillMaxWidth())
             if(s.loading) AppLoadingIndicator()
-            draft.validation?.let { Text(stringResource(it),color=MaterialTheme.colorScheme.error) }
+            draft.validation?.let { AppStatus(stringResource(it)) }
             draft.error?.let { ErrorState(throwable=it) }
-            if(draft.needsReview) Text(stringResource(R.string.knowledge_create_review_required),color=MaterialTheme.colorScheme.error)
-            OutlinedButton(vm::reviewKnowledgeCreation,enabled=!s.loading && draft.title.isNotBlank()) {
+            if(draft.needsReview) AppStatus(stringResource(R.string.knowledge_create_review_required), kind = AppStatusKind.WARNING)
+            AppOutlinedButton(vm::reviewKnowledgeCreation,enabled=!s.loading && draft.title.isNotBlank()) {
                 Text(stringResource(R.string.knowledge_create_review))
             }
             if(draft.reviewed) {
-                Text(stringResource(R.string.editor_lookup_count,draft.matches.take(20).size,draft.matchCount))
+                Text(stringResource(R.string.editor_lookup_count, com.mukhtabir.android.util.formatNumber(draft.matches.take(20).size), com.mukhtabir.android.util.formatNumber(draft.matchCount)))
                 Text(stringResource(R.string.knowledge_create_review_hint))
                 draft.matches.take(20).forEach { match ->
                     Text(match.title,style=MaterialTheme.typography.titleMedium)
                     if(match.learningObjective.isNotBlank()) MarkdownText(match.learningObjective)
-                    OutlinedButton({vm.attachReviewedKnowledge(match.id)},enabled=!s.loading && !draft.needsReview) {
+                    AppOutlinedButton({vm.attachReviewedKnowledge(match.id)},enabled=!s.loading && !draft.needsReview) {
                         Text(stringResource(R.string.knowledge_create_use_existing))
                     }
                 }
             }
         }},
-        confirmButton={TextButton(vm::createKnowledge,enabled=!s.loading && !draft.needsReview && vm.canCreateKnowledge) {
+        confirmButton={AppTextButton(vm::createKnowledge,enabled=!s.loading && !draft.needsReview && vm.canCreateKnowledge) {
             Text(stringResource(R.string.knowledge_create_attach))
         }},
-        dismissButton={TextButton(close,enabled=!s.loading){Text(stringResource(R.string.cancel))}},
+        dismissButton={AppTextButton(close,enabled=!s.loading){Text(stringResource(R.string.cancel))}},
     )
-    if(discard) AlertDialog(
+    if(discard) AppConfirmationDialog(
         onDismissRequest={discard=false},
         title={Text(stringResource(R.string.knowledge_create_discard_title))},
         text={Text(stringResource(R.string.knowledge_create_discard_message))},
         confirmButton={AppDangerTextButton({discard=false;vm.closeKnowledgeCreator()},enabled=!s.loading){Text(stringResource(R.string.ux_discard_knowledge_draft))}},
-        dismissButton={TextButton({discard=false}){Text(stringResource(R.string.keep_editing))}},
+        dismissButton={AppTextButton({discard=false}){Text(stringResource(R.string.keep_editing))}},
     )
 }

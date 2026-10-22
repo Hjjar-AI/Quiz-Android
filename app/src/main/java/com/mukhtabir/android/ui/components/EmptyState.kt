@@ -1,13 +1,11 @@
 package com.mukhtabir.android.ui.components
 
-import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inbox
-import com.mukhtabir.android.ui.components.AppButton as Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,6 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.theme.AppTheme
 
 /**
  * Empty-state placeholder.
@@ -63,21 +63,9 @@ fun EmptyState(
             )
         }
         if (actionLabel != null && onAction != null) {
-            Button(onClick = onAction) {
+            AppButton(onClick = onAction) {
                 Text(actionLabel)
             }
         }
     }
-}
-
-/**
- * Convenience overload using the default "nothing to show yet" copy.
- * Screens that want specific copy pass `title` / `message` instead.
- */
-@Composable
-fun EmptyStateDefault(modifier: Modifier = Modifier) {
-    EmptyState(
-        title = stringResource(R.string.no_items),
-        modifier = modifier,
-    )
 }

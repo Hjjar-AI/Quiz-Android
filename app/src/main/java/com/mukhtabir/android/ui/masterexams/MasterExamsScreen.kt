@@ -2,52 +2,32 @@
 
 package com.mukhtabir.android.ui.masterexams
 
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
-
-import com.mukhtabir.android.ui.theme.AppTheme
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
+import androidx.compose.foundation.selection.selectableGroup
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.LaunchedEffect
-import com.mukhtabir.android.util.formatLocalDateTime
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -60,17 +40,46 @@ import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.MasterExamService
 import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.localizedForDisplay
+import com.mukhtabir.android.ui.components.AnswerChoice
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppConfirmationButton
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppStatusKind
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
+import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.LearningQuestionChips
+import com.mukhtabir.android.ui.components.LearningResultsSummary
+import com.mukhtabir.android.ui.components.LearningSaveState
+import com.mukhtabir.android.ui.components.LearningSaveStatus
+import com.mukhtabir.android.ui.components.LearningSessionHeader
+import com.mukhtabir.android.ui.components.LearningSessionNavigation
 import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.components.QuestionImage
+import com.mukhtabir.android.ui.components.QuestionLanguageSelector
+import com.mukhtabir.android.ui.components.QuestionTextCard
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.quiz.KeepSessionScreenOn
+import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.util.formatLocalDateTime
 
 @Composable
 fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepository, draftStore: SessionDraftStore, onManage: (() -> Unit)? = null, initialExamId: Long? = null, onShare: ((Long) -> Unit)? = null, onBack: () -> Unit) {
     val vm: MasterExamsViewModel = viewModel(key="master-exams-$userId",factory=MasterExamsViewModel.Factory(service,userId,draftStore))
-    val s by vm.state.collectAsState()
+    val s by vm.state.collectAsLifecycleState()
     var readingLocale by androidx.compose.runtime.saveable.rememberSaveable(userId, s.examId, s.status?.sessionId) { mutableStateOf<String?>(null) }
     var requestHandled by remember(initialExamId) { mutableStateOf(initialExamId == null) }
     LaunchedEffect(initialExamId, s.busy, s.examId, s.storageFailed) {
@@ -106,25 +115,25 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
     val canNavigate = !s.busy && !s.finishPending && !s.storageFailed && !s.needsSync && s.draft == null &&
         (s.graceRemainingSeconds ?: 0) > 0
     var showMap by remember(status?.sessionId) { mutableStateOf(false) }
-    if (showMap && active) AlertDialog(onDismissRequest = { showMap = false },
+    if (showMap && active) AppConfirmationDialog(onDismissRequest = { showMap = false },
         title = { Text(stringResource(R.string.session_question_navigation)) },
         text = {
             Column(Modifier.heightIn(max = AppLayoutTokens.menuMaxHeight).verticalScroll(rememberScrollState())) {
                 Text(stringResource(R.string.master_navigation_hint))
-                com.mukhtabir.android.ui.components.LearningQuestionChips(currentIndex, ids.size,
+                LearningQuestionChips(currentIndex, ids.size,
                     answeredIndices, emptySet(), canNavigate, onChoose = { index ->
                         vm.goto(ids[index]); showMap = false
                     })
             }
-        }, confirmButton = { TextButton({ showMap = false }) { Text(stringResource(R.string.done)) } })
+        }, confirmButton = { AppTextButton({ showMap = false }) { Text(stringResource(R.string.done)) } })
     val sessionHeader: @Composable () -> Unit = {
         val grace = s.remainingSeconds == 0L && (s.graceRemainingSeconds ?: 0) > 0
         val seconds = (if (grace) s.graceRemainingSeconds else s.remainingSeconds) ?: 0L
-        com.mukhtabir.android.ui.components.LearningSessionHeader(currentIndex, ids.size, answeredIndices.size,
+        LearningSessionHeader(currentIndex, ids.size, answeredIndices.size,
             seconds = seconds.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(), overtime = grace)
     }
     val sessionNavigation: @Composable () -> Unit = {
-        com.mukhtabir.android.ui.components.LearningSessionNavigation(
+        LearningSessionNavigation(
             onPrevious = { vm.move(-1) }, onNext = { vm.move(1) },
             previousEnabled = canNavigate && currentIndex > 0,
             nextEnabled = canNavigate && currentIndex >= 0 && currentIndex < ids.lastIndex,
@@ -141,14 +150,14 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
         if (active && !pinned) item { sessionHeader() }
         item {
             AppActionRow() {
-                OutlinedButton(leave,enabled=!s.busy) { Text(stringResource(R.string.back)) }
-                OutlinedButton(vm::refresh,enabled=!s.busy) { Text(stringResource(R.string.refresh)) }
-                if (s.examId == null && onManage != null) OutlinedButton(onManage, enabled = !s.busy) { Text(stringResource(R.string.exam_author_manage)) }
+                AppOutlinedButton(leave,enabled=!s.busy) { Text(stringResource(R.string.back)) }
+                AppOutlinedButton(vm::refresh,enabled=!s.busy) { Text(stringResource(R.string.refresh)) }
+                if (s.examId == null && onManage != null) AppOutlinedButton(onManage, enabled = !s.busy) { Text(stringResource(R.string.exam_author_manage)) }
             }
         }
         item { AppPageHeading(s.result?.examName?.takeIf { it.isNotBlank() } ?: s.exam?.name ?: stringResource(R.string.master_exams_title)) }
         s.exam?.id?.let {id -> onShare?.let {share -> item {
-            OutlinedButton({share(id)},enabled=!s.busy) {Text(stringResource(R.string.link_share_exam))}
+            AppOutlinedButton({share(id)},enabled=!s.busy) {Text(stringResource(R.string.link_share_exam))}
         } } }
         if(s.busy && s.page == null) item { AppLoadingIndicator() }
         s.error?.let { item { ErrorState(throwable=it,onRetry=if(s.busy) null else vm::refresh) } }
@@ -157,40 +166,40 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
             Text(stringResource(R.string.notice_existing_exam))
         }
         if(s.storageFailed) item {
-            Text(stringResource(R.string.master_recovery_storage),color=MaterialTheme.colorScheme.error,
+            AppStatus(stringResource(R.string.master_recovery_storage),
                 modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite })
-            OutlinedButton(vm::retryStorage,enabled=!s.busy) { Text(stringResource(R.string.retry)) }
+            AppOutlinedButton(vm::retryStorage,enabled=!s.busy) { Text(stringResource(R.string.retry)) }
             if(s.draft==null) AppDangerOutlinedButton({confirmation="discard-recovery"},enabled=!s.busy) {
                 Text(stringResource(R.string.ux_discard_local_recovery))
             }
         }
         if(s.finishPending && s.status?.isComplete!=true) item {
-            Text(stringResource(R.string.master_finish_uncertain),color=MaterialTheme.colorScheme.error,
-                modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite })
+            AppStatus(stringResource(R.string.master_finish_uncertain),
+                modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite }, kind = AppStatusKind.WARNING)
         }
         if(s.restoredNavigation) item {
             Text(stringResource(R.string.master_restored_navigation),modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite })
-            TextButton(vm::dismissRestorationNotice) { Text(stringResource(R.string.master_restoration_dismiss)) }
+            AppTextButton(vm::dismissRestorationNotice) { Text(stringResource(R.string.master_restoration_dismiss)) }
         }
         if(s.examId==null) {
             item {
-                if(s.notices.isNotEmpty()) Text(stringResource(R.string.master_notices_count,s.notices.size))
+                if(s.notices.isNotEmpty()) Text(stringResource(R.string.master_notices_count, com.mukhtabir.android.util.formatNumber(s.notices.size)))
                 AppActionRow() {
                     listOf("all","active","scheduled","completed").forEach { filter ->
-                        FilterChip(selected=s.statusFilter==filter,onClick={vm.filter(filter)},enabled=!s.busy,
+                        AppFilterChip(selected=s.statusFilter==filter,onClick={vm.filter(filter)},enabled=!s.busy,
                             label={Text(if(filter=="all") stringResource(R.string.master_list_all) else masterStatus(filter))})
                     }
                 }
             }
             s.noticesError?.let { item { ErrorState(throwable=it,title=stringResource(R.string.master_notices_failed),onRetry=if(s.busy) null else vm::refresh) } }
-            if(s.exams.none { s.statusFilter=="all" || it.status==s.statusFilter } && !s.busy && s.error==null) item { Text(stringResource(R.string.master_empty)) }
+            if(s.exams.none { s.statusFilter=="all" || it.status==s.statusFilter } && !s.busy && s.error==null) item { EmptyState(stringResource(R.string.master_empty)) }
             items(s.exams.filter { s.statusFilter=="all" || it.status==s.statusFilter },key={it.id}) { exam ->
-                Card(onClick={vm.open(exam.id)},enabled=!s.busy && !s.storageFailed,modifier=Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                AppCard(onClick={vm.open(exam.id)},enabled=!s.busy && !s.storageFailed,modifier=Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                         Text(exam.name,style=MaterialTheme.typography.titleMedium)
                         Text(masterStatus(exam.status))
                         if(exam.id in s.notices) Text(stringResource(R.string.master_ack_required),color=MaterialTheme.colorScheme.primary)
-                        Text(stringResource(R.string.master_summary,exam.questionCount,exam.durationMinutes))
+                        Text(stringResource(R.string.master_summary, com.mukhtabir.android.util.formatNumber(exam.questionCount), com.mukhtabir.android.util.formatNumber(exam.durationMinutes)))
                         Text(stringResource(R.string.master_window,formatLocalDateTime(exam.opensAt),formatLocalDateTime(exam.closesAt)))
                         if(exam.myAttempt!=null) Text(stringResource(if(exam.myAttempt.isComplete) R.string.master_result else R.string.master_resume))
                     }
@@ -201,38 +210,38 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                 if(s.status==null && s.result==null) {
                     item { MarkdownText(exam.description) }
                     if(exam.instructions.isNotBlank()) item { MarkdownText(exam.instructions) }
-                    item { Text(masterStatus(exam.status)); Text(stringResource(R.string.master_summary,exam.questionCount,exam.durationMinutes)); Text(stringResource(R.string.master_window,formatLocalDateTime(exam.opensAt),formatLocalDateTime(exam.closesAt))) }
+                    item { Text(masterStatus(exam.status)); Text(stringResource(R.string.master_summary, com.mukhtabir.android.util.formatNumber(exam.questionCount), com.mukhtabir.android.util.formatNumber(exam.durationMinutes))); Text(stringResource(R.string.master_window,formatLocalDateTime(exam.opensAt),formatLocalDateTime(exam.closesAt))) }
                     item { Text(stringResource(R.string.master_time_rule)) }
                     if(!exam.hasAcknowledged) item {
-                        Button(vm::acknowledge,enabled=!s.busy && !s.finishPending && !s.storageFailed && s.draft==null && !s.needsSync) { Text(stringResource(R.string.master_acknowledge)) }
+                        AppButton(vm::acknowledge,enabled=!s.busy && !s.finishPending && !s.storageFailed && s.draft==null && !s.needsSync) { Text(stringResource(R.string.master_acknowledge)) }
                     } else item { Text(stringResource(R.string.master_acknowledged)) }
                     if(MasterExamsViewModel.canStart(exam)) item {
-                        Button({confirmation="start"},enabled=!s.busy && !s.storageFailed && !s.needsSync && !s.finishPending && s.draft==null && exam.hasAcknowledged) { Text(stringResource(R.string.master_start)) }
+                        AppButton({confirmation="start"},enabled=!s.busy && !s.storageFailed && !s.needsSync && !s.finishPending && s.draft==null && exam.hasAcknowledged) { Text(stringResource(R.string.master_start)) }
                     }
                 }
             }
                 if(s.draft!=null) item {
                     if(s.draftConflict) {
-                        Text(stringResource(R.string.master_draft_conflict),color=MaterialTheme.colorScheme.error)
+                        AppStatus(stringResource(R.string.master_draft_conflict), kind = AppStatusKind.WARNING)
                         Text(stringResource(R.string.master_server_answer,vm.serverDraftAnswer()?.toString() ?: stringResource(R.string.none)))
-                        Button(vm::rebaseDraft,enabled=!s.busy && !s.storageFailed && !s.needsSync && !s.finishPending && s.status?.sessionId==s.draftSessionId && (s.graceRemainingSeconds ?: 0)>0) {Text(stringResource(R.string.content_keep_draft))}
+                        AppButton(vm::rebaseDraft,enabled=!s.busy && !s.storageFailed && !s.needsSync && !s.finishPending && s.status?.sessionId==s.draftSessionId && (s.graceRemainingSeconds ?: 0)>0) {Text(stringResource(R.string.content_keep_draft))}
                     }
                     Text(stringResource(R.string.master_unsaved))
                     s.draftPage?.let { draftPage ->
                         val pending=QuestionDto(id=draftPage.question.id,question=draftPage.question.text,choices=draftPage.question.choices,
                             translations=draftPage.question.translations,answersHidden=true).localizedForDisplay(readingLocale ?: java.util.Locale.getDefault().toLanguageTag())
-                        Text(stringResource(R.string.master_pending_question,draftPage.index+1))
-                        com.mukhtabir.android.ui.components.QuestionTextCard(pending.question)
+                        Text(stringResource(R.string.master_pending_question, com.mukhtabir.android.util.formatNumber(draftPage.index+1)))
+                        QuestionTextCard(pending.question)
                         pending.choices.getOrNull(s.draft!!.answer-1)?.let { MarkdownText(it) }
                     }
-                    Button(vm::saveAnswer,enabled=!s.busy && !s.storageFailed && !s.finishPending && !s.needsSync && !s.draftConflict && (s.graceRemainingSeconds ?: 0)>0) { Text(stringResource(R.string.master_save_answer)) }
-                    OutlinedButton({confirmation="discard"},enabled=!s.busy) { Text(stringResource(R.string.master_discard_draft)) }
+                    AppButton(vm::saveAnswer,enabled=!s.busy && !s.storageFailed && !s.finishPending && !s.needsSync && !s.draftConflict && (s.graceRemainingSeconds ?: 0)>0) { Text(stringResource(R.string.master_save_answer)) }
+                    AppOutlinedButton({confirmation="discard"},enabled=!s.busy) { Text(stringResource(R.string.master_discard_draft)) }
                 }
             s.result?.let { result ->
-                item { Text(stringResource(R.string.master_result),style=MaterialTheme.typography.titleLarge) }
+                item { AppSectionHeading(stringResource(R.string.master_result)) }
                 item {
-                    com.mukhtabir.android.ui.components.LearningSaveStatus(com.mukhtabir.android.ui.components.LearningSaveState.SERVER)
-                    com.mukhtabir.android.ui.components.LearningResultsSummary(result.correctCount, result.totalQuestions,
+                    LearningSaveStatus(LearningSaveState.SERVER)
+                    LearningResultsSummary(result.correctCount, result.totalQuestions,
                         result.answeredCount, result.accuracy)
                 }
                 item { Text(stringResource(R.string.report_weighted_score) + ": " +
@@ -242,7 +251,7 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                 if(result.forcedFinish) item { Text(stringResource(R.string.master_forced_finish)) }
             }
             if (s.storageFailed || s.needsSync || s.finishPending || s.draftConflict) item {
-                com.mukhtabir.android.ui.components.LearningSaveStatus(com.mukhtabir.android.ui.components.LearningSaveState.REVIEW)
+                LearningSaveStatus(LearningSaveState.REVIEW)
             }
             if(s.status?.isComplete==false) {
                 item {
@@ -251,7 +260,7 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                     }
                     Text(stringResource(R.string.master_time_rule))
                 }
-                if(s.needsSync) item { Text(stringResource(R.string.master_sync_required),color=MaterialTheme.colorScheme.error) }
+                if(s.needsSync) item { AppStatus(stringResource(R.string.master_sync_required), kind = AppStatusKind.WARNING) }
                 s.page?.let { page ->
                     val question=QuestionDto(id=page.question.id,question=page.question.text,choices=page.question.choices,
                         translations=page.question.translations,case=page.question.case,answersHidden=true).localizedForDisplay(readingLocale ?: java.util.Locale.getDefault().toLanguageTag())
@@ -259,28 +268,32 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                         (s.draft==null || s.draft?.questionId==page.question.id)
                     val displayDraft=s.draft?.takeIf { !s.draftConflict && it.questionId==page.question.id }
                     val selected=displayDraft?.answer ?: page.savedAnswer
-                    item { com.mukhtabir.android.ui.components.QuestionLanguageSelector(page.question.translations,
+                    item { QuestionLanguageSelector(page.question.translations,
                         page.question.choices.size, readingLocale, { readingLocale = it },
                         hasCase = page.question.case?.stem?.isNotBlank() == true, caseTranslations = page.question.case?.translations ?: kotlinx.serialization.json.JsonObject(emptyMap())) }
                     item { ClinicalCaseContext(question.case) }
-                    item { com.mukhtabir.android.ui.components.QuestionTextCard(question.question) }
+                    item { QuestionTextCard(question.question) }
                     item { QuestionImage(page.question.imageUrl,images) }
-                    items(question.choices.indices.toList(),key={"choice-$it"}) { index ->
-                        com.mukhtabir.android.ui.components.AnswerChoice(
-                            number=index+1, text=question.choices[index], selected=selected==index+1,
-                            enabled=canEdit, neutralSelection=true, onClick={vm.choose(index+1)})
+                    item(key = "answer-choices") {
+                        Column(Modifier.fillMaxWidth().selectableGroup(),
+                            verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                            question.choices.forEachIndexed { index, choice ->
+                                AnswerChoice(number=index+1, text=choice, selected=selected==index+1,
+                                    enabled=canEdit, neutralSelection=true, onClick={vm.choose(index+1)})
+                            }
+                        }
                     }
                     item {
                         androidx.compose.runtime.key(page.question.id) {
-                            com.mukhtabir.android.ui.components.AppSection(stringResource(R.string.confidence_prompt),
+                            AppSection(stringResource(R.string.confidence_prompt),
                                 subtitle = stringResource(when (displayDraft?.confidence ?: page.savedConfidence ?: 3) {
                                     1 -> R.string.confidence_guessing
                                     2 -> R.string.confidence_uncertain
                                     else -> R.string.confidence_certain
                                 })) {
-                                AppActionRow() {
+                                AppActionRow(Modifier.selectableGroup()) {
                                     listOf(R.string.master_confidence_low,R.string.master_confidence_medium,R.string.master_confidence_high).forEachIndexed { index,label ->
-                                        FilterChip(selected=(displayDraft?.confidence ?: page.savedConfidence ?: 3)==index+1,
+                                        AppFilterChip(selected=(displayDraft?.confidence ?: page.savedConfidence ?: 3)==index+1,
                                             onClick={vm.confidence(index+1)},label={Text(stringResource(label))},enabled=canEdit && selected!=null)
                                     }
                                 }
@@ -288,12 +301,12 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                         }
                     }
                     item {
-                        OutlinedButton({confirmation="report"},enabled=!s.busy && !s.storageFailed && !s.needsSync && !s.finishPending && page.question.id !in s.reported) { Text(stringResource(R.string.master_report)) }
+                        AppOutlinedButton({confirmation="report"},enabled=!s.busy && !s.storageFailed && !s.needsSync && !s.finishPending && page.question.id !in s.reported) { Text(stringResource(R.string.master_report)) }
                         if(page.question.id in s.reported) Text(stringResource(R.string.master_report_attempted))
                     }
                 }
                 item {
-                    Button({confirmation="finish"},enabled=!s.busy && !s.storageFailed && !s.needsSync && (!s.finishPending || s.finishSessionId==s.status?.sessionId) &&
+                    AppButton({confirmation="finish"},enabled=!s.busy && !s.storageFailed && !s.needsSync && (!s.finishPending || s.finishSessionId==s.status?.sessionId) &&
                         (s.draft==null || s.graceRemainingSeconds==0L)) { Text(stringResource(R.string.finish)) }
                 }
             }
@@ -308,17 +321,17 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
     }
     }
     confirmation?.let { action ->
-        AlertDialog(
+        AppConfirmationDialog(
             onDismissRequest={if(!s.busy) confirmation=null},
             title={Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"start"->R.string.master_start;"finish"->R.string.finish;"report"->R.string.master_report;"discard"->R.string.master_discard_draft;else->R.string.back}))},
-            text={if(action=="report") OutlinedTextField(reportReason,{reportReason=it},label={Text(stringResource(R.string.master_report_reason))},modifier=Modifier.fillMaxWidth())
+            text={if(action=="report") AppTextField(reportReason,{reportReason=it},label={Text(stringResource(R.string.master_report_reason))},modifier=Modifier.fillMaxWidth())
                 else Text(stringResource(when(action){"discard-recovery"->R.string.master_recovery_discard;"start"->R.string.master_start_confirm;"finish"->R.string.master_finish_confirm;"discard"->R.string.master_discard_confirm;else->R.string.master_leave_confirm}))},
-            confirmButton={com.mukhtabir.android.ui.components.AppConfirmationButton(
+            confirmButton={AppConfirmationButton(
                 destructive = action == "discard" || action == "discard-recovery", onClick = {
                 confirmation=null
                 when(action){"discard-recovery"->vm.discardUnreadableRecovery();"start"->vm.start();"finish"->vm.finish();"report"->vm.flag(reportReason);"discard"->vm.discardDraft();else->vm.back()}
             },enabled=!s.busy){Text(stringResource(when(action){"discard-recovery"->R.string.ux_discard_local_recovery;"discard"->R.string.master_discard_draft;"start"->R.string.master_start;"finish"->R.string.finish_exam_action;"report"->R.string.master_report;else->R.string.back_to_exams_action}))}},
-            dismissButton={TextButton({confirmation=null},enabled=!s.busy){Text(stringResource(R.string.cancel))}},
+            dismissButton={AppTextButton({confirmation=null},enabled=!s.busy){Text(stringResource(R.string.cancel))}},
         )
     }
 }

@@ -1,30 +1,29 @@
 package com.mukhtabir.android.ui.quiz
 
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.theme.AppTheme
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
-import com.mukhtabir.android.ui.components.AppButton as Button
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.components.AnswerChoice
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.MarkdownText
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-internal fun QuizSelectionRow(content: @Composable () -> Unit) {
-    AppActionRow(Modifier.fillMaxWidth()) { content() }
+internal fun QuizSelectionRow(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    AppActionRow(modifier.fillMaxWidth()) { content() }
 }
 
 @Composable
@@ -40,21 +39,22 @@ internal fun SelectableButton(
     answerCorrect: Boolean? = null,
     neutralSelection: Boolean = false,
 ) {
-    val selectionModifier = modifier.heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget).semantics {
+    val selectionModifier = modifier.heightIn(min = AppLayoutTokens.touchTarget).semantics {
         this.selected = selected
+        role = androidx.compose.ui.semantics.Role.RadioButton
         accessibilityLabel?.let { contentDescription = it }
     }
     if (choiceNumber != null) {
-        com.mukhtabir.android.ui.components.AnswerChoice(
+        AnswerChoice(
             number = choiceNumber, text = text, modifier = modifier,
             selected = selected, enabled = enabled, onClick = onClick, answerCorrect = answerCorrect,
             neutralSelection = neutralSelection, markdown = markdown, accessibilityLabel = accessibilityLabel)
     } else if (selected) {
-        Button(onClick = onClick, enabled = enabled, modifier = selectionModifier) {
+        AppButton(onClick = onClick, enabled = enabled, modifier = selectionModifier) {
             if (markdown) MarkdownText(text, Modifier.weight(1f), interactive = false) else Text(text)
         }
     } else {
-        OutlinedButton(onClick = onClick, enabled = enabled, modifier = selectionModifier) {
+        AppOutlinedButton(onClick = onClick, enabled = enabled, modifier = selectionModifier) {
             if (markdown) MarkdownText(text, Modifier.weight(1f), interactive = false) else Text(text)
         }
     }

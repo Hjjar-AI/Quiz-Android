@@ -1,32 +1,22 @@
 package com.mukhtabir.android.ui.profile
 
-import com.mukhtabir.android.ui.theme.AppTheme
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Icon
-import com.mukhtabir.android.ui.components.AppIconButton
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import com.mukhtabir.android.ui.components.AppCard as Card
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,10 +26,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
-import com.mukhtabir.android.data.remote.UserDto
-import com.mukhtabir.android.util.formatLongDate
 import com.mukhtabir.android.core.has
+import com.mukhtabir.android.data.remote.UserDto
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppIconButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppListRow
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.util.formatLongDate
 /**
  * Read-only profile screen (Phase 1, item 76).
  *
@@ -78,10 +77,10 @@ fun ProfileScreen(
                 Icon(Icons.Filled.Refresh, stringResource(R.string.profile_refresh))
             }
         })
-        refreshError?.let {com.mukhtabir.android.ui.components.ErrorState(throwable=it)}
+        refreshError?.let {ErrorState(throwable=it)}
 
         // ── Identity card ──────────────────────────────────────────
-        Card(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -93,7 +92,7 @@ fun ProfileScreen(
                     color = MaterialTheme.colorScheme.primary,
                     shape = CircleShape,
                 ) {
-                    Box(Modifier.size(AppLayoutTokens.profileAvatarSize), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(ProfileScreenGeometry.profileAvatarSize), contentAlignment = Alignment.Center) {
                         Text(
                             text = user.displayName.firstOrNull()?.uppercase() ?: "?",
                             style = MaterialTheme.typography.headlineMedium,
@@ -102,7 +101,7 @@ fun ProfileScreen(
                         )
                     }
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                     Text(
                         text = user.displayName,
                         style = MaterialTheme.typography.titleLarge,
@@ -121,16 +120,16 @@ fun ProfileScreen(
             StatRow(stringResource(R.string.profile_role), com.mukhtabir.android.util.roleLabel(user.role))
             StatRow(stringResource(R.string.profile_questions_count), com.mukhtabir.android.util.formatNumber(user.questionsCount))
             StatRow(stringResource(R.string.profile_trust_score), com.mukhtabir.android.util.bidi("${com.mukhtabir.android.util.formatDecimal(user.trustScore)}%"))
-            StatRow(stringResource(R.string.profile_streak), stringResource(R.string.profile_streak_value, user.currentStreak, user.longestStreak))
+            StatRow(stringResource(R.string.profile_streak), stringResource(R.string.profile_streak_value, com.mukhtabir.android.util.formatNumber(user.currentStreak), com.mukhtabir.android.util.formatNumber(user.longestStreak)))
             user.createdAt?.let { StatRow(stringResource(R.string.profile_joined), formatLongDate(it)) }
             user.lastLogin?.let { StatRow(stringResource(R.string.profile_last_login), formatLongDate(it)) }
         }
 
         // ── Subscription card (item 78) ────────────────────────────
         if (!user.bypassesExpiry && user.expiresAt != null) {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
-                    modifier = Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets),
+                    modifier = Modifier.padding(AppLayoutTokens.cardInsets),
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
                 ) {
                     Text(
@@ -144,7 +143,7 @@ fun ProfileScreen(
                     )
                     if (days != null) {
                         val daysText = when {
-                            days > 0 -> stringResource(R.string.profile_days_left, days)
+                            days > 0 -> stringResource(R.string.profile_days_left, com.mukhtabir.android.util.formatNumber(days))
                             else -> stringResource(R.string.profile_expired)
                         }
                         StatRow(
@@ -169,7 +168,7 @@ fun ProfileScreen(
             )
         }
         if (adminItems.isNotEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(vertical = AppLayoutTokens.cardVerticalPadding)) {
                     Text(
                         text = stringResource(R.string.profile_admin_section),
@@ -181,9 +180,9 @@ fun ProfileScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable(onClick = action)
-                                .heightIn(min = com.mukhtabir.android.ui.components.AppLayoutTokens.touchTarget)
-                                .padding(horizontal = com.mukhtabir.android.ui.components.AppLayoutTokens.cardPadding, vertical = AppLayoutTokens.denseCardVerticalPadding),
+                                .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = action)
+                                .heightIn(min = AppLayoutTokens.touchTarget)
+                                .padding(horizontal = AppLayoutTokens.cardPadding, vertical = AppLayoutTokens.denseCardVerticalPadding),
                         ) {
                             Text(label, style = MaterialTheme.typography.bodyLarge)
                         }
@@ -193,7 +192,7 @@ fun ProfileScreen(
         }
 
         // ── Actions ────────────────────────────────────────────────
-        Card(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Column {
                 ProfileActionRow(
                     label = stringResource(R.string.nav_change_password),
@@ -244,7 +243,7 @@ private fun ProfileActionRow(
     onClick: () -> Unit,
     destructive: Boolean = false,
 ) {
-    com.mukhtabir.android.ui.components.AppListRow(Modifier.clickable(onClick = onClick)) {
+    AppListRow(Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
@@ -255,4 +254,8 @@ private fun ProfileActionRow(
             },
         )
     }
+}
+
+private object ProfileScreenGeometry {
+    val profileAvatarSize = 64.dp
 }

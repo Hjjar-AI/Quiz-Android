@@ -2,13 +2,13 @@
 
 package com.mukhtabir.android.ui.masterexams
 
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.foundation.focusable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -16,6 +16,7 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.CategoryDto
 import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.questions.QuestionChoiceDraft
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
@@ -54,7 +55,7 @@ internal fun ExamDraftQuestionFields(form: EmbeddedExamDraftForm, enabled: Boole
         form.choices.forEachIndexed { index, choice ->
             QuestionChoiceCard {
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.choice_number, index + 1))
+                    Text(stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)))
                     MarkdownText(choice.text)
                     if (choice.id == form.correctId) Text(stringResource(R.string.correct_answer))
                 }
@@ -76,7 +77,7 @@ internal fun ExamDraftChoiceFields(form: EmbeddedExamDraftForm, choice: Question
         DraftValidatedField("choice:${choice.id}", validation, showMessage = false) { error, focus ->
             MarkdownField(choice.text, { value -> change { f -> f.copy(choices = f.choices.map {
                 if (it.id == choice.id) it.copy(text = value) else it }) } },
-                stringResource(R.string.choice_number, index + 1), enabled, error = error, fieldFocusRequester = focus)
+                stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)), enabled, error = error, fieldFocusRequester = focus)
         }
         DraftValidatedField(if (index == 0) "correct" else "correct:${choice.id}", validation) { _, focus ->
             AppFilterChip(choice.id == form.correctId, { change { it.copy(correctId = choice.id) } },
@@ -105,7 +106,7 @@ internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolea
     change: ((EmbeddedExamDraftForm) -> EmbeddedExamDraftForm) -> Unit, validation: DraftValidationUi = DraftValidationUi()) {
     var menu by remember { mutableStateOf(false) }
     DraftValidatedField("choices", validation) { _, focus ->
-        Text(stringResource(R.string.maximum_choices, maxChoices.coerceAtLeast(2)), Modifier.focusRequester(focus).focusable())
+        Text(stringResource(R.string.maximum_choices, com.mukhtabir.android.util.formatNumber(maxChoices.coerceAtLeast(2))), Modifier.focusRequester(focus).focusable())
         AppOutlinedButton({ change { if (it.choices.size < maxChoices.coerceAtLeast(2))
             it.copy(choices = it.choices + QuestionChoiceDraft()) else it } },
             enabled = enabled && form.choices.size < maxChoices.coerceAtLeast(2)) { Text(stringResource(R.string.add_choice)) }
@@ -114,7 +115,7 @@ internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolea
         stringResource(R.string.explanation), enabled, minLines = 2)
     AppSection(stringResource(R.string.section_organization), revealError = revealError || validation.hasAny("source", "difficulty", "category"), revealRequest = validation.attempt) {
         DraftValidatedField("source", validation) { error, focus ->
-            OutlinedTextField(form.source, { value -> change { it.copy(source = value) } }, enabled = enabled,
+            AppTextField(form.source, { value -> change { it.copy(source = value) } }, enabled = enabled,
                 isError = error != null, label = { Text(stringResource(R.string.question_source)) },
                 modifier = Modifier.fillMaxWidth().focusRequester(focus))
         }
@@ -150,7 +151,7 @@ internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolea
     AppSection(stringResource(R.string.section_case_context), revealError = validation.hasAny("caseKey", "caseStem", "caseOrder"), revealRequest = validation.attempt) {
         Text(stringResource(R.string.editor_case_stem_hint))
         DraftValidatedField("caseKey", validation) { error, focus ->
-            OutlinedTextField(form.caseKey, onCaseKeyChange, enabled = enabled, isError = error != null,
+            AppTextField(form.caseKey, onCaseKeyChange, enabled = enabled, isError = error != null,
                 label = { Text(stringResource(R.string.editor_case_key)) }, modifier = Modifier.fillMaxWidth().focusRequester(focus))
         }
         DraftValidatedField("caseStem", validation, showMessage = false) { error, focus ->
@@ -159,7 +160,7 @@ internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolea
                 error = error, fieldFocusRequester = focus)
         }
         DraftValidatedField("caseOrder", validation) { error, focus ->
-            OutlinedTextField(form.caseOrder, { value -> change { it.copy(caseOrder = value) } }, enabled = enabled, isError = error != null,
+            AppTextField(form.caseOrder, { value -> change { it.copy(caseOrder = value) } }, enabled = enabled, isError = error != null,
                 label = { Text(stringResource(R.string.editor_case_order)) }, modifier = Modifier.fillMaxWidth().focusRequester(focus))
         }
     }

@@ -32,7 +32,12 @@ private fun SharedComponentPreviews() {
                 AppCard(Modifier.fillMaxWidth()) {
                     AppCardBody { Text(stringResource(R.string.reading_preview_hint)) }
                 }
-                AppMetricTile("20", stringResource(R.string.number_of_questions), onClick = {})
+                AppTextField("", {}, label = { Text(stringResource(R.string.username)) }, singleLine = true)
+                AppPasswordField("", {}, label = { Text(stringResource(R.string.password)) })
+                AppStatus(stringResource(R.string.quiz_saved_pending, com.mukhtabir.android.util.formatNumber(2)), kind = AppStatusKind.WARNING)
+                AppStatus(stringResource(R.string.saved), kind = AppStatusKind.SUCCESS)
+                AppProgressBar(.5f, Modifier.fillMaxWidth(), label = stringResource(R.string.session_question_navigation))
+                AppMetricTile(com.mukhtabir.android.util.formatNumber(20), stringResource(R.string.number_of_questions), onClick = {})
                 AnswerChoice(1, stringResource(R.string.demo_q1_c1), selected = true,
                     onClick = {}, answerCorrect = true, markdown = false)
                 AppSection(stringResource(R.string.confidence_prompt), initiallyExpanded = true) {

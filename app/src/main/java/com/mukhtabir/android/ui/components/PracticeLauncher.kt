@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.TestMode
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
 
@@ -38,7 +38,7 @@ fun PracticeLauncher(title: String, ids: List<Long>, maximum: Int, enabled: Bool
                     TestMode.values().forEach { option -> AppFilterChip(mode == option, { mode = option }, enabled = enabled && !dispatched,
                         label = { Text(stringResource(when (option) { TestMode.STUDY -> R.string.study; TestMode.EXAM -> R.string.exam; TestMode.RECALL -> R.string.recall })) }) }
                 }
-                OutlinedTextField(count, { count = it.map { c -> Character.digit(c, 10).takeIf { d -> d >= 0 }?.digitToChar() ?: c }.joinToString("") },
+                AppTextField(count, { count = it.map { c -> Character.digit(c, 10).takeIf { d -> d >= 0 }?.digitToChar() ?: c }.joinToString("") },
                     Modifier.fillMaxWidth(), enabled = enabled && !dispatched, label = { Text(stringResource(R.string.flow_count)) },
                     supportingText = { Text(stringResource(R.string.flow_count_hint, formatNumber(max))) }, isError = number == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)

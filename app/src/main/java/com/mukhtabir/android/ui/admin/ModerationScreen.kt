@@ -1,18 +1,5 @@
 package com.mukhtabir.android.ui.admin
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,20 +8,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,17 +25,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
-import com.mukhtabir.android.data.remote.QuestionRatingRowDto
 import com.mukhtabir.android.data.remote.ModerationService
+import com.mukhtabir.android.data.remote.QuestionRatingRowDto
 import com.mukhtabir.android.data.remote.localizedForDisplay
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppMetadataRow
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppStatusKind
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.BlockedBackHandler
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
+import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -62,7 +64,7 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
     onQuestionsChanged: () -> Unit, onBusyChanged: (Boolean) -> Unit) {
     val vm: ModerationViewModel=viewModel(key="moderation-$mode-$userId-$pageSize-$canManage",
         factory=ModerationViewModel.Factory(mode,service,pageSize,canManage))
-    val s by vm.state.collectAsState()
+    val s by vm.state.collectAsLifecycleState()
     val flags=mode==ModerationMode.FLAGS
     val tags=mode==ModerationMode.TAGS
     val tagValidation=moderationTagError(moderationTagNames(s.addTags),moderationTagNames(s.removeTags))
@@ -73,13 +75,13 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
     }
     RefreshOnResume(vm::refresh)
     LaunchedEffect(s.invalidated) { if(s.invalidated) { vm.consumeInvalidation();onQuestionsChanged() } }
-    com.mukhtabir.android.ui.components.BlockedBackHandler(enabled = s.busy)
+    BlockedBackHandler(enabled = s.busy)
     if(!canManage) {
-        Text(stringResource(R.string.error_forbidden),modifier=Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.pageInsets))
+        Text(stringResource(R.string.error_forbidden),modifier=Modifier.padding(AppLayoutTokens.pageInsets))
         return
     }
     val enabled=!s.busy && !s.loading
-    if(action!=null) AlertDialog(
+    if(action!=null) AppConfirmationDialog(
         onDismissRequest={action=null},
         title={Text(stringResource(when(action) {
             "tags" -> R.string.moderation_tags_apply
@@ -87,8 +89,8 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
             "unverify" -> R.string.moderation_unverify
             else -> R.string.moderation_verify
         }))},
-        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-            Text(stringResource(R.string.moderation_confirm_count,s.selected.size))
+        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+            Text(stringResource(R.string.moderation_confirm_count, com.mukhtabir.android.util.formatNumber(s.selected.size)))
             Text(stringResource(when(action) {
                 "tags" -> R.string.moderation_tags_warning
                 "resolve" -> R.string.moderation_resolve_warning
@@ -101,41 +103,41 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
                 Text(stringResource(R.string.moderation_tags_remove)+"\n"+moderationTagNames(s.removeTags).joinToString("\n"))
             }
         }},
-        confirmButton={TextButton({
+        confirmButton={AppTextButton({
             when(action) { "tags" -> vm.updateTags();"resolve" -> vm.resolve();"unverify" -> vm.verify(false);else -> vm.verify(true) }
             action=null
         },enabled=enabled && !s.needsReview && s.selected.isNotEmpty() && (action!="tags" || tagValidation==null)){Text(stringResource(R.string.confirm))}},
-        dismissButton={TextButton({action=null}){Text(stringResource(R.string.cancel))}},
+        dismissButton={AppTextButton({action=null}){Text(stringResource(R.string.cancel))}},
     )
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(when(mode) { ModerationMode.FLAGS -> R.string.moderation_flags_title; ModerationMode.TAGS -> R.string.moderation_tags_title; ModerationMode.VERIFICATION -> R.string.moderation_verification_title }))
-            TextButton(onBack,enabled=!s.busy){Text(stringResource(R.string.cancel))}
-            OutlinedButton(vm::refresh,enabled=enabled){Text(stringResource(R.string.refresh))}
+            AppTextButton(onBack,enabled=!s.busy){Text(stringResource(R.string.cancel))}
+            AppOutlinedButton(vm::refresh,enabled=enabled){Text(stringResource(R.string.refresh))}
             Text(stringResource(R.string.moderation_page_selection))
         }
         if(!flags) item {
             AppSection(stringResource(R.string.section_moderation_controls), initiallyExpanded = true) {
-                OutlinedTextField(s.query,vm::query,enabled=enabled,label={Text(stringResource(R.string.search))},modifier=Modifier.fillMaxWidth())
-                FilterChip(selected=s.unverifiedOnly,onClick={vm.unverified(!s.unverifiedOnly)},enabled=enabled,
+                AppTextField(s.query,vm::query,enabled=enabled,label={Text(stringResource(R.string.search))},modifier=Modifier.fillMaxWidth())
+                AppFilterChip(selected=s.unverifiedOnly,onClick={vm.unverified(!s.unverifiedOnly)},enabled=enabled,
                     label={Text(stringResource(R.string.moderation_unverified_only))})
-                OutlinedButton(vm::applySearch,enabled=enabled){Text(stringResource(R.string.search))}
+                AppOutlinedButton(vm::applySearch,enabled=enabled){Text(stringResource(R.string.search))}
                 if(s.loaded) Text(stringResource(R.string.moderation_applied_filter,
                     s.appliedQuery.ifBlank { stringResource(R.string.none) },
                     stringResource(if(s.appliedUnverifiedOnly) R.string.moderation_unverified_only else R.string.moderation_all_questions)))
                 if(tags) {
                     Text(stringResource(R.string.moderation_tags_hint))
-                    OutlinedTextField(s.addTags,{vm.tagField(true,it)},enabled=enabled,
+                    AppTextField(s.addTags,{vm.tagField(true,it)},enabled=enabled,
                         label={Text(stringResource(R.string.moderation_tags_add))},minLines=2,modifier=Modifier.fillMaxWidth())
-                    OutlinedTextField(s.removeTags,{vm.tagField(false,it)},enabled=enabled,
+                    AppTextField(s.removeTags,{vm.tagField(false,it)},enabled=enabled,
                         label={Text(stringResource(R.string.moderation_tags_remove))},minLines=2,modifier=Modifier.fillMaxWidth())
                     val error=s.tagError ?: tagValidation?.takeUnless { it==ModerationTagError.EMPTY }
-                    error?.let { Text(stringResource(when(it) {
+                    error?.let { AppStatus(stringResource(when(it) {
                         ModerationTagError.EMPTY -> R.string.moderation_tags_empty
                         ModerationTagError.TOO_LONG -> R.string.moderation_tags_length
                         ModerationTagError.OVERLAP -> R.string.moderation_tags_overlap
-                    }),color=MaterialTheme.colorScheme.error) }
-                } else OutlinedTextField(s.notes,vm::notes,enabled=enabled,label={Text(stringResource(R.string.moderation_notes))},
+                    })) }
+                } else AppTextField(s.notes,vm::notes,enabled=enabled,label={Text(stringResource(R.string.moderation_notes))},
                     minLines=2,modifier=Modifier.fillMaxWidth())
             }
         }
@@ -147,46 +149,46 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
             ErrorState(throwable=failure,onRetry=if(enabled && !s.ratingsLoading) vm::refreshRatings else null)
         } }
         s.actionError?.let { failure -> item { ErrorState(modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite },throwable=failure) } }
-        s.processed?.takeIf { !s.busy }?.let { count -> item { Text(stringResource(R.string.moderation_summary,count,s.submitted),
+        s.processed?.takeIf { !s.busy }?.let { count -> item { Text(stringResource(R.string.moderation_summary, com.mukhtabir.android.util.formatNumber(count), com.mukhtabir.android.util.formatNumber(s.submitted)),
             modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite }) } }
         if(s.needsReview) item {
-            Text(stringResource(R.string.moderation_review_required),color=MaterialTheme.colorScheme.error)
-            OutlinedButton(vm::refresh,enabled=enabled){Text(stringResource(R.string.refresh))}
+            AppStatus(stringResource(R.string.moderation_review_required), kind = AppStatusKind.WARNING)
+            AppOutlinedButton(vm::refresh,enabled=enabled){Text(stringResource(R.string.refresh))}
         }
         item {
-            Text(stringResource(R.string.moderation_selected,s.selected.size))
-            OutlinedButton(vm::selectPage,enabled=enabled && !s.needsReview && s.loaded){Text(stringResource(R.string.moderation_select_page))}
-            TextButton(vm::clearSelection,enabled=enabled && s.selected.isNotEmpty()){Text(stringResource(R.string.moderation_clear_selection))}
-            if(flags) Button({action="resolve"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty()) {
+            Text(stringResource(R.string.moderation_selected, com.mukhtabir.android.util.formatNumber(s.selected.size)))
+            AppOutlinedButton(vm::selectPage,enabled=enabled && !s.needsReview && s.loaded){Text(stringResource(R.string.moderation_select_page))}
+            AppTextButton(vm::clearSelection,enabled=enabled && s.selected.isNotEmpty()){Text(stringResource(R.string.moderation_clear_selection))}
+            if(flags) AppButton({action="resolve"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty()) {
                 Text(stringResource(R.string.moderation_resolve))
             } else if(tags) {
-                Button({action="tags"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty() && tagValidation==null) {
+                AppButton({action="tags"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty() && tagValidation==null) {
                     Text(stringResource(R.string.moderation_tags_apply))
                 }
             } else {
-                Button({action="verify"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty()){Text(stringResource(R.string.moderation_verify))}
-                OutlinedButton({action="unverify"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty()){Text(stringResource(R.string.moderation_unverify))}
+                AppButton({action="verify"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty()){Text(stringResource(R.string.moderation_verify))}
+                AppOutlinedButton({action="unverify"},enabled=enabled && !s.needsReview && s.selected.isNotEmpty()){Text(stringResource(R.string.moderation_unverify))}
             }
         }
-        if(s.loaded && !s.loading && s.error==null && (if(flags) s.flags.isEmpty() else s.questions.isEmpty())) item { com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.moderation_empty)) }
+        if(s.loaded && !s.loading && s.error==null && (if(flags) s.flags.isEmpty() else s.questions.isEmpty())) item { EmptyState(stringResource(R.string.moderation_empty)) }
         if(flags) items(s.flags,key={it.id}) { flag ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            AppCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                     ModerationSelection(s.selected.contains(flag.id),enabled && !s.needsReview,
                         stringResource(R.string.moderation_report_id,flag.id),{vm.toggle(flag.id)})
                     Text(flag.questionText)
                     RatingSummary(s.ratings[flag.questionId])
                     Text(stringResource(R.string.moderation_reporter,flag.flaggerUsername))
                     Text(stringResource(R.string.moderation_author,flag.questionAuthor.ifBlank { stringResource(R.string.none) }))
-                    flag.createdAt?.let { com.mukhtabir.android.ui.components.AppMetadataRow(listOf(it)) }
+                    flag.createdAt?.let { AppMetadataRow(listOf(it)) }
                     if(!flag.reason.isNullOrBlank()) Text(stringResource(R.string.moderation_reason,flag.reason.orEmpty()))
-                    OutlinedButton({onOpenQuestion(flag.questionId)},enabled=!s.busy){Text(stringResource(R.string.question_details))}
+                    AppOutlinedButton({onOpenQuestion(flag.questionId)},enabled=!s.busy){Text(stringResource(R.string.question_details))}
                 }
             }
         } else items(s.questions,key={it.id}) { question ->
             val display=question.localizedForDisplay()
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            AppCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                     ModerationSelection(question.id in s.selected,enabled && !s.needsReview,
                         stringResource(R.string.moderation_question_id,question.id),{vm.toggle(question.id)})
                     Text(stringResource(if(question.verified) R.string.verified else R.string.unverified))
@@ -195,15 +197,15 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
                     ClinicalCaseContext(display.case)
                     MarkdownText(display.question)
                     if(!question.answersHidden && !question.verificationNotes.isNullOrBlank()) Text(stringResource(R.string.moderation_existing_notes,question.verificationNotes.orEmpty()))
-                    OutlinedButton({onOpenQuestion(question.id)},enabled=!s.busy){Text(stringResource(R.string.question_details))}
+                    AppOutlinedButton({onOpenQuestion(question.id)},enabled=!s.busy){Text(stringResource(R.string.question_details))}
                 }
             }
         }
         item {
-            com.mukhtabir.android.ui.components.AppPagination(s.page, s.totalPages,
+            AppPagination(s.page, s.totalPages,
                 onPrevious = { vm.page(s.page - 1) }, onNext = { vm.page(s.page + 1) },
                 previousEnabled = enabled, nextEnabled = enabled,
-                statusLabel = stringResource(R.string.moderation_page, s.page, s.totalPages, s.total))
+                statusLabel = stringResource(R.string.moderation_page, com.mukhtabir.android.util.formatNumber(s.page), com.mukhtabir.android.util.formatNumber(s.totalPages), com.mukhtabir.android.util.formatNumber(s.total)))
         }
     }
 }
@@ -223,6 +225,6 @@ private fun RatingSummary(rating: QuestionRatingRowDto?) {
     Text(when {
         rating == null -> stringResource(R.string.moderation_rating_unavailable)
         rating.count == 0 -> stringResource(R.string.moderation_no_ratings)
-        else -> stringResource(R.string.moderation_rating_summary, rating.average, rating.count, if(rating.userRating in 1..5) "${rating.userRating}/5" else stringResource(R.string.none))
+        else -> stringResource(R.string.moderation_rating_summary, rating.average, com.mukhtabir.android.util.formatNumber(rating.count), if(rating.userRating in 1..5) "${rating.userRating}/5" else stringResource(R.string.none))
     }, style=MaterialTheme.typography.bodySmall, color=MaterialTheme.colorScheme.onSurfaceVariant)
 }

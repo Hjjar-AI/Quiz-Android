@@ -1,37 +1,20 @@
 package com.mukhtabir.android.ui.auth
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppLaunchLayout
-import com.mukhtabir.android.ui.components.AppLaunchHeader
-import com.mukhtabir.android.ui.components.DemoLaunchCard
-import com.mukhtabir.android.ui.components.AppCard
-import com.mukhtabir.android.ui.components.AppCardBody
-import com.mukhtabir.android.ui.components.AppSection
-import com.mukhtabir.android.ui.components.AppOutlinedButton
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
+import com.mukhtabir.android.ui.components.AppSectionHeading
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import com.mukhtabir.android.core.ServerConnectionFile
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppButton as Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Icon
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,14 +23,35 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import com.mukhtabir.android.R
+import com.mukhtabir.android.core.ServerConnectionFile
 import com.mukhtabir.android.core.ServerSettings
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCardBody
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLaunchHeader
+import com.mukhtabir.android.ui.components.AppLaunchLayout
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.AppToggleRow
+import com.mukhtabir.android.ui.components.DemoLaunchCard
+import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -71,7 +75,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
                         modifier = Modifier.fillMaxWidth().semantics { heading() }, textAlign = TextAlign.Center)
                     Text(stringResource(R.string.launch_online_hint), Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                    Button({ showSetup = true }, Modifier.fillMaxWidth()) {
+                    AppButton({ showSetup = true }, Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.launch_connect_server))
                     }
                 }
@@ -129,17 +133,17 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
     val cancelSetup: (() -> Unit)? = if (firstLaunch) ({ showSetup = false }) else onCancel
     BackHandler { if (!busy) cancelSetup?.invoke() }
     pendingUrl?.let { url ->
-        AlertDialog(onDismissRequest={if(!busy) pendingUrl=null},
+        AppConfirmationDialog(onDismissRequest={if(!busy) pendingUrl=null},
             title={Text(stringResource(R.string.server_confirm_title))},
             text={Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
                 if (usingFile) {
                     Text(stringResource(R.string.server_file_selected))
-                    selectedSlot?.let { slot -> Text(stringResource(R.string.server_saved_file_number, slot)) }
+                    selectedSlot?.let { slot -> Text(stringResource(R.string.server_saved_file_number, com.mukhtabir.android.util.formatNumber(slot))) }
                 } else Text(url)
                 if(url.startsWith("http://")) Text(stringResource(R.string.server_http_warning))
                 if(settings.read()!=url) Text(stringResource(R.string.server_change_warning))
             }},
-            confirmButton={TextButton({
+            confirmButton={AppTextButton({
                 if(!busy) {
                     busy=true
                     error=null
@@ -154,11 +158,11 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
                     }
                 }
             },enabled=!busy) { Text(stringResource(R.string.server_setup_title)) }},
-            dismissButton={TextButton({pendingUrl=null},enabled=!busy) { Text(stringResource(R.string.cancel)) }})
+            dismissButton={AppTextButton({pendingUrl=null},enabled=!busy) { Text(stringResource(R.string.cancel)) }})
     }
     AppLaunchLayout {
         cancelSetup?.let { cancel ->
-            TextButton(cancel, enabled = !busy) { Text(stringResource(R.string.back)) }
+            AppTextButton(cancel, enabled = !busy) { Text(stringResource(R.string.back)) }
         }
         SetupLanguageButton(language, onLanguageChange, enabled = !busy)
         Text(stringResource(R.string.server_setup_title),style=MaterialTheme.typography.headlineMedium,
@@ -169,8 +173,8 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
             Text(stringResource(R.string.server_saved_files_hint))
             (1..3).forEach { slot ->
                 val saved = savedFiles.firstOrNull { it.slot == slot }
-                Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-                    Text(stringResource(R.string.server_saved_file_number, slot))
+                Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                    Text(stringResource(R.string.server_saved_file_number, com.mukhtabir.android.util.formatNumber(slot)))
                     if (saved != null) {
                         if (settings.activeImportedSlot() == slot) {
                             Text(stringResource(R.string.server_saved_file_current))
@@ -188,7 +192,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
                                 pendingUrl = null
                                 error = null
                             }
-                        }, enabled = !busy) { Text(stringResource(R.string.server_use_saved_file, slot)) }
+                        }, enabled = !busy) { Text(stringResource(R.string.server_use_saved_file, com.mukhtabir.android.util.formatNumber(slot))) }
                     }
                     AppOutlinedButton({
                         if (!busy) {
@@ -197,7 +201,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
                             catch (_: Exception) { uploadSlot = null; error = R.string.server_file_invalid }
                         }
                     }, enabled = !busy) {
-                        Text(stringResource(if (saved == null) R.string.server_add_file_slot else R.string.server_replace_file_slot, slot))
+                        Text(stringResource(if (saved == null) R.string.server_add_file_slot else R.string.server_replace_file_slot, com.mukhtabir.android.util.formatNumber(slot)))
                     }
                 }
             }
@@ -205,7 +209,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
         }
         if (usingFile) {
             Text(stringResource(R.string.server_file_selected))
-            TextButton({
+            AppTextButton({
                 if (!busy) {
                     usingFile = false
                     fileUrl = null
@@ -217,8 +221,8 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
                 }
             }, enabled = !busy) { Text(stringResource(R.string.server_enter_manually)) }
         } else {
-            Text(stringResource(R.string.server_enter_manually),style=MaterialTheme.typography.titleMedium)
-            OutlinedTextField(input,{input=it;error=null;sameServer=false},enabled=!busy,
+            AppSectionHeading(stringResource(R.string.server_enter_manually))
+            AppTextField(input,{input=it;error=null;sameServer=false},enabled=!busy,
                 label={Text(stringResource(R.string.server_address))},singleLine=true,
                 keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Uri,autoCorrect=false),modifier=Modifier.fillMaxWidth(),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
@@ -226,7 +230,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
         }
         val selectedUrl = if (usingFile) fileUrl else ServerSettings.normalize(input)
         if (settings.read() != null && selectedUrl != settings.read()) {
-            com.mukhtabir.android.ui.components.AppToggleRow(
+            AppToggleRow(
                 modifier = Modifier.fillMaxWidth().toggleable(
                     value = sameServer, enabled = !busy, role = androidx.compose.ui.semantics.Role.Checkbox,
                     onValueChange = { sameServer = it }),
@@ -241,10 +245,10 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
             Text(stringResource(R.string.server_phone_hint))
             Text(stringResource(R.string.server_certificate_hint))
         }
-        error?.let { Text(stringResource(it),color=MaterialTheme.colorScheme.error,
+        error?.let { AppStatus(stringResource(it),
             modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite }) }
         if(busy) AppLoadingIndicator()
-        Button({
+        AppButton({
             val normalized = if (usingFile) fileUrl else ServerSettings.normalize(input)
             if(normalized==null) error=R.string.server_invalid_address else pendingUrl=normalized
         }, modifier = Modifier.fillMaxWidth(), enabled=!busy) { Text(stringResource(R.string.server_continue)) }
@@ -267,16 +271,16 @@ private fun SetupLanguageButton(language: String, onLanguageChange: (String) -> 
         Icon(Icons.Filled.Language, contentDescription = null)
         Text(stringResource(R.string.language_picker_selection,
             androidx.core.text.BidiFormatter.getInstance().unicodeWrap(selectedLanguage)),
-            modifier = Modifier.padding(start = com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
+            modifier = Modifier.padding(start = AppLayoutTokens.controlGap),
             textAlign = TextAlign.Center)
     }
-    if (open) AlertDialog(
+    if (open) AppConfirmationDialog(
         onDismissRequest = { open = false },
         title = { Text(stringResource(R.string.language)) },
         text = {
-            com.mukhtabir.android.ui.components.AppActionRow {
+            AppActionRow {
                 listOf("system", "en", "ar").forEach { code ->
-                    com.mukhtabir.android.ui.components.AppFilterChip(
+                    AppFilterChip(
                         selected = language == code,
                         onClick = { open = false; onLanguageChange(code) },
                         enabled = enabled,
@@ -289,6 +293,6 @@ private fun SetupLanguageButton(language: String, onLanguageChange: (String) -> 
                 }
             }
         },
-        confirmButton = { TextButton({ open = false }) { Text(stringResource(R.string.close)) } },
+        confirmButton = { AppTextButton({ open = false }) { Text(stringResource(R.string.close)) } },
     )
 }

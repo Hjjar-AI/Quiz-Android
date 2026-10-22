@@ -2,21 +2,6 @@
 
 package com.mukhtabir.android.ui.transfer
 
-import com.mukhtabir.android.ui.theme.AppTheme
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
-import com.mukhtabir.android.core.has
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,22 +10,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,17 +27,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
+import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.CategoryService
 import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.data.remote.TransferService
 import com.mukhtabir.android.data.remote.UserDto
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppPasswordField
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.AppToggleRow
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownText
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -80,7 +74,7 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
     user: UserDto, pageSize: Int, onBack: () -> Unit, onBusyChanged: (Boolean) -> Unit, initialVerified: Boolean = false) {
     val context = LocalContext.current
     val vm: TransferViewModel = viewModel(key = "transfer-${user.id}", factory = TransferViewModel.Factory(service, questions, user, context))
-    val s by vm.state.collectAsState()
+    val s by vm.state.collectAsLifecycleState()
     if (!user.has("admin.database")) { Text(stringResource(R.string.error_forbidden)); return }
     var kind by vm.inputs.kind
     var mode by vm.inputs.mode
@@ -138,10 +132,10 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             if (s.file != null || s.queue.any { it.status != ImportStatus.Imported } || s.uncertain || (s.artifact != null && s.savedUri == null)) leaving = true else onBack()
         }
     }
-    if (leaving) AlertDialog(onDismissRequest = { leaving = false }, title = { Text(stringResource(R.string.transfer_leave)) },
+    if (leaving) AppConfirmationDialog(onDismissRequest = { leaving = false }, title = { Text(stringResource(R.string.transfer_leave)) },
         text = { Text(stringResource(R.string.transfer_leave_body)) },
         confirmButton = { AppDangerTextButton({ leaving = false; onBack() }, enabled = !s.busy) { Text(stringResource(R.string.ux_leave_transfer)) } },
-        dismissButton = { TextButton({ leaving = false }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { AppTextButton({ leaving = false }) { Text(stringResource(R.string.cancel)) } })
     DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
     DisposableEffect(Unit) { onDispose { searchJob?.cancel() } }
     fun runImport(preview: Boolean) = vm.importFile(kind, mode, strategy, preview, JsonObject(mapping), JsonObject(resolutions), password)
@@ -149,20 +143,19 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
     val conflicts = s.analysis?.get("conflicts") as? JsonArray ?: JsonArray(emptyList())
     val ready = kind != "state" || (s.analysis != null && unknown.all { mapping[it.jsonObject["name"]?.jsonPrimitive?.content.orEmpty()] != null } &&
         (strategy != "review" || conflicts.all { resolutions[it.jsonObject["uuid"]?.jsonPrimitive?.content.orEmpty()] != null }))
-    if (confirming) AlertDialog(onDismissRequest = { confirming = false; password = "" },
+    if (confirming) AppConfirmationDialog(onDismissRequest = { confirming = false; password = "" },
         title = { Text(stringResource(R.string.transfer_confirm)) },
         text = { Column {
             if (kind == "simple") {
                 Text(stringResource(R.string.transfer_batch_confirm, formatNumber(s.queue.count { it.status in setOf(ImportStatus.Pending, ImportStatus.Limited) })))
             } else Text(s.name)
             Text(stringResource(if (kind == "state" && mode == "replace") R.string.transfer_replace_warning else R.string.transfer_import_warning))
-            if (kind == "state" && mode == "replace") OutlinedTextField(password, { password = it },
-                label = { Text(stringResource(R.string.transfer_admin_password)) }, visualTransformation = PasswordVisualTransformation(),
-                textStyle = com.mukhtabir.android.util.ltrInputStyle(),
+            if (kind == "state" && mode == "replace") AppPasswordField(password, { password = it },
+                label = { Text(stringResource(R.string.transfer_admin_password)) }, textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
-        } }, confirmButton = { TextButton({ confirming = false; runImport(false); password = "" },
+        } }, confirmButton = { AppTextButton({ confirming = false; runImport(false); password = "" },
             enabled = !s.busy && ready && (kind != "state" || mode != "replace" || password.isNotBlank())) { Text(stringResource(R.string.confirm)) } },
-        dismissButton = { TextButton({ confirming = false; password = "" }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { AppTextButton({ confirming = false; password = "" }) { Text(stringResource(R.string.cancel)) } })
     LazyColumn(Modifier.padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(R.string.transfer_title))
@@ -175,22 +168,21 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             if (s.importUnlockedUntil > 0) Text(stringResource(R.string.transfer_unlock_active))
             AppSection(stringResource(R.string.transfer_unlock_title)) {
                 Text(stringResource(R.string.transfer_unlock_hint))
-                OutlinedTextField(importPassword, { importPassword = it }, enabled = !s.busy,
+                AppPasswordField(importPassword, { importPassword = it }, enabled = !s.busy,
                     label = { Text(stringResource(R.string.transfer_admin_password)) },
-                    visualTransformation = PasswordVisualTransformation(),
                     textStyle = com.mukhtabir.android.util.ltrInputStyle(),
                 )
-                OutlinedButton({ vm.unlockImports(importPassword); importPassword = "" }, enabled = !s.busy && importPassword.isNotEmpty()) {
+                AppOutlinedButton({ vm.unlockImports(importPassword); importPassword = "" }, enabled = !s.busy && importPassword.isNotEmpty()) {
                     Text(stringResource(R.string.transfer_unlock_button))
                 }
             }
             if (s.file == null && s.queue.isEmpty()) Choice(kind, listOf("simple" to R.string.transfer_simple, "telegram" to R.string.transfer_telegram, "state" to R.string.transfer_state), !s.busy && !s.uncertain) { kind = it; vm.invalidateAnalysis() }
             Text(stringResource(R.string.transfer_formats))
-            if (s.file != null || s.queue.isNotEmpty()) TextButton(vm::clearFile, enabled = !s.busy && !s.uncertain) {
+            if (s.file != null || s.queue.isNotEmpty()) AppTextButton(vm::clearFile, enabled = !s.busy && !s.uncertain) {
                 Text(stringResource(if (s.queue.isNotEmpty()) R.string.ux_clear_import_queue else R.string.ux_remove_import_file))
             }
             if (kind == "simple") Text(stringResource(R.string.transfer_multiple_hint))
-            OutlinedButton({
+            AppOutlinedButton({
                 if (kind == "simple") multiPicker.launch(arrayOf("*/*")) else picker.launch(arrayOf("*/*"))
             }, enabled = !s.busy && !s.uncertain) { Text(stringResource(if (kind == "simple") R.string.transfer_choose_multiple else R.string.transfer_choose)) }
             if (s.queue.isNotEmpty()) Text(stringResource(R.string.ux_import_queue_summary,
@@ -203,16 +195,16 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             if (kind == "state") {
                 Choice(mode, listOf("merge" to R.string.transfer_merge, "replace" to R.string.transfer_replace), !s.busy && !s.uncertain) { mode = it; strategy = if (it == "replace") "use_imported" else "keep_local"; vm.invalidateAnalysis() }
                 Choice(strategy, listOf("keep_local" to R.string.transfer_keep, "use_imported" to R.string.transfer_use, "review" to R.string.transfer_review), !s.busy && !s.uncertain) { strategy = it; vm.invalidateAnalysis() }
-                OutlinedButton({ runImport(true) }, enabled = !s.busy && s.file != null) { Text(stringResource(R.string.transfer_preview)) }
+                AppOutlinedButton({ runImport(true) }, enabled = !s.busy && s.file != null) { Text(stringResource(R.string.transfer_preview)) }
             }
             if (s.uncertain) {
                 Text(stringResource(R.string.transfer_uncertain))
                 if (kind != "state" && s.queue.isEmpty()) {
                     Text(stringResource(R.string.transfer_simple_review))
-                    OutlinedButton(vm::reviewSimple, enabled = !s.busy) { Text(stringResource(R.string.transfer_review)) }
+                    AppOutlinedButton(vm::reviewSimple, enabled = !s.busy) { Text(stringResource(R.string.transfer_review)) }
                     s.reviewQuestions.forEach { MarkdownText(it.question) }
                 }
-                if (s.queue.isEmpty()) OutlinedButton(vm::acknowledgeReview, enabled = !s.busy && s.reviewed) { Text(stringResource(R.string.transfer_reviewed)) }
+                if (s.queue.isEmpty()) AppOutlinedButton(vm::acknowledgeReview, enabled = !s.busy && s.reviewed) { Text(stringResource(R.string.transfer_reviewed)) }
             }
             if (s.queue.isEmpty() && s.name.isNotBlank() && (s.file != null || s.analysis != null || s.result != null)) {
                 AppSection(s.name, subtitle = stringResource(when {
@@ -247,14 +239,14 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                     if (entry.status == ImportStatus.Uncertain) {
                         Text(stringResource(R.string.transfer_uncertain))
                         Text(stringResource(R.string.transfer_simple_review))
-                        OutlinedButton(vm::reviewSimple, enabled = !s.busy) { Text(stringResource(R.string.ux_review_import_outcome)) }
+                        AppOutlinedButton(vm::reviewSimple, enabled = !s.busy) { Text(stringResource(R.string.ux_review_import_outcome)) }
                         s.reviewQuestions.forEach { MarkdownText(it.question) }
-                        OutlinedButton(vm::acknowledgeReview, enabled = !s.busy && s.reviewed) {
+                        AppOutlinedButton(vm::acknowledgeReview, enabled = !s.busy && s.reviewed) {
                             Text(stringResource(R.string.transfer_reviewed))
                         }
                     }
                     Text(stringResource(R.string.ux_import_remove_hint), style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
-                    TextButton({ vm.removeQueued(entry.uri) }, enabled = !s.busy && !s.uncertain) {
+                    AppTextButton({ vm.removeQueued(entry.uri) }, enabled = !s.busy && !s.uncertain) {
                         Text(stringResource(R.string.transfer_remove_file, entry.name))
                     }
             }
@@ -271,7 +263,7 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             }
             (mapping[name] as? JsonObject)?.get("user_id")?.jsonPrimitive?.content?.let { Text(stringResource(R.string.transfer_local_user) + ": " + it) }
             var id by remember(name, s.analysis) { mutableStateOf((mapping[name] as? JsonObject)?.get("user_id")?.jsonPrimitive?.content.orEmpty()) }
-            OutlinedTextField(id, { value ->
+            AppTextField(id, { value ->
                 id = value
                 val parsed = value.trim().toLongOrNull()?.takeIf { it > 0 }
                 mapping = if (parsed == null) mapping - name else mapping + (name to buildJsonObject { put("action", "user"); put("user_id", parsed) })
@@ -287,7 +279,7 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             Choice(resolutions[uuid]?.jsonPrimitive?.content.orEmpty(), listOf("keep_local" to R.string.transfer_keep, "use_imported" to R.string.transfer_use), !s.busy && !s.uncertain) { resolutions = resolutions + (uuid to JsonPrimitive(it)) }
         } }
         item {
-            OutlinedButton({ confirming = true }, enabled = !s.busy && !s.uncertain && (if (kind == "simple") s.queue.any { it.status in setOf(ImportStatus.Pending, ImportStatus.Limited) } else s.file != null) && ready) { Text(stringResource(R.string.transfer_import)) }
+            AppOutlinedButton({ confirming = true }, enabled = !s.busy && !s.uncertain && (if (kind == "simple") s.queue.any { it.status in setOf(ImportStatus.Pending, ImportStatus.Limited) } else s.file != null) && ready) { Text(stringResource(R.string.transfer_import)) }
             AppSection(stringResource(R.string.transfer_export), initiallyExpanded = true) {
             Text(stringResource(R.string.transfer_export))
             Check(statePackage, R.string.transfer_state, !s.busy) { statePackage = it; if (it && format !in setOf("json", "xlsx")) format = "json" }
@@ -296,18 +288,18 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             if (statePackage) Check(images, R.string.transfer_images, !s.busy) { images = it }
             if (!statePackage) Check(manual, R.string.transfer_manual, !s.busy) { manual = it }
             if (!manual || statePackage) {
-                OutlinedTextField(search, { search = it }, enabled = !s.busy, label = { Text(stringResource(R.string.search)) })
+                AppTextField(search, { search = it }, enabled = !s.busy, label = { Text(stringResource(R.string.search)) })
                 categoryError?.let { ErrorState(throwable = it, onRetry = if (s.busy) null else ({ categoryReload += 1 })) }
                 categoryRows.forEach { category ->
                     val ids = parseTransferIds(categoryIds)
-                    FilterChip(category.id in ids.orEmpty(), { ids?.let { current -> categoryIds = (if (category.id in current) current - category.id else current + category.id).joinToString(",") } },
+                    AppFilterChip(category.id in ids.orEmpty(), { ids?.let { current -> categoryIds = (if (category.id in current) current - category.id else current + category.id).joinToString(",") } },
                         enabled = !s.busy && ids != null, label = { Text(category.name) })
                 }
-                OutlinedTextField(categoryIds, { categoryIds = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_categories)) })
-                OutlinedTextField(tags, { tags = it }, enabled = !s.busy, label = { Text(stringResource(R.string.ux_tags_any)) })
+                AppTextField(categoryIds, { categoryIds = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_categories)) })
+                AppTextField(tags, { tags = it }, enabled = !s.busy, label = { Text(stringResource(R.string.ux_tags_any)) })
                 Text(stringResource(R.string.quiz_filter_matching), style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 FlowRow { listOf("easy" to R.string.difficulty_easy, "medium" to R.string.difficulty_medium, "hard" to R.string.difficulty_hard).forEach { (d, label) ->
-                    FilterChip(d in difficulty, { difficulty = if (d in difficulty) difficulty - d else difficulty + d }, enabled = !s.busy, label = { Text(stringResource(label)) })
+                    AppFilterChip(d in difficulty, { difficulty = if (d in difficulty) difficulty - d else difficulty + d }, enabled = !s.busy, label = { Text(stringResource(label)) })
                 } }
             } else {
                 Text(stringResource(R.string.exam_author_selected, formatNumber(selected.size)))
@@ -322,18 +314,18 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                             if (current < 0 || target !in selected.indices) return
                             selected = selected.toMutableList().apply { add(target, removeAt(current)) }.toList()
                         }
-                        TextButton({ move(-1) }, enabled = !s.busy && index > 0) {
+                        AppTextButton({ move(-1) }, enabled = !s.busy && index > 0) {
                             Text(stringResource(R.string.export_move_up, formatNumber(id)))
                         }
-                        TextButton({ move(1) }, enabled = !s.busy && index < selected.lastIndex) {
+                        AppTextButton({ move(1) }, enabled = !s.busy && index < selected.lastIndex) {
                             Text(stringResource(R.string.export_move_down, formatNumber(id)))
                         }
-                        TextButton({ if (!vm.state.value.busy) selected = selected - id }, enabled = !s.busy) {
+                        AppTextButton({ if (!vm.state.value.busy) selected = selected - id }, enabled = !s.busy) {
                             Text(stringResource(R.string.exam_target_remove, formatNumber(id)))
                         }
                     }
                 }
-                OutlinedTextField(questionQuery, { questionQuery = it }, label = { Text(stringResource(R.string.search)) }, enabled = !s.busy)
+                AppTextField(questionQuery, { questionQuery = it }, label = { Text(stringResource(R.string.search)) }, enabled = !s.busy)
                 fun find(page: Int) {
                     searchJob?.cancel(); finding = true; findError = null
                     searchJob = scope.launch {
@@ -344,19 +336,19 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                         finally { finding = false }
                     }
                 }
-                OutlinedButton({ find(1) }, enabled = !finding && !s.busy) { Text(stringResource(R.string.search)) }
+                AppOutlinedButton({ find(1) }, enabled = !finding && !s.busy) { Text(stringResource(R.string.search)) }
                 if (finding) AppLoadingIndicator()
                 findError?.let { ErrorState(throwable = it) }
                 rows.forEach { row ->
                     MarkdownText(row.question)
-                    FilterChip(row.id in selected, { selected = if (row.id in selected) selected - row.id else selected + row.id },
+                    AppFilterChip(row.id in selected, { selected = if (row.id in selected) selected - row.id else selected + row.id },
                         enabled = !s.busy && !finding && findError == null, label = { Text(formatNumber(row.id)) })
                 }
-                OutlinedButton({ find(questionPage - 1) }, enabled = !s.busy && !finding && findError == null && questionPage > 1) { Text(stringResource(R.string.previous)) }
-                OutlinedButton({ find(questionPage + 1) }, enabled = !s.busy && !finding && findError == null && questionPage < questionPages) { Text(stringResource(R.string.next)) }
+                AppOutlinedButton({ find(questionPage - 1) }, enabled = !s.busy && !finding && findError == null && questionPage > 1) { Text(stringResource(R.string.previous)) }
+                AppOutlinedButton({ find(questionPage + 1) }, enabled = !s.busy && !finding && findError == null && questionPage < questionPages) { Text(stringResource(R.string.next)) }
             }
             if (format == "pdf") {
-                OutlinedTextField(title, { title = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_pdf_title)) })
+                AppTextField(title, { title = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_pdf_title)) })
                 Choice(pdfMode, listOf("study" to R.string.study, "quiz" to R.string.exam), !s.busy) { pdfMode = it }
                 Choice(answers, listOf("inline" to R.string.transfer_inline, "end" to R.string.transfer_end, "after_25" to R.string.transfer_after25, "none" to R.string.none), !s.busy && pdfMode == "study") { answers = it }
                 Text(stringResource(R.string.theme))
@@ -364,18 +356,18 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                 Choice(locale, listOf("ar" to 0, "en" to 0), !s.busy) { locale = it }
                 Check(about, R.string.transfer_cover, !s.busy) { about = it }
                 if (about) {
-                    OutlinedTextField(aboutTitle, { aboutTitle = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_pdf_title)) })
-                    OutlinedTextField(aboutBody, { aboutBody = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_cover_body)) })
+                    AppTextField(aboutTitle, { aboutTitle = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_pdf_title)) })
+                    AppTextField(aboutBody, { aboutBody = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_cover_body)) })
                     fields.forEachIndexed { index, pair ->
-                        OutlinedTextField(pair.first, { value -> fields = fields.mapIndexed { i, p -> if (i == index) p.copy(first = value) else p } }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_label)) })
-                        OutlinedTextField(pair.second, { value -> fields = fields.mapIndexed { i, p -> if (i == index) p.copy(second = value) else p } }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_value)) })
+                        AppTextField(pair.first, { value -> fields = fields.mapIndexed { i, p -> if (i == index) p.copy(first = value) else p } }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_label)) })
+                        AppTextField(pair.second, { value -> fields = fields.mapIndexed { i, p -> if (i == index) p.copy(second = value) else p } }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_value)) })
                         AppDangerTextButton({ fields = fields.filterIndexed { i, _ -> i != index } }, enabled = !s.busy) { Text(stringResource(R.string.remove_choice)) }
                     }
-                    OutlinedButton({ fields = fields + ("" to "") }, enabled = !s.busy && fields.size < 10) { Text(stringResource(R.string.transfer_add_field)) }
+                    AppOutlinedButton({ fields = fields + ("" to "") }, enabled = !s.busy && fields.size < 10) { Text(stringResource(R.string.transfer_add_field)) }
                 }
             }
             }
-            OutlinedButton({
+            AppOutlinedButton({
                 val ids = parseTransferIds(categoryIds)
                 val filters = mapOf("search" to search, "category_ids" to ids.orEmpty().joinToString(","), "difficulty" to difficulty.joinToString(","), "tags_filter" to tags.lineSequence().map(String::trim).filter(String::isNotEmpty).joinToString(","))
                 val filtered = !manual || statePackage
@@ -383,7 +375,7 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                     (aboutTitle.codePointsCount() > 150 || aboutBody.codePointsCount() > 3000 || fields.any {
                         it.first.isBlank() || it.first.codePointsCount() > 60 || it.second.isBlank() || it.second.codePointsCount() > 500 })))
                 if ((filtered && (ids == null || filters.values.any { it.codePointsCount() > 500 })) ||
-                    (!filtered && selected.isEmpty()) || invalidPdf) { validation = true; return@OutlinedButton }
+                    (!filtered && selected.isEmpty()) || invalidPdf) { validation = true; return@AppOutlinedButton }
                 validation = false
                 val body = buildJsonObject {
                     if (manual && !statePackage) put("question_ids", JsonArray(selected.map { JsonPrimitive(it) })) else put("filters", JsonObject(filters.mapValues { JsonPrimitive(it.value) }))
@@ -398,8 +390,8 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             }, enabled = !s.busy) { Text(stringResource(R.string.transfer_export)) }
             s.download?.let { info ->
                 Text(info.filename)
-                OutlinedButton({ saver.launch(info.filename) }, enabled = !s.busy) { Text(stringResource(R.string.save)) }
-                s.savedUri?.let { uri -> OutlinedButton({
+                AppOutlinedButton({ saver.launch(info.filename) }, enabled = !s.busy) { Text(stringResource(R.string.save)) }
+                s.savedUri?.let { uri -> AppOutlinedButton({
                     try { context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType(info.mimeType)
                         .putExtra(Intent.EXTRA_STREAM, uri).apply { clipData = android.content.ClipData.newRawUri("export", uri) }.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), null)) }
                     catch (error: android.content.ActivityNotFoundException) { shareError = true }
@@ -414,13 +406,13 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 private fun Choice(value: String, options: List<Pair<String, Int>>, enabled: Boolean, change: (String) -> Unit) {
     AppActionRow() { options.forEach { (key, label) ->
-        FilterChip(value == key, { change(key) }, enabled = enabled, label = { Text(if (label == 0) key.uppercase() else stringResource(label)) })
+        AppFilterChip(value == key, { change(key) }, enabled = enabled, label = { Text(if (label == 0) key.uppercase() else stringResource(label)) })
     } }
 }
 
 @Composable
 private fun Check(value: Boolean, label: Int, enabled: Boolean, change: (Boolean) -> Unit) {
-    com.mukhtabir.android.ui.components.AppToggleRow(
+    AppToggleRow(
         Modifier.fillMaxWidth().toggleable(value, enabled = enabled, role = Role.Checkbox, onValueChange = change),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {

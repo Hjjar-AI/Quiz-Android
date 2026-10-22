@@ -15,6 +15,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.components.AppStatus
 
 internal data class DraftFieldError(val key: String, @StringRes val message: Int, val limit: Int? = null)
 internal data class DraftValidationUi(val errors: List<DraftFieldError> = emptyList(), val attempt: Int = 0) {
@@ -24,8 +25,7 @@ internal data class DraftValidationUi(val errors: List<DraftFieldError> = emptyL
 @Composable
 internal fun DraftValidationSummary(validation: DraftValidationUi) {
     key(validation.attempt) {
-        Text(stringResource(R.string.draft_validation_summary, validation.errors.map { it.key }.distinct().size),
-            color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+        AppStatus(stringResource(R.string.draft_validation_summary, com.mukhtabir.android.util.formatNumber(validation.errors.map { it.key }.distinct().size)), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     }
 }
 
@@ -35,7 +35,7 @@ internal fun DraftValidationSummary(validation: DraftValidationUi) {
 internal fun DraftValidatedField(key: String, validation: DraftValidationUi, showMessage: Boolean = true,
     content: @Composable (String?, FocusRequester) -> Unit) {
     val issue = validation.errors.firstOrNull { it.key == key }
-    val message = issue?.let { if (it.limit == null) stringResource(it.message) else stringResource(it.message, it.limit) }
+    val message = issue?.let { if (it.limit == null) stringResource(it.message) else stringResource(it.message, com.mukhtabir.android.util.formatNumber(it.limit)) }
     val focus = remember(key) { FocusRequester() }
     val bring = remember(key) { BringIntoViewRequester() }
     var placed by remember(key, validation.attempt) { mutableStateOf(false) }
@@ -48,7 +48,6 @@ internal fun DraftValidatedField(key: String, validation: DraftValidationUi, sho
     }
     Column(Modifier.fillMaxWidth().bringIntoViewRequester(bring).onGloballyPositioned { placed = it.isAttached }) {
         content(message, focus)
-        if (message != null && showMessage) Text(message, style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { error(message) })
+        if (message != null && showMessage) AppStatus(message, style = MaterialTheme.typography.bodySmall, modifier = Modifier.semantics { error(message) })
     }
 }

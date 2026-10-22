@@ -52,7 +52,7 @@ internal fun QuizSetupActions(state: QuizUiState, canUseBlueprint: Boolean, view
         state.countError != null -> null
         state.error != null || state.hasUnknownError -> state.error ?: stringResource(R.string.error_unknown)
         state.availableCount <= 0 -> stringResource(R.string.quiz_no_matching_questions)
-        !ready.countValid -> stringResource(R.string.quiz_count_range, ready.maximum)
+        !ready.countValid -> stringResource(R.string.quiz_count_range, com.mukhtabir.android.util.formatNumber(ready.maximum))
         else -> null
     }
     val bank = state.source in setOf(QuizSource.BOOK, QuizSource.TAG, QuizSource.CATEGORY)

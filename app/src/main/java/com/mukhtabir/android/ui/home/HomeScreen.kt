@@ -1,74 +1,79 @@
 package com.mukhtabir.android.ui.home
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.directionalIcon
-
-import com.mukhtabir.android.ui.components.AppTextButton
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppIconButton
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Quiz
-import androidx.compose.material.icons.outlined.Psychology
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.padding
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Psychology
+import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.mukhtabir.android.ui.components.ErrorState
-import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.SessionDraftStore
-import com.mukhtabir.android.util.formatNumber
 import com.mukhtabir.android.data.remote.AnalyticsService
 import com.mukhtabir.android.data.remote.BookmarkService
+import com.mukhtabir.android.data.remote.ImageRepository
+import com.mukhtabir.android.data.remote.MasterExamService
+import com.mukhtabir.android.data.remote.PlannerService
 import com.mukhtabir.android.data.remote.QuestionService
+import com.mukhtabir.android.data.remote.StreakHistoryDto
+import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.data.remote.TipsService
 import com.mukhtabir.android.data.remote.UserDto
-import com.mukhtabir.android.data.remote.PlannerService
-import com.mukhtabir.android.data.remote.MasterExamService
-import com.mukhtabir.android.data.remote.StreakHistoryDto
-import com.mukhtabir.android.data.remote.ImageRepository
-import com.mukhtabir.android.data.remote.TestMode
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppActivityHeatmap
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCardBody
+import com.mukhtabir.android.ui.components.AppHero
+import com.mukhtabir.android.ui.components.AppHeroRow
+import com.mukhtabir.android.ui.components.AppIconButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppListRow
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppMetricTile
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppProgressRing
+import com.mukhtabir.android.ui.components.AppRecoveryPanel
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTileGrid
+import com.mukhtabir.android.ui.components.EmptyState
+import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.PullToRefresh
+import com.mukhtabir.android.ui.components.QuestionListCard
+import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.activityCalendarCells
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.components.directionalIcon
+import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.util.formatNumber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -106,7 +111,7 @@ fun HomeRoute(
         key = "dashboard-${user.id}",
         factory = DashboardViewModel.Factory(bookmarkService, questionService, tipsService, analyticsService, plannerService, masterExamService),
     )
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsLifecycleState()
     var masterRecovery by remember(user.id) { mutableStateOf(draftStore.readMaster(user.id)) }
     var finishRecovery by remember(user.id) { mutableStateOf(draftStore.readFinish(user.id)) }
     val scope = rememberCoroutineScope()
@@ -154,7 +159,14 @@ fun HomeRoute(
     }
     RefreshOnResume(refreshHome)
 
-    com.mukhtabir.android.ui.components.PullToRefresh(state.isLoading, refreshHome, enabled = !state.studyLoading) {
+    val needsReview = answerRecovery.isFailure || answerRecovery.getOrNull() != null ||
+        finishRecovery.isFailure || finishRecovery.getOrNull() != null
+    val continuing = needsReview || pendingStudy || hasLocalSession || pendingPacks > 0 || completionReadError != null
+    val todayFresh = DashboardSection.TODAY in state.loaded && DashboardSection.TODAY !in state.loading &&
+        DashboardSection.TODAY !in state.errors && DashboardSection.TODAY !in state.stale
+    val plan = state.planner?.takeIf { todayFresh }
+
+    PullToRefresh(state.isLoading, refreshHome, enabled = !state.studyLoading) {
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
         androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
@@ -179,13 +191,7 @@ fun HomeRoute(
                 )
             }
             item(key = "learning-hero", span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                val needsReview = answerRecovery.isFailure || answerRecovery.getOrNull() != null ||
-                    finishRecovery.isFailure || finishRecovery.getOrNull() != null
-                val continuing = needsReview || pendingStudy || hasLocalSession || pendingPacks > 0 || completionReadError != null
-                val todayFresh = DashboardSection.TODAY in state.loaded && DashboardSection.TODAY !in state.loading &&
-                    DashboardSection.TODAY !in state.errors && DashboardSection.TODAY !in state.stale
-                val plan = state.planner?.takeIf { todayFresh }
-                com.mukhtabir.android.ui.components.AppHero {
+                AppHero {
                     val introduction: @Composable () -> Unit = {
                         Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                             Text(stringResource(R.string.home_next_action), style = MaterialTheme.typography.labelMedium)
@@ -193,6 +199,47 @@ fun HomeRoute(
                                 style = MaterialTheme.typography.headlineSmall,
                                 modifier = Modifier.semantics { heading() })
                             Text(stringResource(if (continuing || !canStartTests) R.string.flow_continue_hint else R.string.study_now_description))
+
+                        }
+                    }
+                    if (plan != null && plan.targetQuestionsPerDay > 0) {
+                        val done = (plan.dailyProgress[plan.today] ?: 0).coerceAtLeast(0)
+                        AppHeroRow(decoration = {
+                            AppProgressRing(
+                                done.toFloat() / plan.targetQuestionsPerDay,
+                                formatNumber(done), stringResource(R.string.flow_daily))
+                        }, content = introduction)
+                    } else introduction()
+                    val primary = when {
+                        !canStartTests -> HomePrimaryAction(R.string.question_library, onOpenLibrary)
+                        completionReadError != null -> HomePrimaryAction(R.string.retry, refreshCompletions)
+                        needsReview -> HomePrimaryAction(R.string.flow_resolve, onOpenQuizzes)
+                        pendingStudy -> HomePrimaryAction(R.string.flow_review_sync, onOpenQuizzes)
+                        hasLocalSession -> HomePrimaryAction(R.string.flow_resume, onOpenQuizzes)
+                        pendingPacks > 0 -> HomePrimaryAction(R.string.flow_review_sync, onOpenOfflineStudy)
+                        else -> HomePrimaryAction(R.string.study_now_start) {
+                            scope.launch {
+                                val ids = viewModel.fetchStudyNow(minOf(20, maxQuizQuestions), canStartTests)
+                                if (!ids.isNullOrEmpty()) onStartStudyNow(ids)
+                            }
+                        }
+                    }
+                    AppButton(primary.onClick, Modifier.fillMaxWidth(), enabled = !state.studyLoading) {
+                        Text(stringResource(primary.label))
+                    }
+                    if (state.studyLoading) AppLoadingIndicator()
+                    state.studyError?.let { ErrorState(throwable = it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+                    if (state.studyEmpty) Text(stringResource(R.string.study_now_empty), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                    if (needsReview) Text(stringResource(if (finishRecovery.isFailure || answerRecovery.isFailure)
+                        R.string.quiz_finish_storage_error else R.string.quiz_finish_home_hint))
+                    completionReadError?.let { AppRecoveryPanel(
+                        message = stringResource(R.string.home_pending_completion_read_error), throwable = it, onRetry = refreshCompletions) }
+
+                }
+            }
+            item(key = "learning-details") {
+                AppCard(Modifier.fillMaxWidth()) {
+                    AppCardBody {
                             if (plan != null) {
                                 val done = plan.dailyProgress[plan.today] ?: 0
                                 Text(stringResource(R.string.flow_daily_counts, formatNumber(done.coerceAtLeast(0)),
@@ -204,40 +251,6 @@ fun HomeRoute(
                             state.currentStreak?.takeIf { todayFresh }?.let {
                                 Text(stringResource(R.string.home_streak, formatNumber(it)))
                             }
-                        }
-                    }
-                    if (plan != null && plan.targetQuestionsPerDay > 0) {
-                        val done = (plan.dailyProgress[plan.today] ?: 0).coerceAtLeast(0)
-                        com.mukhtabir.android.ui.components.AppHeroRow(decoration = {
-                            com.mukhtabir.android.ui.components.AppProgressRing(
-                                done.toFloat() / plan.targetQuestionsPerDay,
-                                formatNumber(done), stringResource(R.string.flow_daily))
-                        }, content = introduction)
-                    } else introduction()
-                    if (canStartTests) Button({ when {
-                        completionReadError != null -> refreshCompletions()
-                        needsReview || pendingStudy || hasLocalSession -> onOpenQuizzes()
-                        pendingPacks > 0 -> onOpenOfflineStudy()
-                        else -> scope.launch {
-                            val ids = viewModel.fetchStudyNow(minOf(20, maxQuizQuestions), canStartTests)
-                            if (!ids.isNullOrEmpty()) onStartStudyNow(ids)
-                        }
-                    } }, Modifier.fillMaxWidth(), enabled = !state.studyLoading) {
-                        Text(stringResource(when {
-                            completionReadError != null -> R.string.retry
-                            needsReview -> R.string.flow_resolve
-                            pendingStudy -> R.string.flow_review_sync
-                            hasLocalSession -> R.string.flow_resume
-                            pendingPacks > 0 -> R.string.flow_review_sync
-                            else -> R.string.study_now_start
-                        }))
-                    }
-                    if (!canStartTests) Button(onOpenLibrary, Modifier.fillMaxWidth()) { Text(stringResource(R.string.question_library)) }
-                    if (state.studyLoading) AppLoadingIndicator()
-                    state.studyError?.let { ErrorState(throwable = it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
-                    if (state.studyEmpty) Text(stringResource(R.string.study_now_empty), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                    if (needsReview) Text(stringResource(if (finishRecovery.isFailure || answerRecovery.isFailure)
-                        R.string.quiz_finish_storage_error else R.string.quiz_finish_home_hint))
                     if (collectionsCount > 0) Text(stringResource(R.string.flow_downloaded_count, formatNumber(collectionsCount)))
                     if (pendingPacks > 0) Text(stringResource(R.string.flow_ready_count, formatNumber(pendingPacks)))
                     AppActionRow {
@@ -251,17 +264,15 @@ fun HomeRoute(
                     }
                     if (masterRecovery.getOrNull() != null || masterRecovery.isFailure) Text(stringResource(
                         if (masterRecovery.isFailure) R.string.master_recovery_storage else R.string.master_reopen_hint))
-                    completionReadError?.let { com.mukhtabir.android.ui.components.AppRecoveryPanel(
-                        message = stringResource(R.string.home_pending_completion_read_error), throwable = it, onRetry = refreshCompletions) }
                     if (canStartTests) {
-                        if (todayFresh) Text(stringResource(R.string.smart_review_counts, state.srsDueCount,
-                            state.todayAttempts.wrongOpen, state.todayAttempts.fragileCorrect), style = MaterialTheme.typography.bodySmall)
+                        if (todayFresh) Text(stringResource(R.string.smart_review_counts, com.mukhtabir.android.util.formatNumber(state.srsDueCount), com.mukhtabir.android.util.formatNumber(state.todayAttempts.wrongOpen), com.mukhtabir.android.util.formatNumber(state.todayAttempts.fragileCorrect)), style = MaterialTheme.typography.bodySmall)
                         else {
                             Text(stringResource(if (DashboardSection.TODAY in state.loading) R.string.loading else R.string.ui_summary_unavailable))
                             state.errors[DashboardSection.TODAY]?.let { ErrorState(throwable = it) }
                             AppTextButton({ viewModel.load(DashboardSection.TODAY, force = true) },
                                 enabled = DashboardSection.TODAY !in state.loading) { Text(stringResource(R.string.refresh)) }
                         }
+                    }
                     }
                 }
             }
@@ -283,17 +294,20 @@ fun HomeRoute(
             item(key = "overview") {
                 DashboardCard(DashboardSection.OVERVIEW, stringResource(R.string.home_overview), state, viewModel,
                     subtitle = stringResource(R.string.home_progress_description)) {
+                    val unavailable = stringResource(R.string.dashboard_unavailable)
+                    fun overviewMetric(value: Number): String =
+                        if (DashboardSection.OVERVIEW in state.loaded) formatNumber(value.toLong()) else unavailable
                     HomeMetrics(listOf(
-                        HomeMetricData(if (DashboardSection.OVERVIEW in state.loaded) formatNumber(state.attempts.wrongOpen) else stringResource(R.string.dashboard_unavailable), stringResource(R.string.nav_mistakes), onOpenMistakes),
-                        HomeMetricData(if (DashboardSection.OVERVIEW in state.loaded) formatNumber(state.attempts.fragileCorrect) else stringResource(R.string.dashboard_unavailable), stringResource(R.string.nav_fragile), onOpenFragile),
-                        HomeMetricData(if (DashboardSection.OVERVIEW in state.loaded) formatNumber(state.attempts.everCorrect) else stringResource(R.string.dashboard_unavailable), stringResource(R.string.home_correct_once)),
-                        HomeMetricData(if (DashboardSection.OVERVIEW in state.loaded) formatNumber(state.attempts.totalSeen) else stringResource(R.string.dashboard_unavailable), stringResource(R.string.home_questions_seen)),
+                        HomeMetricData(overviewMetric(state.attempts.wrongOpen), stringResource(R.string.nav_mistakes), onOpenMistakes),
+                        HomeMetricData(overviewMetric(state.attempts.fragileCorrect), stringResource(R.string.nav_fragile), onOpenFragile),
+                        HomeMetricData(overviewMetric(state.attempts.everCorrect), stringResource(R.string.home_correct_once)),
+                        HomeMetricData(overviewMetric(state.attempts.totalSeen), stringResource(R.string.home_questions_seen)),
                     ))
                     HomeMetrics(listOf(
                         HomeMetricData(state.bankTotal?.let(::formatNumber) ?: stringResource(R.string.dashboard_unavailable), stringResource(R.string.home_bank_total), onOpenLibrary),
                         HomeMetricData(state.verifiedTotal?.let(::formatNumber) ?: stringResource(R.string.dashboard_unavailable), stringResource(R.string.verified)),
                         HomeMetricData(state.bankTotal?.let { total -> state.verifiedTotal?.let { verified -> formatNumber((total - verified).coerceAtLeast(0)) } } ?: stringResource(R.string.dashboard_unavailable), stringResource(R.string.unverified)),
-                        HomeMetricData(if (DashboardSection.OVERVIEW in state.loaded) formatNumber(state.bookmarkCount) else stringResource(R.string.dashboard_unavailable), stringResource(R.string.bookmarks), onOpenBookmarks),
+                        HomeMetricData(overviewMetric(state.bookmarkCount), stringResource(R.string.bookmarks), onOpenBookmarks),
                     ))
                     if (canViewHistory) HomeLink(stringResource(R.string.history), onOpenHistory)
                     HomeLink(stringResource(R.string.analytics), onOpenAnalytics)
@@ -303,9 +317,9 @@ fun HomeRoute(
                 DashboardCard(DashboardSection.RECENT, stringResource(R.string.home_recent_questions), state, viewModel,
                     subtitle = stringResource(R.string.home_recent_description)) {
                     val bank = state.bank
-                    if (bank != null && bank.items.isEmpty() && DashboardSection.RECENT !in state.loading && DashboardSection.RECENT !in state.errors) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.no_questions_found))
+                    if (bank != null && bank.items.isEmpty() && DashboardSection.RECENT !in state.loading && DashboardSection.RECENT !in state.errors) EmptyState(stringResource(R.string.no_questions_found))
                     bank?.items?.forEach { question ->
-                        com.mukhtabir.android.ui.components.QuestionListCard(question, imageRepository,
+                        QuestionListCard(question, imageRepository,
                             onOpen = { onOpenQuestion(question.id) })
                     }
                     AppTextButton(onOpenLibrary) { Text(stringResource(R.string.all_questions)) }
@@ -325,7 +339,7 @@ fun HomeRoute(
             item(key = "exams") {
                 DashboardCard(DashboardSection.EXAMS, stringResource(R.string.master_exams_title), state, viewModel) {
                     val exams = state.notices.orEmpty()
-                    if (DashboardSection.EXAMS in state.loaded && exams.isEmpty()) Text(stringResource(R.string.master_empty))
+                    if (DashboardSection.EXAMS in state.loaded && exams.isEmpty()) EmptyState(stringResource(R.string.master_empty))
                     exams.forEach { exam -> HomeLink(exam.name) { onOpenExam(exam.id) } }
                 }
             }
@@ -360,8 +374,7 @@ private fun DashboardCard(
             section in state.errors || section in state.stale -> stringResource(R.string.ui_summary_unavailable)
             !section.requiresData -> listOf(stringResource(R.string.study), stringResource(R.string.exam), stringResource(R.string.recall)).joinToString(" · ")
             section !in state.loaded -> stringResource(R.string.ui_loading_summary)
-            section == DashboardSection.TODAY -> stringResource(R.string.smart_review_counts,
-                state.srsDueCount, state.todayAttempts.wrongOpen, state.todayAttempts.fragileCorrect)
+            section == DashboardSection.TODAY -> stringResource(R.string.smart_review_counts, com.mukhtabir.android.util.formatNumber(state.srsDueCount), com.mukhtabir.android.util.formatNumber(state.todayAttempts.wrongOpen), com.mukhtabir.android.util.formatNumber(state.todayAttempts.fragileCorrect))
             section == DashboardSection.OVERVIEW -> state.bankTotal?.let { stringResource(R.string.ui_summary_count, formatNumber(it)) }
             section == DashboardSection.ACTIVITY -> state.activity?.let { stringResource(R.string.activity_summary,
                 formatNumber(it.currentStreak), formatNumber(it.longestStreak), formatNumber(it.activeDays), formatNumber(it.totalQuestions)) }
@@ -387,9 +400,9 @@ private data class HomeMetricData(val value: String, val label: String, val onCl
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HomeMetrics(metrics: List<HomeMetricData>) {
-    com.mukhtabir.android.ui.components.AppTileGrid(metrics.size) { index, tileModifier ->
+    AppTileGrid(metrics.size) { index, tileModifier ->
         val metric=metrics[index]
-        com.mukhtabir.android.ui.components.AppMetricTile(metric.value,metric.label,tileModifier,onClick=metric.onClick)
+        AppMetricTile(metric.value,metric.label,tileModifier,onClick=metric.onClick)
     }
 }
 
@@ -398,14 +411,14 @@ private data class HomeModeData(val title: String, val description: String, val 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HomeModeGrid(modes: List<HomeModeData>, onOpen: (TestMode) -> Unit) {
-    com.mukhtabir.android.ui.components.AppTileGrid(modes.size) { index, tileModifier ->
+    AppTileGrid(modes.size) { index, tileModifier ->
         val mode=modes[index]
         val accent=when(mode.mode) {
             TestMode.STUDY -> MaterialTheme.colorScheme.primary
             TestMode.EXAM -> MaterialTheme.colorScheme.secondary
             else -> MaterialTheme.colorScheme.tertiary
         }
-        com.mukhtabir.android.ui.components.AppMetricTile(mode.title,mode.description,tileModifier,
+        AppMetricTile(mode.title,mode.description,tileModifier,
             onClick={onOpen(mode.mode)},accent=accent,
             container=androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.background,accent,.07f),
             valueStyle=MaterialTheme.typography.titleMedium,
@@ -419,16 +432,18 @@ private fun HomeModeGrid(modes: List<HomeModeData>, onOpen: (TestMode) -> Unit) 
 
 @Composable
 private fun HomeActivity(activity: StreakHistoryDto) {
-    com.mukhtabir.android.ui.components.AppActivityHeatmap(
-        com.mukhtabir.android.ui.components.activityCalendarCells(activity.days))
+    AppActivityHeatmap(
+        activityCalendarCells(activity.days))
 }
 
 @Composable
 private fun HomeLink(label: String, onClick: () -> Unit) {
-    com.mukhtabir.android.ui.components.AppListRow(Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)) {
+    AppListRow(Modifier.clickable(role = androidx.compose.ui.semantics.Role.AppButton, onClick = onClick)) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
         androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.ChevronRight,
             modifier = Modifier.directionalIcon(),
             contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
+private data class HomePrimaryAction(val label: Int, val onClick: () -> Unit)

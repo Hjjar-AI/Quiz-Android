@@ -2,27 +2,14 @@
 
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.AppSuccessText
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,12 +21,23 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
+import com.mukhtabir.android.core.isRejectedWrite
 import com.mukhtabir.android.data.remote.QuestionRatingDto
 import com.mukhtabir.android.data.remote.QuestionService
+import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppSuccessText
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
-import com.mukhtabir.android.core.isRejectedWrite
-import com.mukhtabir.android.ui.components.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -138,7 +136,7 @@ fun QuestionFeedback(questionId: Long, userId: Long, service: QuestionService, s
     val vm: QuestionFeedbackViewModel = viewModel(
         key = "question-feedback-$userId-$questionId", factory = QuestionFeedbackViewModel.Factory(questionId, service, store, userId),
     )
-    val state by vm.state.collectAsState()
+    val state by vm.state.collectAsLifecycleState()
     val blocked = editorRecoveryBlocked(vm.recovery)
     var showReport by rememberSaveable(questionId, userId) { mutableStateOf(false) }
     LaunchedEffect(state.reported) { if (state.reported) showReport = false }
@@ -146,55 +144,55 @@ fun QuestionFeedback(questionId: Long, userId: Long, service: QuestionService, s
             EditorRecoveryControls(vm.recovery,state.ratingLoading || state.ratingSaving || state.reporting,vm::restore)
             if(state.pending!=null) {
                 Text(stringResource(R.string.author_write_unknown))
-                TextButton(vm::loadRating,enabled=!state.ratingLoading && !state.ratingSaving && !state.reporting && !blocked) {Text(stringResource(R.string.refresh))}
-                if(state.reviewed) TextButton(vm::acknowledge,enabled=!blocked) {Text(stringResource(R.string.tools_reviewed))}
+                AppTextButton(vm::loadRating,enabled=!state.ratingLoading && !state.ratingSaving && !state.reporting && !blocked) {Text(stringResource(R.string.refresh))}
+                if(state.reviewed) AppTextButton(vm::acknowledge,enabled=!blocked) {Text(stringResource(R.string.tools_reviewed))}
             }
             state.rating?.let {
                 Text(if (it.count == 0) stringResource(R.string.no_ratings)
-                    else stringResource(R.string.rating_average, it.average, it.count))
+                    else stringResource(R.string.rating_average, it.average, com.mukhtabir.android.util.formatNumber(it.count)))
             }
             if (state.ratingLoading || state.ratingSaving) AppLoadingIndicator()
             Text(stringResource(R.string.your_rating))
-            Row(horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 (1..5).forEach { rating ->
-                    FilterChip(selected = state.selectedRating == rating, onClick = { vm.selectRating(rating) },
+                    AppFilterChip(selected = state.selectedRating == rating, onClick = { vm.selectRating(rating) },
                         enabled = !blocked && state.pending==null && !state.reporting && !state.ratingLoading && !state.ratingSaving, label = { Text(rating.toString()) })
                 }
             }
-            Button(vm::saveRating, enabled = !blocked && state.pending==null && !state.reporting && !state.ratingLoading && !state.ratingSaving
+            AppButton(vm::saveRating, enabled = !blocked && state.pending==null && !state.reporting && !state.ratingLoading && !state.ratingSaving
                 && state.selectedRating in 1..5 && state.selectedRating != (state.lastSavedRating ?: state.rating?.userRating)) {
                 Text(stringResource(R.string.save_rating))
             }
             if (state.ratingSaved) AppSuccessText(stringResource(R.string.saved))
             state.ratingError?.let {
-                Text(it, color = MaterialTheme.colorScheme.error)
-                TextButton(vm::loadRating, enabled = !blocked && state.pending==null && !state.reporting && !state.ratingLoading && !state.ratingSaving) {
+                AppStatus(it)
+                AppTextButton(vm::loadRating, enabled = !blocked && state.pending==null && !state.reporting && !state.ratingLoading && !state.ratingSaving) {
                     Text(stringResource(R.string.refresh_rating))
                 }
             }
-            state.reportError?.let { Text(it, color=MaterialTheme.colorScheme.error) }
+            state.reportError?.let { AppStatus(it) }
             if (state.reported) Text(stringResource(R.string.question_reported))
-            else OutlinedButton({ showReport = true }, enabled = !blocked && state.pending==null && !state.ratingLoading && !state.ratingSaving && !state.reporting) {
+            else AppOutlinedButton({ showReport = true }, enabled = !blocked && state.pending==null && !state.ratingLoading && !state.ratingSaving && !state.reporting) {
                 Text(stringResource(R.string.report_question))
             }
     }
     if (showReport) {
-        AlertDialog(
+        AppConfirmationDialog(
             onDismissRequest = { if (!state.reporting) showReport = false },
             title = { Text(stringResource(R.string.report_question)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-                    OutlinedTextField(state.reportReason, vm::reportReason, enabled = !blocked && state.pending==null && !state.ratingLoading && !state.ratingSaving && !state.reporting,
+                Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                    AppTextField(state.reportReason, vm::reportReason, enabled = !blocked && state.pending==null && !state.ratingLoading && !state.ratingSaving && !state.reporting,
                         label = { Text(stringResource(R.string.report_reason)) }, minLines = 3, modifier = Modifier.fillMaxWidth())
-                    state.reportError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    state.reportError?.let { AppStatus(it) }
                     if (state.reporting) AppLoadingIndicator()
                 }
             },
             confirmButton = {
-                TextButton(vm::report, enabled = !blocked && state.pending==null && !state.ratingLoading && !state.ratingSaving && !state.reporting) { Text(stringResource(R.string.submit_report)) }
+                AppTextButton(vm::report, enabled = !blocked && state.pending==null && !state.ratingLoading && !state.ratingSaving && !state.reporting) { Text(stringResource(R.string.submit_report)) }
             },
             dismissButton = {
-                TextButton({ showReport = false }, enabled = !state.reporting) { Text(stringResource(R.string.cancel)) }
+                AppTextButton({ showReport = false }, enabled = !state.reporting) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

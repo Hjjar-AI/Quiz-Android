@@ -1,48 +1,46 @@
 package com.mukhtabir.android.ui.admin
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppSuccessText
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.mukhtabir.android.ui.components.AppIconButton as IconButton
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.*
-import kotlinx.serialization.Serializable
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppIconButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppSuccessText
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
+import kotlinx.serialization.Serializable
 
 internal fun tagNodes(tree: List<TagTreeNode>): List<TagTreeNode> {
     val result = linkedMapOf<Long, TagTreeNode>()
@@ -157,40 +155,40 @@ internal class TagManagementViewModel(private val service: ContentManagementServ
 fun TagManagementRoute(service: ContentManagementService, questions: QuestionService, userId: Long, permitted: Boolean, store: SessionDraftStore,
     onBack: () -> Unit, onBusy: (Boolean) -> Unit, onChanged: () -> Unit) {
     val vm: TagManagementViewModel = viewModel(key = "tag-management-$userId-$permitted", factory = TagManagementViewModel.Factory(service, questions, permitted, store, userId))
-    val s by vm.state.collectAsState(); val recoveryBlocked=editorRecoveryBlocked(vm.recovery); var leave by remember { mutableStateOf(false) }
+    val s by vm.state.collectAsLifecycleState(); val recoveryBlocked=editorRecoveryBlocked(vm.recovery); var leave by remember { mutableStateOf(false) }
     val busy = s.loading || s.busy
     BackHandler { if (!busy) { if (s.uncertain || s.action != null) leave = true else onBack() } }
     DisposableEffect(busy) { onBusy(busy); onDispose { onBusy(false) } }
     LaunchedEffect(s.saved) { if (s.saved) onChanged() }
     if (!permitted) { Text(stringResource(R.string.error_forbidden)); return }
     val enabled = !recoveryBlocked && !busy && !s.uncertain
-    if (leave) AlertDialog(onDismissRequest = { leave = false }, title = { Text(stringResource(R.string.confirm)) },
-        text = { Text(stringResource(R.string.manage_leave_confirm)) }, confirmButton = { TextButton({ leave = false; onBack() }) { Text(stringResource(R.string.confirm)) } },
-        dismissButton = { TextButton({ leave = false }) { Text(stringResource(R.string.cancel)) } })
-    if (s.action != null && !s.uncertain && !recoveryBlocked) AlertDialog(onDismissRequest = { if (!busy) vm.close() },
+    if (leave) AppConfirmationDialog(onDismissRequest = { leave = false }, title = { Text(stringResource(R.string.confirm)) },
+        text = { Text(stringResource(R.string.manage_leave_confirm)) }, confirmButton = { AppTextButton({ leave = false; onBack() }) { Text(stringResource(R.string.confirm)) } },
+        dismissButton = { AppTextButton({ leave = false }) { Text(stringResource(R.string.cancel)) } })
+    if (s.action != null && !s.uncertain && !recoveryBlocked) AppConfirmationDialog(onDismissRequest = { if (!busy) vm.close() },
         title = { Text(stringResource(when (s.action) { "rename" -> R.string.taxonomy_rename; "delete" -> R.string.ux_delete_tag; else -> R.string.taxonomy_merge })) },
         text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
             val nodes = tagNodes(s.tree)
             val sources = if (s.action == "merge") nodes.filter { it.id in s.selected } else nodes.filter { it.id == s.source }
-            sources.forEach { Text(it.name + " · " + (s.counts[it.name]?.let { count -> stringResource(R.string.taxonomy_visible_links, count) } ?: stringResource(R.string.taxonomy_counts_unavailable))) }
+            sources.forEach { Text(it.name + " · " + (s.counts[it.name]?.let { count -> stringResource(R.string.taxonomy_visible_links, com.mukhtabir.android.util.formatNumber(count)) } ?: stringResource(R.string.taxonomy_counts_unavailable))) }
             Text(stringResource(when (s.action) { "delete" -> R.string.taxonomy_delete_impact; "rename" -> R.string.taxonomy_rename_impact; else -> R.string.taxonomy_merge_impact }))
             if(s.countsError != null) Text(stringResource(R.string.taxonomy_counts_stale))
             if (s.action != "delete") {
-                OutlinedTextField(s.name, vm::field, enabled = enabled, label = { Text(stringResource(R.string.taxonomy_target)) }, modifier = Modifier.fillMaxWidth())
+                AppTextField(s.name, vm::field, enabled = enabled, label = { Text(stringResource(R.string.taxonomy_target)) }, modifier = Modifier.fillMaxWidth())
                 if (s.action == "merge") AppSection(stringResource(R.string.taxonomy_existing_target)) {
                     val excluded = nodes.filter { it.id in s.selected }.flatMap { listOf(it.id) + tagNodes(it.children).map { child -> child.id } }.toSet()
                     nodes.filter { it.id !in excluded }.forEach { node -> AppOutlinedButton({ vm.field(node.name) }, enabled = enabled) { Text(node.name) } }
                 }
             }
-            s.validation?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+            s.validation?.let { AppStatus(stringResource(it)) }
             s.actionError?.let { ErrorState(throwable = it) }
-        } }, confirmButton = { TextButton(vm::submit, enabled = enabled) { Text(stringResource(when (s.action) {
+        } }, confirmButton = { AppTextButton(vm::submit, enabled = enabled) { Text(stringResource(when (s.action) {
             "delete" -> R.string.ux_delete_tag
             "merge" -> R.string.taxonomy_merge
             "rename" -> R.string.taxonomy_rename
             else -> R.string.confirm
         })) } },
-        dismissButton = { TextButton(vm::close, enabled = enabled) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { AppTextButton(vm::close, enabled = enabled) { Text(stringResource(R.string.cancel)) } })
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item { EditorRecoveryControls(vm.recovery,busy,vm::restore) }
         item {
@@ -205,9 +203,9 @@ fun TagManagementRoute(service: ContentManagementService, questions: QuestionSer
                 Text(stringResource(R.string.content_unknown))
                 AppOutlinedButton(vm::acknowledge, enabled = !busy && s.reviewed) { Text(stringResource(R.string.content_reviewed)) }
             }
-            Text(stringResource(R.string.moderation_selected, s.selected.size))
+            Text(stringResource(R.string.moderation_selected, com.mukhtabir.android.util.formatNumber(s.selected.size)))
             AppButton({ vm.open("merge") }, enabled = enabled && s.selected.isNotEmpty()) { Text(stringResource(R.string.taxonomy_merge)) }
-            if (s.loaded && !busy && s.error==null && s.tree.isEmpty()) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.no_items))
+            if (s.loaded && !busy && s.error==null && s.tree.isEmpty()) EmptyState(stringResource(R.string.no_items))
         }
         fun rows(nodes: List<TagTreeNode>, parents: List<TagTreeNode>) {
             if(parents.size > 64) return
@@ -225,21 +223,21 @@ private fun TagRow(node: TagTreeNode, parents: List<TagTreeNode>, s: TagManageme
     val expanded = node.id in s.expanded
     val state = stringResource(if(expanded) R.string.ui_expanded else R.string.ui_collapsed)
     AppCard(Modifier.fillMaxWidth().padding(start = (parents.size.coerceAtMost(3) * 8).dp)) {
-        Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+        Column(Modifier.padding(AppLayoutTokens.denseCardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Row(Modifier.weight(1f).toggleable(node.id in s.selected, enabled=enabled, role=Role.Checkbox, onValueChange={vm.toggle(node.id)})) {
                     Checkbox(node.id in s.selected, null, enabled=enabled)
                     Text(node.name, Modifier.weight(1f), style=MaterialTheme.typography.titleMedium)
                 }
-                IconButton({vm.expand(node.id)}, enabled=!s.loading && !s.busy, modifier=Modifier.semantics { stateDescription=state }) {
+                AppIconButton({vm.expand(node.id)}, enabled=!s.loading && !s.busy, modifier=Modifier.semantics { stateDescription=state }) {
                     Icon(if(expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                         stringResource(if(expanded) R.string.taxonomy_collapse else R.string.taxonomy_expand))
                 }
             }
-            if(parents.isNotEmpty()) com.mukhtabir.android.ui.components.AppMetadataRow(listOf(parents.joinToString(" / ") { it.name }))
+            if(parents.isNotEmpty()) AppMetadataRow(listOf(parents.joinToString(" / ") { it.name }))
             if(expanded) {
                 val count=s.counts[node.name]
-                Text(if(count==null) stringResource(R.string.taxonomy_counts_unavailable) else stringResource(R.string.taxonomy_visible_links,count))
+                Text(if(count==null) stringResource(R.string.taxonomy_counts_unavailable) else stringResource(R.string.taxonomy_visible_links, com.mukhtabir.android.util.formatNumber(count)))
                 AppOutlinedButton({vm.open("rename",node.id)},enabled=enabled) {Text(stringResource(R.string.taxonomy_rename))}
                 AppOutlinedButton({vm.open("merge",node.id)},enabled=enabled) {Text(stringResource(R.string.taxonomy_merge_one))}
                 AppDangerOutlinedButton({vm.open("delete",node.id)},enabled=enabled) {Text(stringResource(R.string.ux_delete_tag))}

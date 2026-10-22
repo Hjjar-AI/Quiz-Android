@@ -10,10 +10,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -29,7 +27,7 @@ import androidx.compose.ui.unit.dp
 internal fun AppWritingText(text: String, style: TextStyle, durationMillis: Int) {
     val progress = remember(text) { Animatable(0f) }
     var layout by remember(text) { mutableStateOf<TextLayoutResult?>(null) }
-    val motionEnabled = (rememberCoroutineScope().coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f) > 0f
+    val motionEnabled = rememberMotionEnabled()
     val penColor = MaterialTheme.colorScheme.primary
     LaunchedEffect(text, durationMillis, motionEnabled) {
         if (motionEnabled) {

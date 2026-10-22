@@ -5,17 +5,17 @@ package com.mukhtabir.android.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -57,11 +57,11 @@ fun LearningSessionHeader(index: Int, total: Int, answered: Int, seconds: Int? =
                         modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall)
                     StableLearningClock(seconds)
                 }
-                if (critical) Text(stringResource(R.string.session_time_critical), color = MaterialTheme.colorScheme.error)
+                if (critical) AppStatus(stringResource(R.string.session_time_critical))
                 Text(stringResource(R.string.session_answered_progress, formatNumber(answered.coerceIn(0,total.coerceAtLeast(0))), formatNumber(total)),
                     style = MaterialTheme.typography.labelSmall)
-                LinearProgressIndicator(progress = if (total > 0) (answered.toFloat() / total).coerceIn(0f, 1f) else 0f,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 2.dp, max = 2.dp))
+                AppProgressBar(progress = if (total > 0) (answered.toFloat() / total).coerceIn(0f, 1f) else 0f,
+                    modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -165,8 +165,11 @@ fun LearningSaveStatus(state: LearningSaveState, detail: String? = null, actions
         LearningSaveState.REVIEW -> R.string.ui_needs_review
         LearningSaveState.SYNCING -> R.string.quiz_syncing
     })
-    AppSaveStatus(label + (detail?.takeIf { it.isNotBlank() && it != label }?.let { " · $it" } ?: ""),
-        failed = state == LearningSaveState.REVIEW, action = actions)
+    AppStatus(detail?.takeIf { it.isNotBlank() } ?: label, kind = when (state) {
+        LearningSaveState.REVIEW, LearningSaveState.WAITING -> AppStatusKind.WARNING
+        LearningSaveState.SERVER -> AppStatusKind.SUCCESS
+        else -> AppStatusKind.INFO
+    }, style = MaterialTheme.typography.bodySmall, action = actions)
 }
 
 /** No answers/keys: navigation position, completion and local revisit flags only. */
@@ -187,7 +190,7 @@ fun LearningQuestionChips(current: Int, total: Int, answered: Set<Int>, flagged:
     onChoose: (Int) -> Unit) {
     AppActionRow {
         (0 until total).forEach { index ->
-            val questionLabel = stringResource(R.string.select_question_number, index + 1)
+            val questionLabel = stringResource(R.string.select_question_number, com.mukhtabir.android.util.formatNumber(index + 1))
             val isAnswered = index in answered
             val isFlagged = index in flagged
             val status = stringResource(if (isAnswered) R.string.session_question_answered else R.string.session_question_unanswered) +

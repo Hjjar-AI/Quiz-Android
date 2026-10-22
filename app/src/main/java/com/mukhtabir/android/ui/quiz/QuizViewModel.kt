@@ -2,18 +2,17 @@ package com.mukhtabir.android.ui.quiz
 
 import android.os.Bundle
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.createSavedStateHandle
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.mukhtabir.android.core.SessionDraft
+import androidx.lifecycle.viewmodel.CreationExtras
 import com.mukhtabir.android.core.DownloadedSession
-import com.mukhtabir.android.core.SessionDraftKind
-import com.mukhtabir.android.core.SessionDraftStore
 import com.mukhtabir.android.core.PendingSessionFinish
 import com.mukhtabir.android.core.QuizPreset
-import com.mukhtabir.android.data.remote.SessionAnswerBaseline
+import com.mukhtabir.android.core.SessionDraft
+import com.mukhtabir.android.core.SessionDraftKind
+import com.mukhtabir.android.core.SessionDraftStore
 import com.mukhtabir.android.data.remote.AnswerSubmissionDto
 import com.mukhtabir.android.data.remote.ApiException
 import com.mukhtabir.android.data.remote.BlueprintDto
@@ -23,12 +22,13 @@ import com.mukhtabir.android.data.remote.CategoryDto
 import com.mukhtabir.android.data.remote.CategoryService
 import com.mukhtabir.android.data.remote.ExamSessionDto
 import com.mukhtabir.android.data.remote.QuestionService
+import com.mukhtabir.android.data.remote.SessionAnswerBaseline
 import com.mukhtabir.android.data.remote.SessionProgressDto
 import com.mukhtabir.android.data.remote.SessionQuestionPageDto
 import com.mukhtabir.android.data.remote.SessionResultsDto
+import com.mukhtabir.android.data.remote.SourceBookDto
 import com.mukhtabir.android.data.remote.StartSessionRequest
 import com.mukhtabir.android.data.remote.SubmitAnswerRequest
-import com.mukhtabir.android.data.remote.SourceBookDto
 import com.mukhtabir.android.data.remote.TagDto
 import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.data.remote.TestSessionService
@@ -39,14 +39,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
 class QuizViewModel(
@@ -67,6 +67,8 @@ class QuizViewModel(
     private val setup = QuizSetupController(_state, viewModelScope, questionService,
         blueprintPermission = { canUseBlueprint }, persistSetup = { persistSetup() })
     val state = _state.asStateFlow()
+    private val _clock = MutableStateFlow(QuizClock())
+    internal val clock = _clock.asStateFlow()
     private var timerJob: Job? = null
     private var initializationJob: Job? = null
     private var metadataJob: Job? = null
@@ -167,7 +169,7 @@ class QuizViewModel(
                 answeredIndices = downloadedAnsweredIndices(retained),
                 recoveryRequired = false, isLoading = false) }
             applyDownloadedPage(retained.session.currentIndex)
-            if (retained.locallyFinished) _state.update { it.copy(timerSeconds = retained.finishedTimerSeconds, timerOvertime = retained.finishedTimerOvertime) }
+            if (retained.locallyFinished) _clock.value = QuizClock(retained.finishedTimerSeconds, retained.finishedTimerOvertime)
             else startTimer(if (retained.timerDisabled) retained.session.copy(durationMinutes = null) else retained.session)
             return
         }
@@ -596,7 +598,7 @@ class QuizViewModel(
         val snapshot = _state.value
         if (snapshot.mode != TestMode.RECALL && !snapshot.downloaded) return false
         if (snapshot.syncConflict != null && snapshot.syncConflict.index == snapshot.questionPage?.index) return false
-        if (snapshot.mode == TestMode.EXAM && snapshot.session?.durationMinutes != null && snapshot.timerSeconds <= 0) return false
+        if (snapshot.mode == TestMode.EXAM && snapshot.session?.durationMinutes != null && _clock.value.seconds <= 0) return false
         if (snapshot.isLoading || snapshot.locallyFinished || snapshot.recoveryRequired || snapshot.questionPage == null || snapshot.pendingDraft != null || snapshot.draftStorageFailed) return false
         if (answer !in 1..snapshot.questionPage.question.choices.size || answer == snapshot.selectedAnswer) return false
         if (snapshot.mode == TestMode.RECALL && !snapshot.choicesRevealed) return false
@@ -618,7 +620,7 @@ class QuizViewModel(
     fun selectConfidence(confidence: Int) {
         val snapshot = _state.value
         if (snapshot.syncConflict != null && snapshot.syncConflict.index == snapshot.questionPage?.index) return
-        if (snapshot.mode == TestMode.EXAM && snapshot.session?.durationMinutes != null && snapshot.timerSeconds <= 0) return
+        if (snapshot.mode == TestMode.EXAM && snapshot.session?.durationMinutes != null && _clock.value.seconds <= 0) return
         if (snapshot.selectedAnswer == null || snapshot.isLoading || snapshot.locallyFinished || snapshot.recoveryRequired || snapshot.pendingDraft != null || snapshot.draftStorageFailed || confidence !in 1..3) return
         _state.update { it.copy(confidence = confidence) }
         saveCurrentAnswer()
@@ -700,8 +702,8 @@ class QuizViewModel(
         val cached = downloadedSession ?: return
         if (snapshot.mode != TestMode.STUDY || snapshot.isLoading || snapshot.locallyFinished ||
             snapshot.recoveryRequired || snapshot.pendingDraft != null || snapshot.draftStorageFailed || snapshot.finishPending) return
-        if (retainDownloaded(cached.copy(locallyFinished = true, finishedTimerSeconds = snapshot.timerSeconds,
-                finishedTimerOvertime = snapshot.timerOvertime))) {
+        if (retainDownloaded(cached.copy(locallyFinished = true, finishedTimerSeconds = _clock.value.seconds,
+                finishedTimerOvertime = _clock.value.overtime))) {
             timerJob?.cancel()
             _state.update { it.copy(syncRequired = true) }
         }
@@ -986,7 +988,7 @@ class QuizViewModel(
 
     private fun stageDownloadedAnswer(reflection: Boolean = false) {
         val snapshot = _state.value
-        if (snapshot.mode == TestMode.EXAM && snapshot.session?.durationMinutes != null && snapshot.timerSeconds <= 0) return
+        if (snapshot.mode == TestMode.EXAM && snapshot.session?.durationMinutes != null && _clock.value.seconds <= 0) return
         val cached = downloadedSession ?: return
         val page = snapshot.questionPage ?: return
         val answer = snapshot.selectedAnswer ?: return
@@ -1390,16 +1392,14 @@ class QuizViewModel(
                 val total = session.durationMinutes?.times(60)
                 val remaining = total?.minus(elapsed)
                 val overtime = session.mode != TestMode.EXAM.path && remaining != null && remaining < 0
-                _state.update {
-                    it.copy(
-                        timerSeconds = when {
-                            remaining == null -> elapsed
-                            overtime -> -remaining
-                            else -> remaining.coerceAtLeast(0)
-                        },
-                        timerOvertime = overtime,
-                    )
-                }
+                _clock.value = QuizClock(
+                    seconds = when {
+                        remaining == null -> elapsed
+                        overtime -> -remaining
+                        else -> remaining.coerceAtLeast(0)
+                    },
+                    overtime = overtime,
+                )
                 if (
                     session.mode == TestMode.EXAM.path && remaining != null && remaining <= 0 &&
                     !_state.value.isLoading

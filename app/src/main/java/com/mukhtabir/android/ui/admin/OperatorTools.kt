@@ -1,24 +1,12 @@
 package com.mukhtabir.android.ui.admin
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -28,6 +16,15 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppPasswordField
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,32 +99,31 @@ fun OperatorToolsRoute(user: UserDto, service: OperatorService, onQuestion: (Lon
     onBusyChanged: (Boolean) -> Unit) {
     if (!user.has("admin.database") && !user.has("admin.seed")) { Text(stringResource(R.string.error_forbidden)); return }
     val vm: OperatorViewModel = viewModel(key = "operator-${user.id}", factory = OperatorViewModel.Factory(user, service))
-    val s by vm.state.collectAsState()
+    val s by vm.state.collectAsLifecycleState()
     var action by remember { mutableStateOf<String?>(null) }
     var backup by remember { mutableStateOf<String?>(null) }
     var password by remember { mutableStateOf("") }
     var qualityPage by remember { mutableStateOf(1) }
-    com.mukhtabir.android.ui.components.BlockedBackHandler(enabled = s.busy)
+    BlockedBackHandler(enabled = s.busy)
     DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
     fun dismiss() { action = null; password = ""; backup = null }
-    action?.let { selected -> AlertDialog(onDismissRequest = ::dismiss,
+    action?.let { selected -> AppConfirmationDialog(onDismissRequest = ::dismiss,
         title = { Text(stringResource(operatorLabel(selected))) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
             Text(stringResource(operatorWarning(selected)))
             backup?.let { Text(it) }
-            if (selected in setOf("restore", "clear")) OutlinedTextField(password, { password = it }, singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+            if (selected in setOf("restore", "clear")) AppPasswordField(password, { password = it }, singleLine = true,
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(autoCorrect = false, keyboardType = androidx.compose.ui.text.input.KeyboardType.Password), label = { Text(stringResource(R.string.tools_password)) }, modifier = Modifier.fillMaxWidth(),
                 textStyle = com.mukhtabir.android.util.ltrInputStyle(),
             )
-        } }, confirmButton = { TextButton({
+        } }, confirmButton = { AppTextButton({
             val secret = password
             val name = backup
             dismiss()
             vm.act(selected, name, secret)
         }, enabled = !s.busy && s.unknown == null && vm.permitted(selected) &&
             (selected !in setOf("restore", "clear") || password.isNotBlank())) { Text(stringResource(R.string.confirm)) } },
-        dismissButton = { TextButton(::dismiss) { Text(stringResource(R.string.cancel)) } }) }
+        dismissButton = { AppTextButton(::dismiss) { Text(stringResource(R.string.cancel)) } }) }
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(R.string.tools_title))
@@ -160,7 +156,7 @@ fun OperatorToolsRoute(user: UserDto, service: OperatorService, onQuestion: (Lon
                     val pages = ((rows.size - 1).coerceAtLeast(0) / 20) + 1
                     val page = qualityPage.coerceIn(1, pages)
                     rows.drop((page - 1) * 20).take(20).forEach { row ->
-                        AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                        AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.denseCardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                             MarkdownText((row["question"] as? JsonPrimitive)?.content.orEmpty())
                             OperatorReport(row, listOf("has_open_quality_flag"))
                             (row["issues"] as? JsonArray)?.forEach { issue ->
@@ -176,7 +172,7 @@ fun OperatorToolsRoute(user: UserDto, service: OperatorService, onQuestion: (Lon
                     }
                     if (rows.isEmpty()) Text(stringResource(R.string.tools_quality_clean))
                     if (pages > 1) {
-                        Text(stringResource(R.string.report_page, page, pages))
+                        Text(stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
                         AppOutlinedButton({ qualityPage = page - 1 }, enabled = page > 1) { Text(stringResource(R.string.previous)) }
                         AppOutlinedButton({ qualityPage = page + 1 }, enabled = page < pages) { Text(stringResource(R.string.next)) }
                     }
@@ -187,7 +183,7 @@ fun OperatorToolsRoute(user: UserDto, service: OperatorService, onQuestion: (Lon
                 AppOutlinedButton({ action = "backup" }, enabled = !s.busy && s.unknown == null) { Text(stringResource(R.string.tools_backup)) }
                 if (s.backups.isEmpty()) Text(stringResource(R.string.tools_no_backups))
                 s.backups.forEach { row ->
-                    AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {
+                    AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
                         OperatorReport(row, listOf("name", "size", "modified"))
                         val name = (row["name"] as? JsonPrimitive)?.content
                         if (name != null) AppDangerOutlinedButton({ backup = name; action = "restore" }, enabled = !s.busy && s.unknown == null && s.errors["backups"] == null) { Text(stringResource(R.string.tools_restore)) }

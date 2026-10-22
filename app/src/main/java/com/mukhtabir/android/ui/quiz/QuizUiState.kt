@@ -1,8 +1,8 @@
 package com.mukhtabir.android.ui.quiz
 
-import com.mukhtabir.android.core.SessionDraft
 import com.mukhtabir.android.core.PendingSessionFinish
 import com.mukhtabir.android.core.QuizPreset
+import com.mukhtabir.android.core.SessionDraft
 import com.mukhtabir.android.data.remote.BlueprintDto
 import com.mukhtabir.android.data.remote.CategoryDto
 import com.mukhtabir.android.data.remote.ExamSessionDto
@@ -93,8 +93,6 @@ data class QuizUiState(
     val answeredIndices: Set<Int> = emptySet(),
     val autoAdvanceToken: Long = 0,
     val confirmedSaveToken: Long = 0,
-    val timerSeconds: Int = 0,
-    val timerOvertime: Boolean = false,
     val results: SessionResultsDto? = null,
     val reviewLoading: Boolean = false,
     val reviewFailed: Boolean = false,

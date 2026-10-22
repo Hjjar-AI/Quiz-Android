@@ -1,5 +1,6 @@
 package com.mukhtabir.android.ui.settings
 
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -9,8 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.ExplanationCard
 import com.mukhtabir.android.ui.components.QuestionTextCard
 import com.mukhtabir.android.ui.theme.AppTheme
@@ -51,7 +53,7 @@ internal fun ReadingComfortSettings(preferences: AppPreferences, display: Displa
     var preview by rememberSaveable { mutableStateOf(false) }
     AppCard {
         AppCardBody {
-            Text(stringResource(R.string.reading_title), style = MaterialTheme.typography.titleLarge)
+            AppSectionHeading(stringResource(R.string.reading_title))
             Text(stringResource(R.string.reading_intro), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             AppButton({ preview = true }) { Text(stringResource(R.string.reading_preview)) }
@@ -67,14 +69,14 @@ internal fun ReadingComfortSettings(preferences: AppPreferences, display: Displa
         ReadingSlider(stringResource(R.string.reading_leading), display.readingLeading, 100f..160f, 5) {
             preferences.setDisplay(display.copy(readingLeading = it))
         }
-        Text(stringResource(R.string.reading_paragraphs), style = MaterialTheme.typography.titleSmall)
+        AppSectionHeading(stringResource(R.string.reading_paragraphs))
         AppActionRow {
             listOf(100 to R.string.reading_standard, 150 to R.string.reading_relaxed, 200 to R.string.reading_spacious).forEach { (value, label) ->
                 AppFilterChip(display.readingParagraphs == value,
                     { preferences.setDisplay(display.copy(readingParagraphs = value)) }, { Text(stringResource(label)) })
             }
         }
-        Text(stringResource(R.string.reading_width), style = MaterialTheme.typography.titleSmall)
+        AppSectionHeading(stringResource(R.string.reading_width))
         Text(stringResource(R.string.reading_width_hint), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         AppActionRow {
@@ -84,7 +86,7 @@ internal fun ReadingComfortSettings(preferences: AppPreferences, display: Displa
                     { preferences.setDisplay(display.copy(readingWidth = value)) }, { Text(stringResource(label)) })
             }
         }
-        Text(stringResource(R.string.preferences_font), style = MaterialTheme.typography.titleSmall)
+        AppSectionHeading(stringResource(R.string.preferences_font))
         Text(stringResource(R.string.reading_font_hint), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         AppActionRow {
@@ -111,7 +113,7 @@ private fun ReadingSlider(label: String, value: Int, range: ClosedFloatingPointR
     onChange: (Int) -> Unit) {
     val percentage = stringResource(R.string.reading_percent, formatNumber(value))
     Column {
-        Text("$label · $percentage", style = MaterialTheme.typography.titleSmall)
+        AppSectionHeading("$label · $percentage")
         Slider(value.toFloat(), { onChange(it.roundToInt()) }, valueRange = range, steps = steps,
             modifier = Modifier.fillMaxWidth().semantics {
                 contentDescription = label
@@ -133,10 +135,12 @@ private fun StudyReadingPreview(onClose: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.content)) {
                     AppPageHeading(stringResource(R.string.reading_preview), stringResource(R.string.reading_preview_hint))
                     QuestionTextCard(stringResource(R.string.demo_q1))
+                    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                     listOf(R.string.demo_q1_c1, R.string.demo_q1_c2, R.string.demo_q1_c3, R.string.demo_q1_c4).forEachIndexed { index, label ->
                         AnswerChoice(index + 1, stringResource(label), selected = selected == index,
                             onClick = { selected = index },
                             answerCorrect = if (selected < 0) null else if (index == 0) true else if (selected == index) false else null)
+                    }
                     }
                     if (selected >= 0) ExplanationCard(stringResource(R.string.demo_q1_explanation))
                 }

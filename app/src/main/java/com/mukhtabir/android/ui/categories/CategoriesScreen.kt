@@ -1,29 +1,15 @@
 package com.mukhtabir.android.ui.categories
 
-import com.mukhtabir.android.ui.components.AppSuccessText
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
-import androidx.compose.foundation.layout.*
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.*
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,10 +17,20 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.core.*
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSuccessText
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import java.util.UUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 @Serializable
 internal data class CategoryDraft(val name: String = "", val description: String = "", val color: String = "#667eea",
@@ -198,7 +194,7 @@ internal class CategoriesViewModel(private val service: CategoryService, private
 fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: SessionDraftStore, userId: Long,
     onBack: () -> Unit, onBusyChanged: (Boolean) -> Unit) {
     val vm: CategoriesViewModel = viewModel(key = "categories-$userId-$canManage", factory = CategoriesViewModel.Factory(service, canManage, store, userId))
-    val s by vm.state.collectAsState(); val blocked = editorRecoveryBlocked(vm.recovery)
+    val s by vm.state.collectAsLifecycleState(); val blocked = editorRecoveryBlocked(vm.recovery)
     var iconPicker by remember { mutableStateOf(false) }
     var discardEditor by remember { mutableStateOf(false) }
     var nextEditor by remember { mutableStateOf<CategoryDto?>(null) }
@@ -209,7 +205,7 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
         else s.draft.name!=currentEditor.name || s.draft.description!=currentEditor.description.orEmpty() || s.draft.color!=currentEditor.color.orEmpty() || s.draft.icon!=currentEditor.icon.orEmpty()
     val editable = canManage && !s.busy && !blocked && !s.draft.uncertain && !s.conflict
     var leaving by remember { mutableStateOf(false) }
-    val recoveryError by vm.recovery.error.collectAsState()
+    val recoveryError by vm.recovery.error.collectAsLifecycleState()
     val back: () -> Unit = {
         if (!s.busy) {
             if (dirty || s.draft.uncertain || s.draft.action != null) leaving = true
@@ -219,25 +215,25 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
     BackHandler(onBack = back)
     BlockedBackHandler(s.busy)
     DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
-    if (leaving) AlertDialog(onDismissRequest = { if (!s.busy) leaving = false },
+    if (leaving) AppConfirmationDialog(onDismissRequest = { if (!s.busy) leaving = false },
         title = { Text(stringResource(R.string.category_leave_title)) },
         text = { Column {
             Text(stringResource(if (s.draft.uncertain || s.draft.action != null) R.string.author_leave_unknown else R.string.category_leave_draft))
             recoveryError?.let { ErrorState(throwable = it) }
         } },
         confirmButton = { Column {
-            TextButton({ vm.leave(false, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.author_save_later)) }
+            AppTextButton({ vm.leave(false, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.author_save_later)) }
             AppDangerTextButton({ vm.leave(true, onBack) }, enabled = !s.busy) { Text(stringResource(R.string.discard_changes_continue)) }
-        } }, dismissButton = { TextButton({ leaving = false }, enabled = !s.busy) { Text(stringResource(R.string.keep_editing)) } })
+        } }, dismissButton = { AppTextButton({ leaving = false }, enabled = !s.busy) { Text(stringResource(R.string.keep_editing)) } })
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets),
         verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
         item {
             AppPageHeading(stringResource(R.string.nav_categories))
             EditorRecoveryControls(vm.recovery, s.busy, vm::restore)
             if (canManage) {
-                OutlinedTextField(s.draft.name, { vm.field(name=it) }, label={Text(stringResource(R.string.category_name))}, enabled=editable, modifier=Modifier.fillMaxWidth())
-                OutlinedTextField(s.draft.description, { vm.field(description=it) }, label={Text(stringResource(R.string.description))}, enabled=editable, modifier=Modifier.fillMaxWidth())
-                OutlinedTextField(s.draft.color, { vm.field(color=it) }, label={Text(stringResource(R.string.category_color))}, enabled=editable, modifier=Modifier.fillMaxWidth())
+                AppTextField(s.draft.name, { vm.field(name=it) }, label={Text(stringResource(R.string.category_name))}, enabled=editable, modifier=Modifier.fillMaxWidth())
+                AppTextField(s.draft.description, { vm.field(description=it) }, label={Text(stringResource(R.string.description))}, enabled=editable, modifier=Modifier.fillMaxWidth())
+                AppTextField(s.draft.color, { vm.field(color=it) }, label={Text(stringResource(R.string.category_color))}, enabled=editable, modifier=Modifier.fillMaxWidth())
                 AppOutlinedButton({iconPicker=true},enabled=editable) { Text(stringResource(R.string.category_icon_selected,s.draft.icon)) }
                 AppActionRow { AppButton(vm::save,enabled=editable && s.draft.name.isNotBlank()) {Text(stringResource(R.string.save))}
                     AppOutlinedButton({nextEditor=null;if(dirty) discardEditor=true else vm.cancelEdit()},enabled=!s.busy && !blocked && !s.draft.uncertain) {Text(stringResource(R.string.cancel))} }
@@ -258,7 +254,7 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
             }
         }
         items(s.items,key={it.id}) { item ->
-            AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {Row {
+            AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {Row {
                 val known=categoryIconOptions.firstOrNull {it.value==item.icon}
                 Icon(iconFor(known?.nativeIcon ?: MaterialIcons.CATEGORIES),contentDescription=null)
                 Text(item.name,Modifier.weight(1f))
@@ -269,7 +265,7 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
             } }
         }
     }
-    mergeSource?.let { source -> AlertDialog(onDismissRequest={if(!s.busy) mergeSource=null},
+    mergeSource?.let { source -> AppConfirmationDialog(onDismissRequest={if(!s.busy) mergeSource=null},
         title={Text(stringResource(R.string.category_merge))},
         text={Column {
             Text(stringResource(R.string.category_merge_impact,source.name))
@@ -282,13 +278,13 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
             } }
         }},
         confirmButton={AppButton({val target=mergeTarget;mergeSource=null;mergeTarget=null;vm.merge(source,target)},enabled=editable && mergeTarget!=null) {Text(stringResource(R.string.category_merge))}},
-        dismissButton={TextButton({mergeSource=null;mergeTarget=null},enabled=!s.busy) {Text(stringResource(R.string.cancel))}})
+        dismissButton={AppTextButton({mergeSource=null;mergeTarget=null},enabled=!s.busy) {Text(stringResource(R.string.cancel))}})
     }
-    if(discardEditor) AlertDialog(onDismissRequest={discardEditor=false;nextEditor=null},
+    if(discardEditor) AppConfirmationDialog(onDismissRequest={discardEditor=false;nextEditor=null},
         title={Text(stringResource(R.string.ux_discard_category_changes))},text={Text(stringResource(R.string.manage_leave_confirm))},
         confirmButton={AppDangerTextButton({val target=nextEditor;discardEditor=false;nextEditor=null;vm.cancelEdit();target?.let(vm::edit)},enabled=!s.busy && !blocked) {Text(stringResource(R.string.ux_discard_category_changes))}},
-        dismissButton={TextButton({discardEditor=false;nextEditor=null}) {Text(stringResource(R.string.cancel))}})
-    if(iconPicker) AlertDialog(onDismissRequest={iconPicker=false},title={Text(stringResource(R.string.category_icon))}, text={
+        dismissButton={AppTextButton({discardEditor=false;nextEditor=null}) {Text(stringResource(R.string.cancel))}})
+    if(iconPicker) AppConfirmationDialog(onDismissRequest={iconPicker=false},title={Text(stringResource(R.string.category_icon))}, text={
         LazyColumn { items(categoryIconOptions,key={it.value}) { option ->
             Row(Modifier.fillMaxWidth().selectable(selected=s.draft.icon==option.value,role=Role.RadioButton,onClick={vm.field(icon=option.value);iconPicker=false}).padding(8.dp)) {
                 RadioButton(selected=s.draft.icon==option.value,onClick=null);Icon(iconFor(option.nativeIcon),contentDescription=null)
@@ -296,8 +292,8 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
             }
         }
         if(categoryIconOptions.none {it.value==s.draft.icon}) item {Text(stringResource(R.string.category_icon_selected,s.draft.icon))} }
-    },confirmButton={TextButton({iconPicker=false}) {Text(stringResource(R.string.close))}})
-    s.confirmDelete?.let { item -> AlertDialog(onDismissRequest=vm::dismissDelete,title={Text(stringResource(R.string.ux_delete_category))},
+    },confirmButton={AppTextButton({iconPicker=false}) {Text(stringResource(R.string.close))}})
+    s.confirmDelete?.let { item -> AppConfirmationDialog(onDismissRequest=vm::dismissDelete,title={Text(stringResource(R.string.ux_delete_category))},
         text={Text(stringResource(R.string.category_delete_confirmation,item.name))},confirmButton={AppDangerTextButton(vm::confirmDelete,enabled=editable){Text(stringResource(R.string.ux_delete_category))}},
         dismissButton={AppOutlinedButton(vm::dismissDelete){Text(stringResource(R.string.cancel))}}) }
 }

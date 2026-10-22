@@ -1,46 +1,43 @@
 package com.mukhtabir.android.ui.quiz
 
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.theme.AppTheme
-import androidx.compose.material3.LinearProgressIndicator
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
-import com.mukhtabir.android.ui.components.AppSwitchRow
-import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.TestMode
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppProgressBar
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppSwitchRow
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.difficultyLabel
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -52,18 +49,18 @@ internal fun QuizSetupContent(
     var bookContents by rememberSaveable { mutableStateOf(false) }
     if (bookContents) BookContentsDialog(state, viewModel, onDismiss = { bookContents = false })
     var confirmDiscard by rememberSaveable(state.resumable?.progress?.sessionId) { mutableStateOf(false) }
-    if (confirmDiscard) AlertDialog(
+    if (confirmDiscard) AppConfirmationDialog(
         onDismissRequest = { confirmDiscard = false },
         title = { Text(stringResource(R.string.discard_saved_session_title)) },
         text = { Text(stringResource(R.string.discard_saved_session_message)) },
         confirmButton = { AppDangerTextButton({ confirmDiscard = false; viewModel.discardSaved() }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_saved_session)) } },
-        dismissButton = { TextButton({ confirmDiscard = false }) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { AppTextButton({ confirmDiscard = false }) { Text(stringResource(R.string.cancel)) } },
     )
     state.resumable?.let { saved ->
-        Card(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets),
-                verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
+                modifier = Modifier.padding(AppLayoutTokens.cardInsets),
+                verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
             ) {
                 Text(stringResource(R.string.quiz_saved_mode, quizModeLabel(saved.mode)),
                     style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
@@ -79,14 +76,14 @@ internal fun QuizSetupContent(
                 Text(stringResource(R.string.session_answered_progress,
                     com.mukhtabir.android.util.formatNumber(answered), com.mukhtabir.android.util.formatNumber(total)),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                LinearProgressIndicator(progress = if (total > 0) answered.toFloat() / total else 0f,
+                AppProgressBar(progress = if (total > 0) answered.toFloat() / total else 0f,
                     modifier = Modifier.fillMaxWidth())
                 val pending = if (state.pendingDraft?.sessionId == saved.progress.sessionId) 1 else 0
                 Text(if (state.draftStorageFailed) stringResource(R.string.quiz_resume_pending_unknown)
                     else stringResource(R.string.quiz_resume_pending, com.mukhtabir.android.util.formatNumber(pending)),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 QuizSelectionRow {
-                    Button(onClick = viewModel::resumeSaved, enabled = !state.isLoading) {
+                    AppButton(onClick = viewModel::resumeSaved, enabled = !state.isLoading) {
                         Text(stringResource(R.string.quiz_continue_session))
                     }
                     AppDangerTextButton(onClick = { confirmDiscard = true }, enabled = !state.isLoading) {
@@ -131,8 +128,8 @@ internal fun QuizSetupContent(
                 state, viewModel, state.blueprints.isNotEmpty())
         }
         when (state.source) {
-            QuizSource.BOOKMARKS -> if (state.metadataError == null) Text(stringResource(R.string.source_bookmarks_count, state.bookmarkCount))
-            QuizSource.SRS -> if (state.metadataError == null) Text(stringResource(R.string.source_srs_count, state.srsDueCount))
+            QuizSource.BOOKMARKS -> if (state.metadataError == null) Text(stringResource(R.string.source_bookmarks_count, com.mukhtabir.android.util.formatNumber(state.bookmarkCount)))
+            QuizSource.SRS -> if (state.metadataError == null) Text(stringResource(R.string.source_srs_count, com.mukhtabir.android.util.formatNumber(state.srsDueCount)))
             QuizSource.BLUEPRINT -> SetupPicker(title = stringResource(R.string.select_blueprint),
                 options = state.blueprints.map { it.id to it.name },
                 selected = state.selectedBlueprintId?.let(::setOf).orEmpty(),
@@ -141,7 +138,7 @@ internal fun QuizSetupContent(
         }
     }
     if (bankPool) {
-        OutlinedButton({ bookContents = true }, enabled = !state.isLoading) { Text(stringResource(R.string.flow_book_contents)) }
+        AppOutlinedButton({ bookContents = true }, enabled = !state.isLoading) { Text(stringResource(R.string.flow_book_contents)) }
         AppSection(title = stringResource(R.string.quiz_optional_book),
             subtitle = selectedBook ?: stringResource(R.string.quiz_no_book_restriction), initiallyExpanded = false) {
             Text(stringResource(R.string.quiz_book_hint), style = MaterialTheme.typography.bodySmall)
@@ -154,12 +151,12 @@ internal fun QuizSetupContent(
                 selected = selectedBook?.let(::setOf).orEmpty(), onToggle = viewModel::selectBook,
                 enabled = !state.isLoading)
         }
-        if (!bookExists) Text(stringResource(R.string.quiz_book_unavailable), color = MaterialTheme.colorScheme.error)
+        if (!bookExists) AppStatus(stringResource(R.string.quiz_book_unavailable))
     }
     val filtersHint = if (selectedBook != null) stringResource(R.string.quiz_scoped_filters_optional, com.mukhtabir.android.util.bidi(selectedBook))
         else stringResource(R.string.quiz_pool_filters_optional)
     val selectionHint = if (!hasFilters) filtersHint else filtersHint + "\n" +
-        stringResource(R.string.quiz_filters_selected, state.selectedCategoryIds.size, selectedTagCount)
+        stringResource(R.string.quiz_filters_selected, com.mukhtabir.android.util.formatNumber(state.selectedCategoryIds.size), com.mukhtabir.android.util.formatNumber(selectedTagCount))
     ActiveFilterSummary(state, viewModel, selectedBook)
     if (selectedBook != null && state.bookFiltersLoading) AppLoadingIndicator()
     if (selectedBook != null) state.bookFiltersError?.let {
@@ -181,18 +178,17 @@ internal fun QuizSetupContent(
                 selected = state.selectedTags, onToggle = viewModel::toggleTag, enabled = !state.isLoading)
         }
         // Preserve legacy free-text filters visibly, including after pool/book changes.
-        if (state.additionalTags.isNotBlank()) OutlinedTextField(value = state.additionalTags,
+        if (state.additionalTags.isNotBlank()) AppTextField(value = state.additionalTags,
             onValueChange = viewModel::setAdditionalTags, modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.additional_tags)) },
             supportingText = { Text(stringResource(R.string.comma_separated)) }, enabled = !state.isLoading)
-        if (hasFilters) OutlinedButton(onClick = viewModel::clearFilters, enabled = !state.isLoading) {
+        if (hasFilters) AppOutlinedButton(onClick = viewModel::clearFilters, enabled = !state.isLoading) {
             Text(stringResource(R.string.quiz_clear_filters))
         }
     }
     AppSection(title = stringResource(R.string.quiz_other_options), initiallyExpanded = false,
         subtitle = stringResource(R.string.quiz_refinement_summary,
-            stringResource(when (state.difficulty) { "easy" -> R.string.difficulty_easy; "medium" -> R.string.difficulty_medium;
-                "hard" -> R.string.difficulty_hard; else -> R.string.difficulty_any }),
+            state.difficulty?.let { difficultyLabel(it) } ?: stringResource(R.string.difficulty_any),
             if (state.verifiedOnly) stringResource(R.string.verified_only) else stringResource(R.string.quiz_verification_any)) +
             (if (state.source != QuizSource.SRS) " · " + stringResource(when (state.selectionStrategy) {
                 "balanced" -> R.string.selection_balanced; "review" -> R.string.selection_review; else -> R.string.selection_coverage
@@ -225,10 +221,10 @@ internal fun QuizSetupContent(
         state.countError?.let {
             ErrorState(throwable = it, onRetry = if (state.isLoading || state.isCountLoading) null else viewModel::refreshAvailableCount)
         }
-        OutlinedTextField(value = state.requestedCount, onValueChange = viewModel::setRequestedCount,
+        AppTextField(value = state.requestedCount, onValueChange = viewModel::setRequestedCount,
             modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.number_of_questions)) },
             supportingText = { if (state.countError == null && state.metadataError == null) Text(if (state.isCountLoading) stringResource(R.string.checking_available)
-                else stringResource(R.string.available_questions_with_limit, state.availableCount, state.maxQuizQuestions)) },
+                else stringResource(R.string.available_questions_with_limit, com.mukhtabir.android.util.formatNumber(state.availableCount), com.mukhtabir.android.util.formatNumber(state.maxQuizQuestions))) },
             isError = !state.isCountLoading && state.availableCount > 0 && !countValid,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = androidx.compose.ui.text.input.ImeAction.Done), enabled = !state.isLoading,
             singleLine = true, textStyle = com.mukhtabir.android.util.ltrInputStyle())
@@ -249,8 +245,8 @@ internal fun QuizSetupContent(
 @Composable
 private fun SetupStepCard(title: String, subtitle: String? = null,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets),
+    AppCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(AppLayoutTokens.cardInsets),
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
             Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall,
@@ -304,7 +300,7 @@ private fun DifficultyButton(
 @Composable
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 private fun SetupChoiceChip(selected: Boolean, enabled: Boolean, onClick: () -> Unit, text: String) {
-    FilterChip(selected = selected, enabled = enabled, onClick = onClick,
+    AppFilterChip(selected = selected, enabled = enabled, onClick = onClick,
         label = { Text(text, style = MaterialTheme.typography.labelLarge) })
 }
 

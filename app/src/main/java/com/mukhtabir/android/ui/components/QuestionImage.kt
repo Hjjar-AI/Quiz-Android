@@ -1,7 +1,7 @@
 package com.mukhtabir.android.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
@@ -29,10 +29,10 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 
 /** Caller retains reveal authority; local images never cause a network request. */
 @Composable
@@ -57,7 +57,7 @@ fun QuestionImage(url: String?, repository: ImageRepository? = null, modifier: M
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val panelHeight = if (state is ImageState.Error) 96.dp else
-                (maxWidth / AppLayoutTokens.questionImageAspectRatio).coerceAtMost(maxHeight)
+                (maxWidth / QuestionImageGeometry.questionImageAspectRatio).coerceAtMost(maxHeight)
             Surface(Modifier.fillMaxWidth().height(panelHeight), color = AppTheme.questionSurfaces.choice,
                 shape = MaterialTheme.shapes.medium, border = BorderStroke(AppLayoutTokens.cardBorderWidth, AppTheme.questionSurfaces.border)) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -65,7 +65,7 @@ fun QuestionImage(url: String?, repository: ImageRepository? = null, modifier: M
                         ImageState.Loading -> AppLoadingIndicator()
                         ImageState.Error -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                             .padding(AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.content)) {
-                            Text(stringResource(R.string.question_image_unavailable), color = MaterialTheme.colorScheme.error,
+                            AppStatus(stringResource(R.string.question_image_unavailable),
                                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                             AppTextButton({ retry += 1 }) { Text(stringResource(R.string.retry)) }
                         }
@@ -118,7 +118,7 @@ private fun QuestionImageViewer(bytes: ByteArray, onClose: () -> Unit) {
                     AppOutlinedButton(onClose) { Text(stringResource(R.string.close)) }
                     AppTextButton({ scale = 1f; pan = Offset.Zero }) { Text(stringResource(R.string.image_reset_view)) }
                 }
-                val imageModifier = if (short) Modifier.fillMaxWidth().height((viewportHeight * .6f).coerceAtLeast(AppLayoutTokens.imageControlsMaxHeight))
+                val imageModifier = if (short) Modifier.fillMaxWidth().height((viewportHeight * .6f).coerceAtLeast(QuestionImageGeometry.imageControlsMaxHeight))
                     else Modifier.weight(1f).fillMaxWidth()
                 Box(imageModifier.clipToBounds().onSizeChanged { viewport = it }
                     .transformable(transform), contentAlignment = Alignment.Center) {
@@ -131,7 +131,7 @@ private fun QuestionImageViewer(bytes: ByteArray, onClose: () -> Unit) {
                 }
                 // Sliders provide keyboard/TalkBack alternatives to every gesture, including panning.
                 Column(Modifier.fillMaxWidth().then(if (short) Modifier else
-                    Modifier.heightIn(max = AppLayoutTokens.imageControlsMaxHeight).verticalScroll(rememberScrollState()))) {
+                    Modifier.heightIn(max = QuestionImageGeometry.imageControlsMaxHeight).verticalScroll(rememberScrollState()))) {
                     ImageViewSlider(stringResource(R.string.image_zoom), scale, 1f..5f) { scale = it; if (it == 1f) pan = Offset.Zero }
                     val bounds = limits(scale)
                     if (bounds.x > 0) ImageViewSlider(stringResource(R.string.image_pan_horizontal), pan.x, -1f..1f) { pan = pan.copy(x = it) }
@@ -157,4 +157,9 @@ private sealed interface ImageState {
     data object Loading : ImageState
     data object Error : ImageState
     data class Success(val bytes: ByteArray, val bitmap: ImageBitmap) : ImageState
+}
+
+private object QuestionImageGeometry {
+    val imageControlsMaxHeight = 160.dp
+    const val questionImageAspectRatio = 1.6f
 }

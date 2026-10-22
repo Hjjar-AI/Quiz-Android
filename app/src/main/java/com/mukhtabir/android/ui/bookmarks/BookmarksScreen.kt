@@ -2,21 +2,6 @@
 
 package com.mukhtabir.android.ui.bookmarks
 
-import com.mukhtabir.android.ui.theme.AppTheme
-
-
-import com.mukhtabir.android.ui.components.AppPagination
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.data.remote.localizedForDisplay
-
-import com.mukhtabir.android.ui.components.RefreshOnResume
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,37 +9,54 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.createSavedStateHandle
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.mukhtabir.android.core.LearnerSavedState
 import com.mukhtabir.android.R
+import com.mukhtabir.android.core.LearnerSavedState
 import com.mukhtabir.android.data.remote.BookmarkService
 import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.TestMode
+import com.mukhtabir.android.data.remote.localizedForDisplay
+import com.mukhtabir.android.ui.components.ActiveFilter
+import com.mukhtabir.android.ui.components.ActiveFilterSummary
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppBottomSheet
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppFilterOptions
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.PracticeLauncher
+import com.mukhtabir.android.ui.components.PullToRefresh
+import com.mukhtabir.android.ui.components.QuestionListCard
+import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
@@ -206,7 +208,7 @@ fun BookmarksRoute(
         key = "bookmarks-$userId",
         factory = BookmarksViewModel.Factory(service, pageSize, userId),
     )
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsLifecycleState()
     LaunchedEffect(pageSize) { viewModel.applyPageSize(pageSize) }
     RefreshOnResume(viewModel::retry)
     val busy = state.isLoading || state.removingId != null
@@ -226,22 +228,22 @@ fun BookmarksRoute(
 
     val filterControls: @Composable () -> Unit = {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.content)) {
-        androidx.compose.material3.OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+        AppTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(), singleLine = true,
             label = { Text(stringResource(R.string.search_questions)) }, enabled = !busy)
         Text(stringResource(R.string.ui_page_filter_hint), style = MaterialTheme.typography.bodySmall)
-        com.mukhtabir.android.ui.components.ActiveFilterSummary(buildList {
-            if (query.isNotBlank()) add(com.mukhtabir.android.ui.components.ActiveFilter("query", query, { query = "" }))
-            category?.let { value -> add(com.mukhtabir.android.ui.components.ActiveFilter("category", stringResource(R.string.quiz_filter_category, value), { category = null })) }
-            book?.let { value -> add(com.mukhtabir.android.ui.components.ActiveFilter("book", stringResource(R.string.quiz_filter_book, value), { book = null })) }
-            tag?.let { value -> add(com.mukhtabir.android.ui.components.ActiveFilter("tag", stringResource(R.string.quiz_filter_tag, value), { tag = null })) }
+        ActiveFilterSummary(buildList {
+            if (query.isNotBlank()) add(ActiveFilter("query", query, { query = "" }))
+            category?.let { value -> add(ActiveFilter("category", stringResource(R.string.quiz_filter_category, value), { category = null })) }
+            book?.let { value -> add(ActiveFilter("book", stringResource(R.string.quiz_filter_book, value), { book = null })) }
+            tag?.let { value -> add(ActiveFilter("tag", stringResource(R.string.quiz_filter_tag, value), { tag = null })) }
         }, onClear = { query = ""; category = null; book = null; tag = null }, enabled = !busy)
-        OutlinedButton({ showFilters = true }, enabled = !busy) {
-            Text(stringResource(R.string.library_active_filters, listOf(category, book, tag).count { it != null }))
+        AppOutlinedButton({ showFilters = true }, enabled = !busy) {
+            Text(stringResource(R.string.library_active_filters, com.mukhtabir.android.util.formatNumber(listOf(category, book, tag).count { it != null })))
         }
         }
     }
 
-    com.mukhtabir.android.ui.components.PullToRefresh(state.isLoading,viewModel::retry,enabled=state.removingId==null) {
+    PullToRefresh(state.isLoading,viewModel::retry,enabled=state.removingId==null) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -249,8 +251,8 @@ fun BookmarksRoute(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
     ) {
         AppPageHeading(stringResource(R.string.bookmarks))
-        if (canStartSessions && filteredItems.isNotEmpty()) Button({ showPractice = true }) {
-            Text(stringResource(R.string.library_practice, filteredItems.size))
+        if (canStartSessions && filteredItems.isNotEmpty()) AppButton({ showPractice = true }) {
+            Text(stringResource(R.string.library_practice, com.mukhtabir.android.util.formatNumber(filteredItems.size)))
         }
         if (busy) AppLoadingIndicator()
         val actionError = state.mutationError
@@ -281,9 +283,9 @@ fun BookmarksRoute(
                 item { filterControls() }
                 if (filteredItems.isEmpty() && !busy && state.error == null) item { EmptyState(stringResource(R.string.no_questions_found)) }
                 items(filteredItems, key = { it.id }) { question ->
-                    com.mukhtabir.android.ui.components.QuestionListCard(question, imageRepository,
+                    QuestionListCard(question, imageRepository,
                         onOpen = { onOpenQuestion(question.id) }) {
-                        OutlinedButton(onClick = { viewModel.remove(question.id) }, enabled = canAct) {
+                        AppOutlinedButton(onClick = { viewModel.remove(question.id) }, enabled = canAct) {
                             Text(stringResource(R.string.remove_bookmark))
                         }
                     }
@@ -297,11 +299,11 @@ fun BookmarksRoute(
         }
     }
     }
-    if (showFilters) com.mukhtabir.android.ui.components.AppBottomSheet(
+    if (showFilters) AppBottomSheet(
         stringResource(R.string.ui_page_filters), onDismiss = { showFilters = false }, actions = {
-            com.mukhtabir.android.ui.components.AppActionRow {
-                Button({ showFilters = false }) { Text(stringResource(R.string.done)) }
-                com.mukhtabir.android.ui.components.AppTextButton({ category = null; book = null; tag = null }, enabled = !busy) {
+            AppActionRow {
+                AppButton({ showFilters = false }) { Text(stringResource(R.string.done)) }
+                AppTextButton({ category = null; book = null; tag = null }, enabled = !busy) {
                     Text(stringResource(R.string.ui_clear_all))
                 }
             }
@@ -309,19 +311,19 @@ fun BookmarksRoute(
         Text(stringResource(R.string.ui_page_filter_hint), style = MaterialTheme.typography.bodySmall)
         Text(stringResource(R.string.ux_filter_single_tag), style = MaterialTheme.typography.bodySmall)
         val any = "" to stringResource(R.string.difficulty_any)
-        com.mukhtabir.android.ui.components.AppFilterOptions(stringResource(R.string.source_categories),
+        AppFilterOptions(stringResource(R.string.source_categories),
             listOf(any) + state.items.mapNotNull { it.categoryName }.distinct().map { it to it }, category.orEmpty(),
             onSelect = { category = it.takeIf(String::isNotBlank) }, enabled = !busy)
-        com.mukhtabir.android.ui.components.AppFilterOptions(stringResource(R.string.select_source_book),
+        AppFilterOptions(stringResource(R.string.select_source_book),
             listOf(any) + state.items.mapNotNull { it.sourceDocument?.takeIf(String::isNotBlank) }.distinct().map { it to it }, book.orEmpty(),
             onSelect = { book = it.takeIf(String::isNotBlank) }, enabled = !busy)
-        com.mukhtabir.android.ui.components.AppFilterOptions(stringResource(R.string.source_tags),
+        AppFilterOptions(stringResource(R.string.source_tags),
             listOf(any) + state.items.flatMap { it.tags }.distinct().map { it to it }, tag.orEmpty(),
             onSelect = { tag = it.takeIf(String::isNotBlank) }, enabled = !busy)
     }
     if (showPractice && canStartSessions) {
         val ids = androidx.compose.runtime.remember { filteredItems.map { it.id } }
-        com.mukhtabir.android.ui.components.PracticeLauncher(sessionLabel, ids, maxQuestions, enabled = canAct,
+        PracticeLauncher(sessionLabel, ids, maxQuestions, enabled = canAct,
             onDismiss = { showPractice = false },
             onStart = { mode, selected, title -> showPractice = false; onStartQuestions(mode, selected, title) },
             onDownload = onDownloadOffline?.let { download -> ({ selected -> showPractice = false; download(selected) }) })

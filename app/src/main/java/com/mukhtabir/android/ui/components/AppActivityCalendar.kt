@@ -2,8 +2,8 @@ package com.mukhtabir.android.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.StreakDayDto
 import com.mukhtabir.android.util.formatCalendarDate
@@ -88,18 +89,11 @@ fun AppActivityWeek(partial: List<StreakDayDto?>, showDetails: Boolean = false) 
     }
 }
 
-@Composable
-fun AppActivityCalendar(days: List<StreakDayDto>) {
-    Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
-        activityCalendarCells(days).chunked(7).forEach { AppActivityWeek(it) }
-    }
-}
-
 /** Seven weekday rows and scrollable week columns, without visible numeric counts. */
 @Composable
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 fun AppActivityHeatmap(cells: List<StreakDayDto?>) {
-    val cellSize = AppLayoutTokens.heatmapCellSize * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val cellSize = AppActivityCalendarGeometry.heatmapCellSize * LocalDensity.current.fontScale.coerceAtLeast(1f)
     val gap = AppLayoutTokens.tightGap
     Column(verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(gap)) {
@@ -127,7 +121,7 @@ fun AppActivityHeatmap(cells: List<StreakDayDto?>) {
                 }
             }
         }
-        com.mukhtabir.android.ui.components.AppActionRow {
+        AppActionRow {
             Text(stringResource(R.string.activity_less),style=MaterialTheme.typography.bodySmall)
             ActivityCalendarTokens.levels.forEach { intensity ->
                 Box(Modifier.size(cellSize).background(
@@ -137,4 +131,8 @@ fun AppActivityHeatmap(cells: List<StreakDayDto?>) {
             Text(stringResource(R.string.activity_more),style=MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+private object AppActivityCalendarGeometry {
+    val heatmapCellSize = 24.dp
 }

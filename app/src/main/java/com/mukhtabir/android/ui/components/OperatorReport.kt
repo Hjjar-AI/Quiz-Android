@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.components
 
-import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -8,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatLocalDateTime
 import com.mukhtabir.android.util.formatNumber
 import kotlinx.serialization.json.*
@@ -15,7 +15,7 @@ import kotlinx.serialization.json.*
 /** Curated labels only: do not surface paths, server diagnostics or arbitrary new fields. */
 @Composable
 fun OperatorReport(value: JsonObject, keys: List<String>, percentKeys: Set<String> = emptySet()) {
-    Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
         keys.forEach { key ->
             val element = value[key]
             val label = reportLabel(key)
@@ -38,10 +38,7 @@ fun OperatorReport(value: JsonObject, keys: List<String>, percentKeys: Set<Strin
                         key.endsWith("_at") -> formatLocalDateTime(element.content)
                         element.longOrNull != null -> formatNumber(requireNotNull(element.longOrNull))
                         element.doubleOrNull != null -> java.text.NumberFormat.getNumberInstance().apply { maximumFractionDigits = 2 }.format(element.doubleOrNull)
-                        key == "difficulty" -> when (element.content) {
-                            "easy" -> stringResource(R.string.difficulty_easy); "medium" -> stringResource(R.string.difficulty_medium)
-                            "hard" -> stringResource(R.string.difficulty_hard); else -> element.content
-                        }
+                        key == "difficulty" -> difficultyLabel(element.content)
                         else -> element.content
                     }
                     Text(stringResource(label) + ": " + content)
@@ -63,13 +60,13 @@ fun OperatorRows(rows: List<JsonObject>, keys: List<String>, pageSize: Int = 20,
     val pages = ((rows.size - 1).coerceAtLeast(0) / size) + 1
     val page = requested.coerceIn(1, pages)
     Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
-        if (rows.isEmpty()) Text(stringResource(R.string.master_empty))
+        if (rows.isEmpty()) EmptyState(stringResource(R.string.master_empty))
         rows.drop((page - 1) * size).take(size).forEach { row ->
-            AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) { OperatorReport(row, if ((row["is_complete"] as? JsonPrimitive)?.booleanOrNull == false)
+            AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) { OperatorReport(row, if ((row["is_complete"] as? JsonPrimitive)?.booleanOrNull == false)
                 keys - setOf("correct_count", "accuracy", "weighted_score") else keys, percentKeys) } }
         }
         if (pages > 1) {
-            Text(stringResource(R.string.report_page, page, pages))
+            Text(stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
             AppOutlinedButton({ requested = page - 1 }, enabled = page > 1) { Text(stringResource(R.string.previous)) }
             AppOutlinedButton({ requested = page + 1 }, enabled = page < pages) { Text(stringResource(R.string.next)) }
         }

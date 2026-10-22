@@ -1,24 +1,11 @@
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
@@ -26,6 +13,15 @@ import com.mukhtabir.android.core.SessionDraftStore
 import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.UserDto
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.EmptyState
+import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -64,7 +60,7 @@ fun AuthoringDraftsRoute(user: UserDto, store: SessionDraftStore, onOpen: (Strin
         }
     } }
     LaunchedEffect(user.id) { refresh() }
-    deleting?.let { key -> AlertDialog(onDismissRequest = { deleting = null }, title = { Text(stringResource(R.string.author_drafts_title)) },
+    deleting?.let { key -> AppConfirmationDialog(onDismissRequest = { deleting = null }, title = { Text(stringResource(R.string.author_drafts_title)) },
         text = { Text(stringResource(R.string.author_drafts_delete)) }, confirmButton = { AppDangerTextButton({
             deleting = null
             if (!busy) { busy = true; scope.launch {
@@ -73,7 +69,7 @@ fun AuthoringDraftsRoute(user: UserDto, store: SessionDraftStore, onOpen: (Strin
                 catch (failure: Exception) { ensureActive(); error = failure }
                 finally { busy = false }
             } }
-        }) { Text(stringResource(R.string.ux_discard_saved_authoring_draft)) } }, dismissButton = { TextButton({ deleting = null }) { Text(stringResource(R.string.cancel)) } }) }
+        }) { Text(stringResource(R.string.ux_discard_saved_authoring_draft)) } }, dismissButton = { AppTextButton({ deleting = null }) { Text(stringResource(R.string.cancel)) } }) }
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(R.string.author_drafts_title))
@@ -81,9 +77,9 @@ fun AuthoringDraftsRoute(user: UserDto, store: SessionDraftStore, onOpen: (Strin
             AppOutlinedButton(refresh, enabled = !busy) { Text(stringResource(R.string.refresh)) }
             if (busy) AppLoadingIndicator()
             error?.let { ErrorState(throwable = it, onRetry = if (busy) null else refresh) }
-            if (!busy && keys.isEmpty()) Text(stringResource(R.string.author_drafts_empty))
+            if (!busy && keys.isEmpty()) EmptyState(stringResource(R.string.author_drafts_empty))
         }
-        items(keys, key = { it }) { key -> AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {
+        items(keys, key = { it }) { key -> AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
             val label = when (key.substringBefore('-')) {
                 "question" -> R.string.question_text; "image" -> R.string.question_manage_image
                 "exam" -> R.string.exam_author_name; else -> R.string.exam_library_title

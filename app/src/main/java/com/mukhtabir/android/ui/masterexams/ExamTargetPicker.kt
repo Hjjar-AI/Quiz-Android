@@ -1,7 +1,5 @@
 package com.mukhtabir.android.ui.masterexams
 
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,12 +8,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
 import androidx.compose.material3.Checkbox
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +25,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.MasterExamAuthorDto
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.AppToggleRow
+import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.util.formatNumber
 
@@ -78,13 +80,13 @@ internal fun ExamTargetFields(form: ExamForm, exam: MasterExamAuthorDto?, enable
     open: ((ExamTargetKind) -> Unit)?, cache: Map<ExamTargetKind, Map<Long, String>>) {
     Text(stringResource(R.string.exam_author_ids_hint))
     ExamTargetKind.entries.forEach { kind ->
-        OutlinedTextField(kind.ids(form), { value -> change { kind.replace(it, value) } }, enabled = enabled,
+        AppTextField(kind.ids(form), { value -> change { kind.replace(it, value) } }, enabled = enabled,
             label = { Text(stringResource(kind.label)) }, modifier = Modifier.fillMaxWidth())
         val ids = parseExamTargetIds(kind.ids(form)).orEmpty()
         val names = targetNames(kind, exam, cache)
         if (ids.isNotEmpty()) Text(ids.joinToString(" · ") { targetLabel(it, names) })
         if (open != null) {
-            if (canLookUp?.invoke(kind) == true) OutlinedButton({ open(kind) }, enabled = enabled) {
+            if (canLookUp?.invoke(kind) == true) AppOutlinedButton({ open(kind) }, enabled = enabled) {
                 Text(stringResource(kind.pickerLabel))
             } else Text(stringResource(if (kind == ExamTargetKind.GROUPS) R.string.exam_target_groups_permission else R.string.exam_target_users_permission))
         }
@@ -96,16 +98,16 @@ internal fun ExamTargetPicker(p: ExamTargetPickerState, s: ExamEditorState, vm: 
     var query by remember(p.kind) { mutableStateOf(p.query) }
     val enabled = vm.editable(s) && vm.canLookUp(p.kind) && !p.busy && p.error == null
     val names = targetNames(p.kind, s.exam, s.targetNames)
-    AlertDialog(onDismissRequest = vm::closeTargets,
+    AppConfirmationDialog(onDismissRequest = vm::closeTargets,
         title = { Text(stringResource(p.kind.pickerLabel)) },
         text = {
-            LazyColumn(Modifier.heightIn(max = com.mukhtabir.android.ui.components.AppLayoutTokens.pickerMaxHeight), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            LazyColumn(Modifier.heightIn(max = AppLayoutTokens.pickerMaxHeight), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 item {
                     Text(stringResource(R.string.exam_target_staged))
                     if (p.kind != ExamTargetKind.GROUPS) Text(stringResource(R.string.exam_target_member_filter))
-                    OutlinedTextField(query, { query = it }, label = { Text(stringResource(R.string.search)) },
+                    AppTextField(query, { query = it }, label = { Text(stringResource(R.string.search)) },
                         enabled = !s.busy, modifier = Modifier.fillMaxWidth())
-                    OutlinedButton({ vm.searchTargets(query, 1) }, enabled = vm.editable(s) && !p.busy) {
+                    AppOutlinedButton({ vm.searchTargets(query, 1) }, enabled = vm.editable(s) && !p.busy) {
                         Text(stringResource(R.string.search))
                     }
                     if (p.busy) AppLoadingIndicator()
@@ -118,17 +120,17 @@ internal fun ExamTargetPicker(p: ExamTargetPickerState, s: ExamEditorState, vm: 
                 items(p.selected.sorted(), key = { "selected-$it" }) { id ->
                     Column {
                         Text(targetLabel(id, names))
-                        TextButton({ vm.removeTarget(id) }, enabled = enabled) {
+                        AppTextButton({ vm.removeTarget(id) }, enabled = enabled) {
                             Text(stringResource(R.string.exam_target_remove, targetLabel(id, names)))
                         }
                     }
                 }
                 item {
                     Text(stringResource(R.string.exam_target_matches))
-                    if (!p.busy && p.error == null && p.rows.isEmpty()) Text(stringResource(R.string.exam_target_empty))
+                    if (!p.busy && p.error == null && p.rows.isEmpty()) EmptyState(stringResource(R.string.exam_target_empty))
                 }
                 items(p.rows, key = { "match-${it.id}" }) { row ->
-                    com.mukhtabir.android.ui.components.AppToggleRow(Modifier.fillMaxWidth()
+                    AppToggleRow(Modifier.fillMaxWidth()
                         .toggleable(value = row.id in p.selected, enabled = enabled, role = Role.Checkbox,
                             onValueChange = { vm.toggleTarget(row.id) })
                         .semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
@@ -139,14 +141,14 @@ internal fun ExamTargetPicker(p: ExamTargetPickerState, s: ExamEditorState, vm: 
                 item {
                     Text(stringResource(R.string.exam_target_page, formatNumber(p.page), formatNumber(p.totalPages)))
                     // Separate rows remain usable with large text and RTL.
-                    OutlinedButton({ vm.searchTargets(p.query, p.page - 1) }, enabled = enabled && p.page > 1) {
+                    AppOutlinedButton({ vm.searchTargets(p.query, p.page - 1) }, enabled = enabled && p.page > 1) {
                         Text(stringResource(R.string.previous))
                     }
-                    OutlinedButton({ vm.searchTargets(p.query, p.page + 1) }, enabled = enabled && p.page < p.totalPages) {
+                    AppOutlinedButton({ vm.searchTargets(p.query, p.page + 1) }, enabled = enabled && p.page < p.totalPages) {
                         Text(stringResource(R.string.next))
                     }
                 }
             }
-        }, confirmButton = { TextButton(vm::applyTargets, enabled = enabled) { Text(stringResource(R.string.exam_target_apply)) } },
-        dismissButton = { TextButton(vm::closeTargets) { Text(stringResource(R.string.cancel)) } })
+        }, confirmButton = { AppTextButton(vm::applyTargets, enabled = enabled) { Text(stringResource(R.string.exam_target_apply)) } },
+        dismissButton = { AppTextButton(vm::closeTargets) { Text(stringResource(R.string.cancel)) } })
 }

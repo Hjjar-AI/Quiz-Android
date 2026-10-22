@@ -1,9 +1,5 @@
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.ExplanationCard
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,16 +10,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.QuestionDto
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.ExplanationCard
 import com.mukhtabir.android.ui.components.MarkdownText
+import com.mukhtabir.android.ui.components.QuestionChoiceCard
+import com.mukhtabir.android.ui.components.QuestionContext
+import com.mukhtabir.android.ui.components.QuestionTextCard
 
 @Composable
 internal fun QuestionDraftPreview(text: String, choices: List<String>, correctAnswer: Int?, explanation: String) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
-        com.mukhtabir.android.ui.components.QuestionTextCard(text)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+        QuestionTextCard(text)
         choices.forEachIndexed { index, choice ->
-            com.mukhtabir.android.ui.components.QuestionChoiceCard {
+            QuestionChoiceCard {
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.choice_number, index + 1))
+                    Text(stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)))
                     MarkdownText(choice, Modifier.fillMaxWidth())
                     if (correctAnswer == index + 1) Text(stringResource(R.string.correct_answer), color = MaterialTheme.colorScheme.primary)
                 }
@@ -38,7 +39,7 @@ internal fun QuestionDraftPreview(text: String, choices: List<String>, correctAn
 
 @Composable
 internal fun QuestionExtendedPreview(question: QuestionDto) {
-    com.mukhtabir.android.ui.components.QuestionContext(question)
+    QuestionContext(question)
     question.case?.let { case ->
         Text(stringResource(R.string.editor_case_key)+": "+case.key.orEmpty())
         if(!case.stem.isNullOrBlank()) MarkdownText(case.stem.orEmpty())

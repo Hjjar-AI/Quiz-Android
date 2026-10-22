@@ -6,9 +6,10 @@ import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ExamDurationReportDto
 import com.mukhtabir.android.ui.components.OperatorRows
+import com.mukhtabir.android.ui.components.difficultyLabel
 import com.mukhtabir.android.util.formatNumber
-import kotlinx.serialization.json.JsonObject
 import java.text.NumberFormat
+import kotlinx.serialization.json.JsonObject
 
 @Composable
 internal fun analyticsReportTitle(key: String): String = stringResource(when (key) {
@@ -21,12 +22,7 @@ internal fun analyticsReportTitle(key: String): String = stringResource(when (ke
 })
 
 @Composable
-internal fun analyticsDifficultyLabel(key: String): String = when (key) {
-    "easy" -> stringResource(R.string.difficulty_easy)
-    "medium" -> stringResource(R.string.difficulty_medium)
-    "hard" -> stringResource(R.string.difficulty_hard)
-    else -> key
-}
+internal fun analyticsDifficultyLabel(key: String): String = difficultyLabel(key)
 
 /** Curated backend fields, accessible text values and paging over every returned row. */
 @Composable

@@ -1,40 +1,48 @@
 package com.mukhtabir.android.ui.quiz
 
-import com.mukhtabir.android.ui.components.AppSection
-
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.Icon
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.mukhtabir.android.ui.components.AppButton as Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.TestMode
-import com.mukhtabir.android.ui.components.ClinicalCaseContext
-import com.mukhtabir.android.ui.components.QuestionLanguageSelector
 import com.mukhtabir.android.data.remote.localizedForDisplay
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppIconButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.BilingualQuestionComparison
+import com.mukhtabir.android.ui.components.ClinicalCaseContext
 import com.mukhtabir.android.ui.components.QuestionImage
+import com.mukhtabir.android.ui.components.QuestionLanguageSelector
+import com.mukhtabir.android.ui.components.QuestionTextCard
+import com.mukhtabir.android.ui.components.performAppHaptic
+import com.mukhtabir.android.ui.components.reflectionLabel
 import java.util.Locale
 
 @Composable
@@ -62,7 +70,7 @@ internal fun QuizQuestionContent(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val flagged = page.index in state.flaggedIndices
                 val flagLabel = stringResource(if (flagged) R.string.flow_unflag else R.string.flow_flag)
-                com.mukhtabir.android.ui.components.AppIconButton(viewModel::toggleFlag, enabled = !state.isLoading,
+                AppIconButton(viewModel::toggleFlag, enabled = !state.isLoading,
                     modifier = Modifier.semantics { selected = flagged; contentDescription = flagLabel }) {
                     Icon(if (flagged) Icons.Filled.Flag else Icons.Outlined.Flag, contentDescription = null)
                 }
@@ -70,17 +78,17 @@ internal fun QuizQuestionContent(
             }
         })
     if (state.flagError) {
-        Text(stringResource(R.string.flow_flag_error), color = MaterialTheme.colorScheme.error)
-        TextButton(viewModel::retryFlags) { Text(stringResource(R.string.retry)) }
+        AppStatus(stringResource(R.string.flow_flag_error))
+        AppTextButton(viewModel::retryFlags) { Text(stringResource(R.string.retry)) }
     }
     ClinicalCaseContext(localized.case)
-    com.mukhtabir.android.ui.components.QuestionTextCard(localized.text, Modifier.fillMaxWidth(),
+    QuestionTextCard(localized.text, Modifier.fillMaxWidth(),
         textStyle = MaterialTheme.typography.titleMedium)
     if (page.question.id in state.bookmarkErrors) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.quiz_bookmark_error), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            TextButton({ viewModel.refreshQuestionBookmark(page.question.id, force = true) },
+            AppStatus(stringResource(R.string.quiz_bookmark_error), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodySmall)
+            AppTextButton({ viewModel.refreshQuestionBookmark(page.question.id, force = true) },
                 enabled = page.question.id !in state.bookmarkBusyIds) { Text(stringResource(R.string.retry)) }
         }
     }
@@ -89,7 +97,7 @@ internal fun QuizQuestionContent(
 
     if (state.mode == TestMode.RECALL && !state.choicesRevealed) {
         Text(stringResource(R.string.recall_instruction))
-        OutlinedTextField(
+        AppTextField(
             value = state.preAnswer,
             onValueChange = viewModel::updatePreAnswer,
             modifier = Modifier.fillMaxWidth(),
@@ -97,39 +105,41 @@ internal fun QuizQuestionContent(
             minLines = 3,
             enabled = !state.isLoading,
         )
-        Button(
+        AppButton(
             onClick = viewModel::revealRecallChoices,
             modifier = Modifier.fillMaxWidth(),
             enabled = state.preAnswer.isNotBlank() && !state.isLoading,
         ) { Text(stringResource(R.string.reveal_choices)) }
     } else {
-        localized.choices.forEachIndexed { index, choice ->
-            val answer = index + 1
-            SelectableButton(
-                selected = state.selectedAnswer == answer,
-                enabled = !state.isLoading && !(state.mode.isLearningMode() && state.showFeedback),
-                onClick = {
-                    if (viewModel.selectAnswer(answer)) {
-                        if (viewModel.soundEnabled) nativeView.playSoundEffect(android.view.SoundEffectConstants.CLICK)
-                        if (viewModel.hapticsEnabled) com.mukhtabir.android.ui.components.performAppHaptic(nativeView)
-                    }
-                },
-                text = choice,
-                choiceNumber = answer,
-                neutralSelection = state.mode == TestMode.EXAM,
-                answerCorrect = when {
-                    !showExplanation -> null
-                    page.question.correctAnswer == answer -> true
-                    state.selectedAnswer == answer -> state.isCorrect
-                    else -> null
-                },
-                markdown = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+        Column(Modifier.fillMaxWidth().selectableGroup(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+            localized.choices.forEachIndexed { index, choice ->
+                val answer = index + 1
+                SelectableButton(
+                    selected = state.selectedAnswer == answer,
+                    enabled = !state.isLoading && !(state.mode.isLearningMode() && state.showFeedback),
+                    onClick = {
+                        if (viewModel.selectAnswer(answer)) {
+                            if (viewModel.soundEnabled) nativeView.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                            if (viewModel.hapticsEnabled) performAppHaptic(nativeView)
+                        }
+                    },
+                    text = choice,
+                    choiceNumber = answer,
+                    neutralSelection = state.mode == TestMode.EXAM,
+                    answerCorrect = when {
+                        !showExplanation -> null
+                        page.question.correctAnswer == answer -> true
+                        state.selectedAnswer == answer -> state.isCorrect
+                        else -> null
+                    },
+                    markdown = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 
-    if (state.mode.isLearningMode()) com.mukhtabir.android.ui.components.BilingualQuestionComparison(
+    if (state.mode.isLearningMode()) BilingualQuestionComparison(
         com.mukhtabir.android.data.remote.QuestionDto(id = page.question.id, question = page.question.text,
             choices = page.question.choices, translations = page.question.translations, case = page.question.case,
             explanation = state.explanation ?: page.question.explanation),
@@ -151,10 +161,10 @@ internal fun QuizQuestionContent(
                     2 -> R.string.confidence_uncertain
                     else -> R.string.confidence_certain
                 }) }) {
-                QuizSelectionRow {
-                    ConfidenceButton(1, R.string.confidence_guessing, state, viewModel)
-                    ConfidenceButton(2, R.string.confidence_uncertain, state, viewModel)
-                    ConfidenceButton(3, R.string.confidence_certain, state, viewModel)
+                QuizSelectionRow(Modifier.selectableGroup()) {
+                    ConfidenceButton(1, R.string.confidence_guessing, state.confidence, !state.isLoading, viewModel::selectConfidence)
+                    ConfidenceButton(2, R.string.confidence_uncertain, state.confidence, !state.isLoading, viewModel::selectConfidence)
+                    ConfidenceButton(3, R.string.confidence_certain, state.confidence, !state.isLoading, viewModel::selectConfidence)
                 }
             }
         }
@@ -163,13 +173,8 @@ internal fun QuizQuestionContent(
     if (state.mode.isLearningMode() && state.isCorrect == false) {
         androidx.compose.runtime.key(page.question.id) {
             AppSection(stringResource(R.string.reflection_title),
-                subtitle = stringResource(when (state.errorReason ?: "unknown") {
-                    "misread" -> R.string.reflection_misread
-                    "confused" -> R.string.reflection_confused
-                    "guessed" -> R.string.reflection_guessed
-                    else -> R.string.reflection_unknown
-                })) {
-                ReflectionButtons(viewModel, state.isLoading || state.errorReason != null, state.errorReason ?: "unknown")
+                subtitle = reflectionLabel(state.errorReason ?: "unknown")) {
+                ReflectionButtons(state.isLoading || state.errorReason != null, state.errorReason ?: "unknown", viewModel::recordReflection)
             }
         }
     }
@@ -180,28 +185,31 @@ internal fun QuizQuestionContent(
 private fun ConfidenceButton(
     value: Int,
     label: Int,
-    state: QuizUiState,
-    viewModel: QuizViewModel,
+    confidence: Int?,
+    enabled: Boolean,
+    onSelect: (Int) -> Unit,
 ) {
     SelectableButton(
-        selected = state.confidence == value,
-        enabled = !state.isLoading,
-        onClick = { viewModel.selectConfidence(value) },
+        selected = confidence == value,
+        enabled = enabled,
+        onClick = { onSelect(value) },
         text = stringResource(label),
     )
 }
 
 @Composable
-private fun ReflectionButtons(viewModel: QuizViewModel, disabled: Boolean, selectedReason: String) {
+private fun ReflectionButtons(disabled: Boolean, selectedReason: String, onSelect: (String) -> Unit) {
     val reasons = listOf(
         "unknown" to R.string.reflection_unknown,
         "misread" to R.string.reflection_misread,
         "confused" to R.string.reflection_confused,
         "guessed" to R.string.reflection_guessed,
     )
-    reasons.forEach { (reason, label) ->
-        SelectableButton(selected = selectedReason == reason, enabled = !disabled,
-            onClick = { viewModel.recordReflection(reason) }, text = stringResource(label),
-            modifier = Modifier.fillMaxWidth())
+    Column(Modifier.fillMaxWidth().selectableGroup()) {
+        reasons.forEach { (reason, label) ->
+            SelectableButton(selected = selectedReason == reason, enabled = !disabled,
+                onClick = { onSelect(reason) }, text = stringResource(label),
+                modifier = Modifier.fillMaxWidth())
+        }
     }
 }

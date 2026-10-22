@@ -1,11 +1,11 @@
 package com.mukhtabir.android.ui.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,27 +29,28 @@ fun AnswerChoice(number: Int, text: String, modifier: Modifier = Modifier,
     answerCorrect: Boolean? = null, neutralSelection: Boolean = false,
     markdown: Boolean = true, accessibilityLabel: String? = null, interactiveText: Boolean = false,
     reviewMode: Boolean = false) {
+    val visual = ChoiceVisualState.from(selected, answerCorrect, neutralSelection, reviewMode)
     QuestionChoiceCard(modifier.semantics {
         this.selected = selected
         accessibilityLabel?.let { contentDescription = it }
     },
-        selected, enabled, onClick, answerCorrect, neutralSelection) {
+        visual, enabled, onClick) {
         Text("\u2066${formatNumber(number)}.\u2069",
-            Modifier.width(AppLayoutTokens.choiceNumberWidth * LocalDensity.current.fontScale),
+            Modifier.width(AppPresentationGeometry.choiceNumberWidth * LocalDensity.current.fontScale),
             style = MaterialTheme.typography.bodyLarge)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
             ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
                 if (markdown) MarkdownText(text, interactive = interactiveText)
                 else Text(text, style = com.mukhtabir.android.ui.theme.readingTextStyle(MaterialTheme.typography.bodyLarge))
             }
-            val answerLabel = when {
-                selected && answerCorrect == true -> listOf(
+            val answerLabel = when (visual) {
+                ChoiceVisualState.SELECTED_CORRECT -> listOf(
                     stringResource(R.string.quiz_your_choice),
                     stringResource(R.string.answer_status_correct),
                 ).joinToString(" · ")
-                answerCorrect == true -> stringResource(R.string.answer_status_correct)
-                selected && answerCorrect == false -> stringResource(R.string.quiz_your_wrong_choice)
-                selected && reviewMode -> stringResource(R.string.quiz_your_choice)
+                ChoiceVisualState.CORRECT -> stringResource(R.string.answer_status_correct)
+                ChoiceVisualState.SELECTED_INCORRECT -> stringResource(R.string.quiz_your_wrong_choice)
+                ChoiceVisualState.REVIEWED_SELECTED -> stringResource(R.string.quiz_your_choice)
                 else -> null
             }
             answerLabel?.let { label ->
@@ -73,12 +74,8 @@ fun AnswerChoice(number: Int, text: String, modifier: Modifier = Modifier,
 @Composable
 fun AppSaveStatus(message: String, modifier: Modifier = Modifier, failed: Boolean = false,
     action: (@Composable () -> Unit)? = null) {
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
-        Text(message, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall,
-            color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
-        action?.invoke()
-    }
+    AppStatus(message, modifier, kind = if (failed) AppStatusKind.ERROR else AppStatusKind.INFO,
+        style = MaterialTheme.typography.bodySmall, action = action)
 }
 
 @Composable
@@ -86,8 +83,7 @@ fun AppRecoveryPanel(message: String? = null, throwable: Throwable? = null,
     modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null, retryEnabled: Boolean = true,
     actions: (@Composable () -> Unit)? = null) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
-        message?.let { Text(it, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            style = MaterialTheme.typography.bodyMedium) }
+        message?.let { AppStatus(it, kind = AppStatusKind.WARNING) }
         throwable?.let { ErrorState(throwable = it) }
         if (onRetry != null) AppOutlinedButton(onRetry, enabled = retryEnabled) { Text(stringResource(R.string.retry)) }
         actions?.invoke()
@@ -101,7 +97,9 @@ fun AppConfirmationDialog(onDismissRequest: () -> Unit, confirmButton: @Composab
     title: (@Composable () -> Unit)? = null, text: (@Composable () -> Unit)? = null,
     icon: (@Composable () -> Unit)? = null) {
     val heading: (@Composable () -> Unit)? = title?.let { content ->
-        { ProvideTextStyle(MaterialTheme.typography.titleMedium) { content() } }
+        { androidx.compose.foundation.layout.Box(Modifier.semantics(mergeDescendants = true) { heading() }) {
+            ProvideTextStyle(MaterialTheme.typography.titleMedium) { content() }
+        } }
     }
     val body: (@Composable () -> Unit)? = text?.let { content ->
         { Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
@@ -109,7 +107,7 @@ fun AppConfirmationDialog(onDismissRequest: () -> Unit, confirmButton: @Composab
         } }
     }
     AlertDialog(onDismissRequest, confirmButton, modifier = modifier, dismissButton = dismissButton,
-        title = heading, text = body, icon = icon, shape = MaterialTheme.shapes.medium)
+        title = heading, text = body, icon = icon, shape = MaterialTheme.shapes.large)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,7 +189,7 @@ fun AppMetricRow(label: String, value: String, modifier: Modifier = Modifier) {
 fun AppProgressMetric(label: String, value: Int, total: Int, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
         AppMetricRow(label, "${formatNumber(value)} / ${formatNumber(total)}")
-        LinearProgressIndicator(progress = if (total > 0) (value.toFloat() / total).coerceIn(0f, 1f) else 0f,
+        AppProgressBar(progress = if (total > 0) (value.toFloat() / total).coerceIn(0f, 1f) else 0f,
             modifier = Modifier.fillMaxWidth())
     }
 }
@@ -210,17 +208,6 @@ fun AppSectionHeading(title: String, modifier: Modifier = Modifier, subtitle: St
     }
 }
 
-@Composable
-fun AppPendingSessionCard(title: String, modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit) {
-    AppCard(modifier.fillMaxWidth()) {
-        AppCardBody {
-            AppSectionHeading(title)
-            content()
-        }
-    }
-}
-
 /** One width policy prevents each screen inventing incompatible breakpoints. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -230,9 +217,9 @@ fun AppTileGrid(count: Int, modifier: Modifier = Modifier,
     val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
     val gap = AppLayoutTokens.controlGap
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val columns = ((maxWidth + gap) / (AppLayoutTokens.tileMinWidth * scale + gap)).toInt()
-            .coerceIn(1, minOf(count, AppLayoutTokens.tileMaxColumns))
-        val tileWidth = ((maxWidth - gap * (columns - 1)) / columns - AppLayoutTokens.tileWidthAllowance).coerceAtLeast(0.dp)
+        val columns = ((maxWidth + gap) / (AppPresentationGeometry.tileMinWidth * scale + gap)).toInt()
+            .coerceIn(1, minOf(count, AppPresentationGeometry.tileMaxColumns))
+        val tileWidth = ((maxWidth - gap * (columns - 1)) / columns - AppPresentationGeometry.tileWidthAllowance).coerceAtLeast(0.dp)
         FlowRow(Modifier.fillMaxWidth(), maxItemsInEachRow = columns,
             horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(gap)) {
@@ -266,4 +253,11 @@ fun AppMetricTile(value: String, label: String, modifier: Modifier = Modifier,
         border = border, content = body)
     else Surface(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget),
         shape = MaterialTheme.shapes.medium, color = container, border = border, content = body)
+}
+
+private object AppPresentationGeometry {
+    val choiceNumberWidth = 24.dp
+    const val tileMaxColumns = 3
+    val tileMinWidth = 112.dp
+    val tileWidthAllowance = .5.dp
 }

@@ -2,6 +2,7 @@
 
 package com.mukhtabir.android.ui.quiz
 
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,11 +45,11 @@ internal fun BookContentsDialog(state: QuizUiState, viewModel: QuizViewModel, on
                 if (state.bookFiltersLoading) AppLoadingIndicator()
                 state.bookFiltersError?.let { ErrorState(throwable = it, onRetry = if (state.bookFiltersLoading) null else viewModel::refreshBookFilters) }
                 if (facetsReady) {
-                    Text(stringResource(R.string.select_categories), style = MaterialTheme.typography.titleSmall)
+                    AppSectionHeading(stringResource(R.string.select_categories))
                     if (state.bookCategories.isEmpty()) Text(stringResource(R.string.quiz_book_no_categories))
                     AppActionRow { state.bookCategories.forEach { category -> AppFilterChip(category.id in state.selectedCategoryIds,
                         { viewModel.toggleCategory(category.id) }, enabled = !state.isLoading, label = { Text(category.name) }) } }
-                    Text(stringResource(R.string.ux_tags_any), style = MaterialTheme.typography.titleSmall)
+                    AppSectionHeading(stringResource(R.string.ux_tags_any))
                     if (state.bookTags.isEmpty()) Text(stringResource(R.string.quiz_book_no_tags))
                     AppActionRow { state.bookTags.forEach { tag -> AppFilterChip(tag.name in state.selectedTags,
                         { viewModel.toggleTag(tag.name) }, enabled = !state.isLoading, label = { Text(tag.name + " · " + formatNumber(tag.count)) }) } }

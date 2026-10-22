@@ -1,56 +1,39 @@
 package com.mukhtabir.android.ui.quiz
 
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.theme.AppTheme
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
-import com.mukhtabir.android.core.SessionDraftStore
 import com.mukhtabir.android.core.QuizPresetHolder
+import com.mukhtabir.android.core.SessionDraftStore
 import com.mukhtabir.android.data.remote.BlueprintService
 import com.mukhtabir.android.data.remote.BookmarkService
 import com.mukhtabir.android.data.remote.CategoryService
@@ -58,7 +41,24 @@ import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.data.remote.TestSessionService
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppRecoveryPanel
+import com.mukhtabir.android.ui.components.AppSaveStatus
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.PracticeLauncher
+import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
@@ -94,26 +94,26 @@ fun QuizRoute(
             imageRepository,
         ),
     )
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsLifecycleState()
     var confirmFinishRecovery by remember { mutableStateOf(false) }
     var confirmRecoveredFinish by remember { mutableStateOf(false) }
     var confirmDiscardFinishStorage by remember { mutableStateOf(false) }
-    if(confirmDiscardFinishStorage) AlertDialog(onDismissRequest={confirmDiscardFinishStorage=false},
+    if(confirmDiscardFinishStorage) AppConfirmationDialog(onDismissRequest={confirmDiscardFinishStorage=false},
         title={Text(stringResource(R.string.quiz_finish_recovery_title))},
         text={Text(stringResource(R.string.quiz_finish_storage_discard))},
         confirmButton={AppDangerTextButton({confirmDiscardFinishStorage=false;viewModel.discardUnreadableFinishRecovery()},enabled=!state.isLoading) { Text(stringResource(R.string.ux_discard_finish_recovery)) }},
-        dismissButton={TextButton({confirmDiscardFinishStorage=false}) { Text(stringResource(R.string.cancel)) }})
-    if(confirmFinishRecovery) AlertDialog(onDismissRequest={confirmFinishRecovery=false},
+        dismissButton={AppTextButton({confirmDiscardFinishStorage=false}) { Text(stringResource(R.string.cancel)) }})
+    if(confirmFinishRecovery) AppConfirmationDialog(onDismissRequest={confirmFinishRecovery=false},
         title={Text(stringResource(R.string.quiz_finish_recovery_title))},
         text={Text(stringResource(R.string.quiz_finish_review_confirm))},
-        confirmButton={TextButton({confirmFinishRecovery=false;viewModel.acknowledgeFinishRecovery()},enabled=!state.isLoading) { Text(stringResource(R.string.quiz_finish_review_done)) }},
-        dismissButton={TextButton({confirmFinishRecovery=false}) { Text(stringResource(R.string.cancel)) }})
-    if(confirmRecoveredFinish) AlertDialog(onDismissRequest={confirmRecoveredFinish=false},
+        confirmButton={AppTextButton({confirmFinishRecovery=false;viewModel.acknowledgeFinishRecovery()},enabled=!state.isLoading) { Text(stringResource(R.string.quiz_finish_review_done)) }},
+        dismissButton={AppTextButton({confirmFinishRecovery=false}) { Text(stringResource(R.string.cancel)) }})
+    if(confirmRecoveredFinish) AppConfirmationDialog(onDismissRequest={confirmRecoveredFinish=false},
         title={Text(stringResource(R.string.finish_session_title))},
         text={Text(stringResource(R.string.finish_session_message))},
-        confirmButton={TextButton({confirmRecoveredFinish=false;viewModel.finish()},enabled=!state.isLoading && !state.recoveryRequired) { Text(stringResource(R.string.finish_session_action)) }},
-        dismissButton={TextButton({confirmRecoveredFinish=false}) { Text(stringResource(R.string.cancel)) }})
-    val display by preferences.display.collectAsState()
+        confirmButton={AppTextButton({confirmRecoveredFinish=false;viewModel.finish()},enabled=!state.isLoading && !state.recoveryRequired) { Text(stringResource(R.string.finish_session_action)) }},
+        dismissButton={AppTextButton({confirmRecoveredFinish=false}) { Text(stringResource(R.string.cancel)) }})
+    val display by preferences.display.collectAsLifecycleState()
     val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     var foreground by remember { mutableStateOf(owner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) }
     DisposableEffect(owner) {
@@ -136,7 +136,7 @@ fun QuizRoute(
         viewModel.applyMaxQuizQuestions(maxQuizQuestions)
     }
     LaunchedEffect(canUseBlueprint) {viewModel.configureBlueprintPermission(canUseBlueprint)}
-    com.mukhtabir.android.ui.components.RefreshOnResume {viewModel.refreshMetadata()}
+    RefreshOnResume {viewModel.refreshMetadata()}
     LaunchedEffect(Unit) { if (!state.setupLoaded && !state.isLoading) viewModel.initialize() }
     val sessionActive = state.session != null && state.results == null
     val focusManager = LocalFocusManager.current
@@ -160,25 +160,25 @@ fun QuizRoute(
     BackHandler {
         if (sessionActive) confirmPause = true else viewModel.pauseAndExit(onBack)
     }
-    if (confirmPause && sessionActive) AlertDialog(
+    if (confirmPause && sessionActive) AppConfirmationDialog(
         onDismissRequest = { if (!state.isLoading && !state.syncing) confirmPause = false },
         title = { Text(stringResource(R.string.session_pause_title)) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
             Text(stringResource(if (state.locallyFinished) R.string.offline_finish_leave
                 else if (state.queuedAnswers > 0) R.string.session_pause_sync_first else R.string.session_pause_message))
-            if (state.syncing) com.mukhtabir.android.ui.components.AppSaveStatus(stringResource(R.string.quiz_syncing))
+            if (state.syncing) AppSaveStatus(stringResource(R.string.quiz_syncing))
             if (state.syncError != null || state.error != null) ErrorState(throwable=state.syncError,message=state.error)
             if (!sessionUi.canRequestPause && !state.isLoading && !state.syncing) {
                 Text(stringResource(R.string.session_pause_recovery_required))
             }
         } },
         confirmButton = {
-            TextButton({ viewModel.pauseAndExit { confirmPause = false; onBack() } }, enabled = sessionUi.canRequestPause) {
+            AppTextButton({ viewModel.pauseAndExit { confirmPause = false; onBack() } }, enabled = sessionUi.canRequestPause) {
                 Text(stringResource(if(state.queuedAnswers>0 && !state.locallyFinished)
                     R.string.session_sync_pause_leave else R.string.pause_and_leave))
             }
         },
-        dismissButton = { TextButton({ confirmPause = false },enabled=!state.isLoading && !state.syncing) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { AppTextButton({ confirmPause = false },enabled=!state.isLoading && !state.syncing) { Text(stringResource(R.string.cancel)) } },
     )
 
     // Consume any preset dropped by the Home / Mistakes / Fragile
@@ -189,20 +189,20 @@ fun QuizRoute(
     // re-created) by the tab-navigation save/restore pattern.
     var retryLaunch by remember { mutableStateOf(false) }
     if (retryLaunch) state.launchPreset?.let { pending ->
-        com.mukhtabir.android.ui.components.PracticeLauncher(pending.sessionLabel, pending.questionIds, state.maxQuizQuestions,
+        PracticeLauncher(pending.sessionLabel, pending.questionIds, state.maxQuizQuestions,
             enabled = !state.isLoading && !state.recoveryRequired && state.resumable == null && state.session == null,
             initialMode = pending.mode, onDismiss = { retryLaunch = false }, onStart = { mode, ids, title ->
                 retryLaunch = false; viewModel.startPreset(com.mukhtabir.android.core.QuizPreset(mode, ids, title))
             })
     }
-    val pendingSetupMode by quizPresetHolder.setupMode.collectAsState()
+    val pendingSetupMode by quizPresetHolder.setupMode.collectAsLifecycleState()
     LaunchedEffect(pendingSetupMode, state.setupLoaded, state.isLoading, state.recoveryRequired, state.session, state.results, state.pendingDraft, state.draftStorageFailed) {
         if (pendingSetupMode != null && state.setupLoaded && !state.isLoading && !state.recoveryRequired &&
             state.session == null && state.results == null && state.pendingDraft == null && !state.draftStorageFailed) {
             quizPresetHolder.consumeSetupMode()?.let(viewModel::setMode)
         }
     }
-    val pendingPreset by quizPresetHolder.preset.collectAsState()
+    val pendingPreset by quizPresetHolder.preset.collectAsLifecycleState()
     LaunchedEffect(pendingPreset, state.setupLoaded, state.isLoading, state.recoveryRequired, state.session, state.results, state.pendingDraft, state.draftStorageFailed) {
         if (pendingPreset != null && state.setupLoaded && !state.isLoading && !state.recoveryRequired
             && state.session == null && state.results == null && state.pendingDraft == null && !state.draftStorageFailed) {
@@ -217,10 +217,10 @@ fun QuizRoute(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.pageInsets),
-        verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap),
+            .padding(AppLayoutTokens.pageInsets),
+        verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
     ) {
-        if (sessionActive) SessionHeader(sessionUi) {
+        if (sessionActive) SessionHeader(sessionUi, viewModel.clock) {
             SessionToolsMenu(state, sessionUi, viewModel, preferences, onPause = { confirmPause = true })
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -229,25 +229,24 @@ fun QuizRoute(
             verticalArrangement = Arrangement.spacedBy(if (sessionActive) AppTheme.spacing.content else AppTheme.spacing.section),
         ) {
             state.syncConflict?.let { conflict ->
-                Text(stringResource(R.string.session_sync_conflict, conflict.index + 1,
-                    state.syncConflictAnswer ?: 0, conflict.savedAnswer ?: 0))
+                Text(stringResource(R.string.session_sync_conflict, com.mukhtabir.android.util.formatNumber(conflict.index + 1), com.mukhtabir.android.util.formatNumber(state.syncConflictAnswer ?: 0), com.mukhtabir.android.util.formatNumber(conflict.savedAnswer ?: 0)))
                 QuizSelectionRow {
-                    OutlinedButton(onClick = { viewModel.resolveDownloadedConflict(true) }, enabled = !state.isLoading) {
+                    AppOutlinedButton(onClick = { viewModel.resolveDownloadedConflict(true) }, enabled = !state.isLoading) {
                         Text(stringResource(R.string.session_keep_device))
                     }
-                    OutlinedButton(onClick = { viewModel.resolveDownloadedConflict(false) }, enabled = !state.isLoading) {
+                    AppOutlinedButton(onClick = { viewModel.resolveDownloadedConflict(false) }, enabled = !state.isLoading) {
                         Text(stringResource(R.string.session_keep_server))
                     }
                 }
             }
             if (sessionActive && state.draftStorageFailed && state.pendingDraft == null) {
-                com.mukhtabir.android.ui.components.AppRecoveryPanel(
+                AppRecoveryPanel(
                     message=stringResource(R.string.quiz_finish_storage_error),
                     onRetry=viewModel::retryDownloadedStorage,retryEnabled=!state.isLoading)
             }
             if (sessionActive && state.mode != TestMode.RECALL) {
                 if (!state.downloaded) {
-                    com.mukhtabir.android.ui.components.AppRecoveryPanel(
+                    AppRecoveryPanel(
                         message=stringResource(R.string.session_download_required),
                         onRetry={viewModel.downloadSession()},retryEnabled=!state.isLoading && !state.draftStorageFailed)
                 } else {
@@ -266,21 +265,20 @@ fun QuizRoute(
             if (state.locallyFinished) Text(stringResource(R.string.offline_finished_session),
                 style = MaterialTheme.typography.bodySmall)
             if (state.error != null || state.hasUnknownError) {
-                Text(
+                AppStatus(
                     state.error ?: stringResource(R.string.error_unknown),
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    color = MaterialTheme.colorScheme.error,
                 )
                 if (state.recoveryRequired) Text(stringResource(R.string.session_recovery_required))
                 if (state.recoveryRequired || (state.questionPage == null && state.results == null)) {
-                    OutlinedButton(onClick = viewModel::initialize, enabled = !state.isLoading) {
+                    AppOutlinedButton(onClick = viewModel::initialize, enabled = !state.isLoading) {
                         Text(stringResource(R.string.retry))
                     }
                 }
             }
 
             if(state.finishStorageFailed) {
-                com.mukhtabir.android.ui.components.AppRecoveryPanel(
+                AppRecoveryPanel(
                     message=stringResource(R.string.quiz_finish_storage_error),
                     onRetry=viewModel::retryFinishStorage,retryEnabled=!state.isLoading)
                 if(state.finishRecovery==null) AppDangerOutlinedButton({confirmDiscardFinishStorage=true},enabled=!state.isLoading) {
@@ -288,22 +286,22 @@ fun QuizRoute(
                 }
             }
             if(state.finishPending) {
-                Text(stringResource(R.string.quiz_finish_recovery_title),style=MaterialTheme.typography.titleMedium)
+                AppSectionHeading(stringResource(R.string.quiz_finish_recovery_title))
                 Text(stringResource(if(state.finishStatusChecked && state.finishedSessionMissing)
                     R.string.quiz_finish_session_missing else R.string.quiz_finish_uncertain))
-                OutlinedButton(viewModel::initialize,enabled=!state.isLoading) { Text(stringResource(R.string.refresh)) }
+                AppOutlinedButton(viewModel::initialize,enabled=!state.isLoading) { Text(stringResource(R.string.refresh)) }
                 onOpenHistory?.let { history ->
-                    OutlinedButton(history,enabled=!state.isLoading) { Text(stringResource(R.string.history)) }
+                    AppOutlinedButton(history,enabled=!state.isLoading) { Text(stringResource(R.string.history)) }
                 }
-                if(state.finishStatusChecked && !state.finishStorageFailed) OutlinedButton({confirmFinishRecovery=true},enabled=!state.isLoading) {
+                if(state.finishStatusChecked && !state.finishStorageFailed) AppOutlinedButton({confirmFinishRecovery=true},enabled=!state.isLoading) {
                     Text(stringResource(R.string.quiz_finish_review_done))
                 }
             }
             if(state.session!=null && state.questionPage==null && !state.finishStorageFailed && !state.finishPending && !state.recoveryRequired && state.results==null) {
-                OutlinedButton({confirmRecoveredFinish=true},enabled=!state.isLoading) { Text(stringResource(R.string.finish)) }
+                AppOutlinedButton({confirmRecoveredFinish=true},enabled=!state.isLoading) { Text(stringResource(R.string.finish)) }
             }
             if (state.draftStorageFailed) {
-                com.mukhtabir.android.ui.components.AppRecoveryPanel(
+                AppRecoveryPanel(
                     message=stringResource(R.string.session_draft_storage_error),
                     onRetry=viewModel::retryDraftStorage,retryEnabled=!state.isLoading)
                 if (state.pendingDraft == null) {
@@ -313,19 +311,19 @@ fun QuizRoute(
                     AppDangerOutlinedButton({ confirmUnreadableDiscard = true }, enabled = !state.isLoading) {
                         Text(stringResource(R.string.ux_discard_answer_draft))
                     }
-                    if (confirmUnreadableDiscard) AlertDialog(
+                    if (confirmUnreadableDiscard) AppConfirmationDialog(
                         onDismissRequest = { confirmUnreadableDiscard = false },
                         title = { Text(stringResource(R.string.session_draft_discard_title)) },
                         text = { Text(stringResource(R.string.session_draft_discard_message)) },
                         confirmButton = { AppDangerTextButton({ confirmUnreadableDiscard = false; viewModel.discardLocalDraft() }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_answer_draft)) } },
-                        dismissButton = { TextButton({ confirmUnreadableDiscard = false }) { Text(stringResource(R.string.cancel)) } },
+                        dismissButton = { AppTextButton({ confirmUnreadableDiscard = false }) { Text(stringResource(R.string.cancel)) } },
                     )
                 }
             }
             state.pendingDraft?.takeIf { !state.isLoading }?.let { draft ->
                 var confirmDiscard by rememberSaveable(draft.sessionId, draft.index) { mutableStateOf(false) }
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                AppCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                         Text(stringResource(R.string.session_draft_title), modifier = Modifier.semantics { heading() })
                         Text(stringResource(when {
                             state.recoveryRequired -> R.string.session_recovery_required
@@ -336,24 +334,24 @@ fun QuizRoute(
                         }))
                         draft.answer?.let { Text(stringResource(R.string.your_answer, it.toString())) }
                         if (draft.preAnswer.isNotBlank()) Text(draft.preAnswer)
-                        if (state.draftCanRetry) Button(viewModel::retryPendingDraft,
+                        if (state.draftCanRetry) AppButton(viewModel::retryPendingDraft,
                             enabled = !state.isLoading && !state.recoveryRequired && !state.draftStorageFailed) { Text(stringResource(R.string.retry)) }
                         AppDangerOutlinedButton({ confirmDiscard = true }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_answer_draft)) }
                     }
                 }
-                if (confirmDiscard) AlertDialog(onDismissRequest = { confirmDiscard = false },
+                if (confirmDiscard) AppConfirmationDialog(onDismissRequest = { confirmDiscard = false },
                     title = { Text(stringResource(R.string.session_draft_discard_title)) },
                     text = { Text(stringResource(R.string.session_draft_discard_message)) },
                     confirmButton = { AppDangerTextButton({ confirmDiscard = false; viewModel.discardLocalDraft() }, enabled = !state.isLoading) { Text(stringResource(R.string.ux_discard_answer_draft)) } },
-                    dismissButton = { TextButton({ confirmDiscard = false }) { Text(stringResource(R.string.cancel)) } },
+                    dismissButton = { AppTextButton({ confirmDiscard = false }) { Text(stringResource(R.string.cancel)) } },
                 )
             }
 
             if (state.launchPreset != null && state.session == null && state.results == null) {
                 Text(stringResource(R.string.flow_target_retained))
                 QuizSelectionRow {
-                    OutlinedButton({ retryLaunch = true }, enabled = !state.isLoading && !state.recoveryRequired && state.resumable == null) { Text(stringResource(R.string.flow_practice)) }
-                    TextButton(viewModel::discardLaunchPreset, enabled = !state.isLoading) { Text(stringResource(R.string.ux_clear_practice_selection)) }
+                    AppOutlinedButton({ retryLaunch = true }, enabled = !state.isLoading && !state.recoveryRequired && state.resumable == null) { Text(stringResource(R.string.flow_practice)) }
+                    AppTextButton(viewModel::discardLaunchPreset, enabled = !state.isLoading) { Text(stringResource(R.string.ux_clear_practice_selection)) }
                 }
             }
             when {

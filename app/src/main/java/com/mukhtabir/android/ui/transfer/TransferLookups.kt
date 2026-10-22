@@ -1,11 +1,6 @@
 package com.mukhtabir.android.ui.transfer
 
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -17,6 +12,11 @@ import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.AdminService
 import com.mukhtabir.android.data.remote.UserDto
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ErrorState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -46,14 +46,14 @@ internal fun AuthorUserLookup(admin: AdminService, enabled: Boolean, pageSize: I
             finally { busy = false }
         }
     }
-    OutlinedTextField(query, { query = it }, enabled = enabled && !busy, label = { Text(stringResource(R.string.search)) })
-    OutlinedButton({ search(1) }, enabled = enabled && !busy) { Text(stringResource(R.string.search)) }
+    AppTextField(query, { query = it }, enabled = enabled && !busy, label = { Text(stringResource(R.string.search)) })
+    AppOutlinedButton({ search(1) }, enabled = enabled && !busy) { Text(stringResource(R.string.search)) }
     if (busy) AppLoadingIndicator()
     error?.let { ErrorState(throwable = it, onRetry = if (busy || !enabled) null else ({ search(page) })) }
     if (!busy && error == null) rows.forEach { person ->
-        TextButton({ if (enabled) pick(person) }, enabled = enabled) { Text(person.displayName + " (@" + person.username + ")") }
+        AppTextButton({ if (enabled) pick(person) }, enabled = enabled) { Text(person.displayName + " (@" + person.username + ")") }
     }
-    com.mukhtabir.android.ui.components.AppPagination(page, totalPages,
+    AppPagination(page, totalPages,
         onPrevious = { search(page - 1) }, onNext = { search(page + 1) },
         previousEnabled = enabled && !busy && error == null, nextEnabled = enabled && !busy && error == null)
 }

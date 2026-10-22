@@ -1,28 +1,28 @@
 package com.mukhtabir.android.ui.components
 
-import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
-import com.mukhtabir.android.ui.components.AppOutlinedButton as Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.userMessage
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.theme.AppTheme
 
 /**
  * Error state with a message and an optional retry button.
@@ -73,7 +73,7 @@ fun ErrorState(
             textAlign = TextAlign.Center,
         )
         if (onRetry != null) {
-            Button(onClick = onRetry) {
+            AppOutlinedButton(onClick = onRetry) {
                 Text(stringResource(R.string.retry))
             }
         }

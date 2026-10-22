@@ -1,6 +1,7 @@
 package com.mukhtabir.android.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
@@ -19,14 +19,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
@@ -64,11 +64,12 @@ fun ExplanationCard(text: String, modifier: Modifier = Modifier, title: String? 
 
 /** Only presentation and whole-choice selection; the caller owns all write guards. */
 @Composable
-fun QuestionChoiceCard(modifier: Modifier = Modifier, selected: Boolean = false,
+fun QuestionChoiceCard(modifier: Modifier = Modifier, visualState: ChoiceVisualState = ChoiceVisualState.PLAIN,
     enabled: Boolean = true, onClick: (() -> Unit)? = null,
-    answerCorrect: Boolean? = null,
-    neutralSelection: Boolean = false,
     content: @Composable RowScope.() -> Unit) {
+    val selected = visualState.selected
+    val answerCorrect = visualState.correctness
+    val neutralSelection = visualState == ChoiceVisualState.NEUTRAL_SELECTED
     val colors = AppTheme.questionSurfaces
     val scheme = MaterialTheme.colorScheme
     val interactionSource = remember { MutableInteractionSource() }
@@ -99,9 +100,10 @@ fun QuestionChoiceCard(modifier: Modifier = Modifier, selected: Boolean = false,
 }
 
 /** Richer feedback outlines without changing theme colors or subtle choice fills. */
-private fun Color.saturatedAnswerBorder(): Color {
+@Composable
+private fun Color.saturatedAnswerBorder(): Color = remember(this) {
     val hsv = FloatArray(3)
     android.graphics.Color.colorToHSV(toArgb(), hsv)
     hsv[1] = (hsv[1] + .20f).coerceAtMost(1f)
-    return Color(android.graphics.Color.HSVToColor(hsv)).copy(alpha = alpha)
+    Color(android.graphics.Color.HSVToColor(hsv)).copy(alpha = alpha)
 }

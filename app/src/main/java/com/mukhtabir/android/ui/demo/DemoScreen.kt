@@ -8,9 +8,9 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 
@@ -188,7 +189,7 @@ fun DemoScreen(onExit: () -> Unit) {
                         if (session.mode == DemoMode.RECALL) {
                             if (index !in session.revealed && active) {
                                 Text(stringResource(R.string.demo_recall_prompt))
-                                OutlinedTextField(session.recalled[index], { value -> session = session.copy(recalled = session.recalled.mapIndexed { i, old -> if (i == index) value else old }) },
+                                AppTextField(session.recalled[index], { value -> session = session.copy(recalled = session.recalled.mapIndexed { i, old -> if (i == index) value else old }) },
                                     Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.demo_recalled)) })
                                 AppButton({ session = session.copy(revealed = session.revealed + index); focus.clearFocus() }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_reveal)) }
                             } else if (session.recalled[index].isNotBlank()) {

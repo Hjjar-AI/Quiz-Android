@@ -1,12 +1,13 @@
 package com.mukhtabir.android.ui.quiz
 
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,8 +26,9 @@ import com.mukhtabir.android.data.remote.SessionResultItemDto
 import com.mukhtabir.android.data.remote.SessionResultsDto
 import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.ui.components.*
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.util.formatNumber
 
 @Composable
@@ -46,7 +48,7 @@ internal fun QuizResultsContent(
     onDone: () -> Unit,
 ) {
     var practiceIds by remember { mutableStateOf<List<Long>?>(null) }
-    practiceIds?.let { ids -> com.mukhtabir.android.ui.components.PracticeLauncher(stringResource(R.string.results), ids,
+    practiceIds?.let { ids -> PracticeLauncher(stringResource(R.string.results), ids,
         maximum, enabled = canPractice, onDismiss = { practiceIds = null },
         onStart = { mode, selected, label -> practiceIds = null; onPractice(mode, selected, label) }) }
     var reviewFilter by rememberSaveable(results.sourceSessionId, results.historyId) { mutableStateOf(ReviewFilter.ALL) }
@@ -54,28 +56,27 @@ internal fun QuizResultsContent(
     ResultsOverview(results)
     if (results.reviewWithheld) {
         Text(stringResource(R.string.quiz_review_withheld))
-        if (reviewFailed) Text(reviewError ?: stringResource(R.string.quiz_review_read_failed),
-            color = MaterialTheme.colorScheme.error)
-        OutlinedButton(onClick = onRefreshReview, enabled = !reviewLoading,
+        if (reviewFailed) AppStatus(reviewError ?: stringResource(R.string.quiz_review_read_failed))
+        AppOutlinedButton(onClick = onRefreshReview, enabled = !reviewLoading,
             modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.quiz_refresh_review)) }
     } else {
-        val incorrect = results.results.filter { it.userAnswer != null && !it.isCorrect }.map { it.questionId }.filter { it > 0 }.distinct()
-        val unanswered = results.results.filter { it.userAnswer == null }.map { it.questionId }.filter { it > 0 }.distinct()
+        val incorrect = remember(results) { results.results.filter { it.userAnswer != null && !it.isCorrect }.map { it.questionId }.filter { it > 0 }.distinct() }
+        val unanswered = remember(results) { results.results.filter { it.userAnswer == null }.map { it.questionId }.filter { it > 0 }.distinct() }
         QuizSelectionRow {
-            if (incorrect.isNotEmpty()) OutlinedButton({ practiceIds = incorrect }, enabled = canPractice) { Text(stringResource(R.string.flow_incorrect)) }
-            if (unanswered.isNotEmpty()) OutlinedButton({ practiceIds = unanswered }, enabled = canPractice) { Text(stringResource(R.string.flow_unanswered)) }
+            if (incorrect.isNotEmpty()) AppOutlinedButton({ practiceIds = incorrect }, enabled = canPractice) { Text(stringResource(R.string.flow_incorrect)) }
+            if (unanswered.isNotEmpty()) AppOutlinedButton({ practiceIds = unanswered }, enabled = canPractice) { Text(stringResource(R.string.flow_unanswered)) }
         }
         AppSection(stringResource(R.string.flow_category)) {
-            results.results.filter { it.categoryId != null }.distinctBy { it.categoryId }.forEach { row ->
-                OutlinedButton({ row.categoryId?.let(onCategory) }, enabled = canPractice && row.categoryId?.let { it in categories } == true) {
+            remember(results) { results.results.filter { it.categoryId != null }.distinctBy { it.categoryId } }.forEach { row ->
+                AppOutlinedButton({ row.categoryId?.let(onCategory) }, enabled = canPractice && row.categoryId?.let { it in categories } == true) {
                     Text(row.categoryName ?: com.mukhtabir.android.util.formatNumber(requireNotNull(row.categoryId)))
                 }
             }
         }
         AppSectionHeading(stringResource(R.string.review_details))
-        val reviews = results.results.withIndex().filter { (_, result) ->
+        val reviews = remember(results, reviewFilter) { results.results.withIndex().filter { (_, result) ->
             reviewFilter.includes(result.userAnswer != null, result.isCorrect)
-        }
+        } }
         ResultReviewFilters(reviewFilter, { reviewFilter = it }, reviews.size, results.results.size)
         var selectedReview by rememberSaveable(results.sourceSessionId, results.historyId) { mutableStateOf<Int?>(null) }
         ResultReviewPanes(reviews, selectedReview, { selectedReview = it }, imageRepository)
@@ -84,7 +85,7 @@ internal fun QuizResultsContent(
         }
     }
 
-    Button(onClick = onNewSession, modifier = Modifier.fillMaxWidth()) {
+    AppButton(onClick = onNewSession, modifier = Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.new_session))
     }
     AppTextButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
@@ -94,36 +95,38 @@ internal fun QuizResultsContent(
 
 @Composable
 private fun ResultBreakdowns(results: List<SessionResultItemDto>) {
-    val categories = results.groupBy { it.categoryName ?: "—" }
-    val difficulties = results.groupBy { it.difficulty ?: "—" }
+    val categories = remember(results) { results.groupBy { it.categoryName ?: "—" }
+        .map { (name, items) -> Triple(name, items.count { it.isCorrect }, items.size) } }
+    val difficulties = remember(results) { results.groupBy { it.difficulty }
+        .map { (name, items) -> Triple(name, items.count { it.isCorrect }, items.size) } }
     if (categories.isNotEmpty()) {
-        Text(stringResource(R.string.breakdown_category), style = MaterialTheme.typography.titleMedium)
-        categories.forEach { (name, items) ->
-            AppProgressMetric(name, items.count { it.isCorrect }, items.size)
+        AppSectionHeading(stringResource(R.string.breakdown_category))
+        categories.forEach { (name, correct, total) ->
+            AppProgressMetric(name, correct, total)
         }
     }
     if (difficulties.isNotEmpty()) {
-        Text(stringResource(R.string.breakdown_difficulty), style = MaterialTheme.typography.titleMedium)
-        difficulties.forEach { (name, items) ->
-            AppProgressMetric(name, items.count { it.isCorrect }, items.size)
+        AppSectionHeading(stringResource(R.string.breakdown_difficulty))
+        difficulties.forEach { (name, correct, total) ->
+            AppProgressMetric(difficultyLabel(name), correct, total)
         }
     }
 }
 
 @Composable
 private fun reviewRowTitle(index: Int, result: SessionResultItemDto): String =
-    if (result.userAnswer == null) stringResource(R.string.quiz_review_unanswered,
-        com.mukhtabir.android.util.formatNumber(index + 1))
-    else stringResource(if (result.isCorrect) R.string.review_correct else R.string.review_wrong, index + 1)
+    resultReviewTitle(index + 1, result.userAnswer != null, result.isCorrect)
 
 /** Frozen completion rows only; withheld review never composes either pane. */
 @Composable
 private fun ResultReviewPanes(reviews: List<IndexedValue<SessionResultItemDto>>, selected: Int?,
     onSelect: (Int) -> Unit, imageRepository: ImageRepository) {
-    val active = reviews.firstOrNull { it.index == selected } ?: reviews.firstOrNull()
+    val active = remember(reviews, selected) { reviews.firstOrNull { it.index == selected } ?: reviews.firstOrNull() }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
         if (maxWidth >= AppLayoutTokens.detailPaneBreakpoint * scale) {
+            val readerScroll = rememberScrollState()
+            LaunchedEffect(active?.index) { readerScroll.scrollTo(0) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 Column(Modifier.weight(AppLayoutTokens.detailListFraction)
                     .heightIn(max = AppLayoutTokens.reviewListMaxHeight * scale).verticalScroll(rememberScrollState()),
@@ -151,7 +154,8 @@ private fun ResultReviewPanes(reviews: List<IndexedValue<SessionResultItemDto>>,
                         }
                     }
                 }
-                Column(Modifier.weight(1f - AppLayoutTokens.detailListFraction)) {
+                Column(Modifier.weight(1f - AppLayoutTokens.detailListFraction)
+                    .heightIn(max = AppLayoutTokens.reviewListMaxHeight * scale).verticalScroll(readerScroll)) {
                     active?.let { (index, result) -> key(index) {
                         SessionResultReview(index + 1, result, imageRepository)
                     } }

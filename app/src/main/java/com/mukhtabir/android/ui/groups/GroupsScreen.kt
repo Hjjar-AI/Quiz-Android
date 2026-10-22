@@ -2,18 +2,6 @@
 
 package com.mukhtabir.android.ui.groups
 
-import com.mukhtabir.android.ui.theme.AppTheme
-
-import com.mukhtabir.android.ui.components.AppSection
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,15 +13,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import com.mukhtabir.android.ui.components.AppCard as Card
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,21 +29,33 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.createSavedStateHandle
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.LearnerSavedState
-import com.mukhtabir.android.util.formatNumber
-import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.data.remote.GroupDto
 import com.mukhtabir.android.data.remote.GroupLeaderboardDto
 import com.mukhtabir.android.data.remote.GroupService
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppMetadataRow
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.util.formatNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
@@ -201,14 +197,14 @@ class GroupsViewModel(private val service: GroupService, userId: Long, handle: S
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 fun GroupsRoute(service: GroupService, userId: Long) {
     val vm: GroupsViewModel = viewModel(key = "groups-$userId", factory = GroupsViewModel.Factory(service,userId))
-    val state by vm.state.collectAsState()
+    val state by vm.state.collectAsLifecycleState()
     val busy = state.loading || state.visibilityBusy
     RefreshOnResume(vm::load)
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
             AppPageHeading(stringResource(R.string.nav_groups), action = {
                 AppActionRow(fillWidth = false) {
-                    OutlinedButton(vm::load, enabled = !busy) { Text(stringResource(R.string.refresh)) }
+                    AppOutlinedButton(vm::load, enabled = !busy) { Text(stringResource(R.string.refresh)) }
                 }
             })
         }
@@ -216,7 +212,7 @@ fun GroupsRoute(service: GroupService, userId: Long) {
             AppSection(stringResource(R.string.group_period)) {
             AppActionRow() {
                 listOf(7,30,90).forEach { days ->
-                    FilterChip(selected=state.days==days,onClick={vm.changeDays(days)},enabled=!busy,
+                    AppFilterChip(selected=state.days==days,onClick={vm.changeDays(days)},enabled=!busy,
                         label={Text(stringResource(R.string.group_days,formatNumber(days)))})
                 }
             }
@@ -224,7 +220,7 @@ fun GroupsRoute(service: GroupService, userId: Long) {
         }
         if (busy || state.boardLoading) item { AppLoadingIndicator() }
         state.message?.let { item { Text(stringResource(it),modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite }) } }
-        if(state.visibilityNeedsReview) item { Text(stringResource(R.string.group_visibility_recovery),color=MaterialTheme.colorScheme.error) }
+        if(state.visibilityNeedsReview) item { AppStatus(stringResource(R.string.group_visibility_recovery)) }
         state.error?.let { item { ErrorState(throwable = it, onRetry = if (busy) null else vm::load,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) } }
         state.boardError?.let { item { ErrorState(throwable = it, onRetry = if (busy || state.boardLoading) null else vm::retryBoard,
@@ -233,15 +229,15 @@ fun GroupsRoute(service: GroupService, userId: Long) {
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) } }
         if (!state.loading && state.error == null && state.groups.isEmpty()) item { EmptyState(stringResource(R.string.no_groups)) }
         items(state.groups, key = { "group-${it.id}" }) { group ->
-            Card(Modifier.fillMaxWidth().semantics { selected = state.selected == group.id }
-                .clickable(enabled = !busy) { vm.open(group.id) }) {
-                Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            AppCard(Modifier.fillMaxWidth().semantics { selected = state.selected == group.id }
+                .clickable(role = androidx.compose.ui.semantics.Role.Button, enabled = !busy) { vm.open(group.id) }) {
+                Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                         if (state.selected == group.id) Icon(Icons.Filled.Check, contentDescription = null)
                         Text(group.name, style = MaterialTheme.typography.titleMedium)
                     }
                     if (group.description.isNotBlank()) Text(group.description)
-                    com.mukhtabir.android.ui.components.AppMetadataRow(listOf(stringResource(R.string.member_count,group.memberCount)))
+                    AppMetadataRow(listOf(stringResource(R.string.member_count, com.mukhtabir.android.util.formatNumber(group.memberCount))))
                 }
             }
         }
@@ -261,13 +257,13 @@ fun GroupsRoute(service: GroupService, userId: Long) {
             }
             if(board.rows.isEmpty() && !state.boardLoading && state.boardError==null && state.error==null) item { EmptyState(stringResource(R.string.group_board_empty)) }
             items(board.rows, key = { "member-${it.userId}" }) { row ->
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.fillMaxWidth().padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                AppCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth().padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                         Text(row.fullName.ifBlank { row.username },style=MaterialTheme.typography.titleMedium)
                         if(row.userId==userId) Text(stringResource(R.string.group_self))
                         if(row.rank>0) Text(stringResource(R.string.group_rank,formatNumber(row.rank)))
-                        Text(stringResource(R.string.leaderboard_score, row.questionsAnswered, row.accuracy))
-                        com.mukhtabir.android.ui.components.AppMetadataRow(listOf(stringResource(R.string.group_streak,formatNumber(row.currentStreak))))
+                        Text(stringResource(R.string.leaderboard_score, com.mukhtabir.android.util.formatNumber(row.questionsAnswered), row.accuracy))
+                        AppMetadataRow(listOf(stringResource(R.string.group_streak,formatNumber(row.currentStreak))))
                     }
                 }
             }

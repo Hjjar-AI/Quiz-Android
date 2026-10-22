@@ -13,31 +13,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.MotionDurationScale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.integerResource
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.res.integerResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mukhtabir.android.R
 
 /** Reveal the already-shaped Arabic word so combining marks and joined letters stay intact. */
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 fun StartupBrand(modifier: Modifier = Modifier, onFinished: () -> Unit = {}) {
-    val motionEnabled = (rememberCoroutineScope().coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f) > 0f
+    val motionEnabled = rememberMotionEnabled()
     val duration = integerResource(R.integer.startup_reveal_duration)
     val ink = MaterialTheme.colorScheme.primary
     var revealed by remember { mutableStateOf(false) }

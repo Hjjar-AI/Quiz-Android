@@ -1,12 +1,10 @@
 package com.mukhtabir.android.ui.home
 
-import com.mukhtabir.android.ui.theme.AppTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import com.mukhtabir.android.ui.components.AppCard as Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.theme.AppTheme
 
 /**
  * Small rotating "Did you know?" card (Phase 1, item 26).
@@ -37,15 +38,15 @@ fun TipsCard(
 ) {
     if (tip.isBlank()) return
 
-    Card(modifier = modifier.fillMaxWidth()) {
+    AppCard(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets),
+                .padding(AppLayoutTokens.cardInsets),
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
             verticalAlignment = Alignment.Top,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 Text(
                     text = stringResource(R.string.tips_title),
                     style = MaterialTheme.typography.labelMedium,

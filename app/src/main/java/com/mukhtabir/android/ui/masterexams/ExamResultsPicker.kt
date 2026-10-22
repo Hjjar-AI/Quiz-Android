@@ -1,12 +1,5 @@
 package com.mukhtabir.android.ui.masterexams
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +11,11 @@ import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -44,7 +42,7 @@ fun ExamResultsPicker(user: UserDto, service: MasterExamService, onOpen: (Long) 
         item {
             AppPageHeading(stringResource(R.string.exam_results_title))
             Text(stringResource(R.string.transfer_exam_scope))
-            OutlinedTextField(id, { id = it }, label = { Text(stringResource(R.string.transfer_exam_id)) }, modifier = Modifier.fillMaxWidth())
+            AppTextField(id, { id = it }, label = { Text(stringResource(R.string.transfer_exam_id)) }, modifier = Modifier.fillMaxWidth())
             val chosen = id.trim().map { char -> Character.digit(char, 10).takeIf { it >= 0 }?.let { ('0'.code + it).toChar() } ?: char }.joinToString("").toLongOrNull()?.takeIf { it > 0 }
             AppOutlinedButton({ chosen?.let(onOpen) }, enabled = chosen != null) { Text(stringResource(R.string.exam_results_title)) }
             AppOutlinedButton(refresh, enabled = !busy) { Text(stringResource(R.string.refresh)) }
@@ -52,7 +50,7 @@ fun ExamResultsPicker(user: UserDto, service: MasterExamService, onOpen: (Long) 
             error?.let { ErrorState(throwable = it, onRetry = if (busy) null else refresh) }
         }
         items(rows, key = { it.id }) { exam -> AppCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {
+            Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
                 Text(exam.name, style = MaterialTheme.typography.titleMedium)
                 Text(masterStatus(exam.status))
                 AppOutlinedButton({ onOpen(exam.id) }, enabled = !busy) { Text(stringResource(R.string.exam_results_title)) }

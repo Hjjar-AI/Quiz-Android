@@ -2,50 +2,30 @@
 
 package com.mukhtabir.android.ui.offline
 
-import com.mukhtabir.android.ui.components.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.material3.Scaffold
-import com.mukhtabir.android.ui.theme.AppTheme
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppButton as Button
-import com.mukhtabir.android.ui.components.AppCard as Card
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.mukhtabir.android.ui.components.AppOutlinedButton as OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -54,8 +34,25 @@ import com.mukhtabir.android.core.SessionDraftStore
 import com.mukhtabir.android.data.remote.OfflineStudyService
 import com.mukhtabir.android.data.remote.localizedForDisplay
 import com.mukhtabir.android.data.remote.summaryOnly
+import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppProgressBar
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -64,7 +61,7 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
     onBack: () -> Unit,onBusy: (Boolean) -> Unit = {}) {
     val vm: OfflineStudyViewModel=viewModel(key="offline-$userId-$localOnly-$canSync",
         factory=OfflineStudyViewModel.Factory(service,store,userId,localOnly,canSync,maxQuestions,initialIds))
-    val s by vm.state.collectAsState()
+    val s by vm.state.collectAsLifecycleState()
     var deleting by remember {mutableStateOf<String?>(null)}
     var leaving by remember {mutableStateOf(false)}
     var confirmBank by remember {mutableStateOf(false)}
@@ -78,17 +75,17 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
             if (s.storageFailed || s.pendingStorage || row?.displayTitle == collectionTitle.trim()) renameSubmitted = false
         }
     }
-    if (renameOpen && row != null) AlertDialog(onDismissRequest = { if (!s.busy && !renameSubmitted) renameOpen = false },
+    if (renameOpen && row != null) AppConfirmationDialog(onDismissRequest = { if (!s.busy && !renameSubmitted) renameOpen = false },
         title = { Text(stringResource(R.string.flow_rename)) },
         text = { Column {
-            OutlinedTextField(collectionTitle, { collectionTitle = it.take(120) }, label = { Text(stringResource(R.string.flow_local_title)) }, enabled = !s.busy)
+            AppTextField(collectionTitle, { collectionTitle = it.take(120) }, label = { Text(stringResource(R.string.flow_local_title)) }, enabled = !s.busy)
             if (s.storageFailed || s.pendingStorage) {
-                Text(stringResource(R.string.offline_storage_error), color = MaterialTheme.colorScheme.error)
-                TextButton(vm::retryStorage, enabled = !s.busy) { Text(stringResource(R.string.retry)) }
+                AppStatus(stringResource(R.string.offline_storage_error))
+                AppTextButton(vm::retryStorage, enabled = !s.busy) { Text(stringResource(R.string.retry)) }
             }
         } },
-        confirmButton = { TextButton({ renameSubmitted = vm.rename(collectionTitle) }, enabled = !renameSubmitted && collectionTitle.isNotBlank() && !s.busy && !s.storageFailed && !s.pendingStorage && row.pack.id !in s.syncingIds) { Text(stringResource(R.string.save)) } },
-        dismissButton = { TextButton({ renameOpen = false }, enabled = !s.busy && !renameSubmitted) { Text(stringResource(R.string.cancel)) } })
+        confirmButton = { AppTextButton({ renameSubmitted = vm.rename(collectionTitle) }, enabled = !renameSubmitted && collectionTitle.isNotBlank() && !s.busy && !s.storageFailed && !s.pendingStorage && row.pack.id !in s.syncingIds) { Text(stringResource(R.string.save)) } },
+        dismissButton = { AppTextButton({ renameOpen = false }, enabled = !s.busy && !renameSubmitted) { Text(stringResource(R.string.cancel)) } })
     val activeSelection = s.bank?.takeIf { !it.complete }?.selection ?: s.selection
     val focused = activeSelection != com.mukhtabir.android.data.remote.OfflineSelection()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -97,13 +94,13 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
     var reviewFilter by rememberSaveable(s.selected, row?.completionId) { mutableStateOf(ReviewFilter.ALL) }
     var confirmFinish by remember(s.selected) { mutableStateOf(false) }
     var showMap by remember(s.selected) { mutableStateOf(false) }
-    if (showMap && row != null) AlertDialog(onDismissRequest = { showMap = false },
+    if (showMap && row != null) AppConfirmationDialog(onDismissRequest = { showMap = false },
         title = { Text(stringResource(R.string.session_question_navigation)) },
         text = { LearningQuestionMap(row.index, row.pack.questions.size,
             row.pack.questions.indices.filter { i -> row.answers.any { it.questionId == row.pack.questions[i].id } }.toSet(),
             row.flaggedIndices, !s.busy && !s.storageFailed) { target ->
                 reviewFilter = ReviewFilter.ALL; vm.go(target - row.index); showMap = false
-            } }, confirmButton = { TextButton({ showMap = false }) { Text(stringResource(R.string.done)) } })
+            } }, confirmButton = { AppTextButton({ showMap = false }) { Text(stringResource(R.string.done)) } })
     val visibleReview = row?.let { material -> material.pack.questions.indices.filter { i ->
         val question = material.pack.questions[i]
         val saved = material.answers.firstOrNull { it.questionId == question.id }
@@ -115,33 +112,33 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
     val q = shownIndex?.let { row?.pack?.questions?.getOrNull(it) }
     androidx.compose.runtime.LaunchedEffect(s.selected, shownIndex, reviewToken, reviewing, reviewFilter) { listState.scrollToItem(0) }
     val showQuestion = row?.completionId != null && (row.frozenTime == null || reviewing)
-    if (confirmFinish) AlertDialog(onDismissRequest = { if (!s.busy) confirmFinish = false },
+    if (confirmFinish) AppConfirmationDialog(onDismissRequest = { if (!s.busy) confirmFinish = false },
         title = { Text(stringResource(R.string.flow_final_review)) }, text = { Column {
             Text(stringResource(R.string.ui_finish_offline))
             if (row != null) LearningQuestionMap(row.index, row.pack.questions.size,
                 row.pack.questions.indices.filter { i -> row.answers.any { it.questionId == row.pack.questions[i].id } }.toSet(),
                 row.flaggedIndices, !s.busy && !s.storageFailed) { target -> vm.go(target - row.index); confirmFinish = false }
         } },
-        confirmButton = { TextButton({ confirmFinish = false; vm.finish() }, enabled = !s.busy && !s.storageFailed) { Text(stringResource(R.string.finish_session_action)) } },
-        dismissButton = { TextButton({ confirmFinish = false }, enabled = !s.busy) { Text(stringResource(R.string.cancel)) } })
+        confirmButton = { AppTextButton({ confirmFinish = false; vm.finish() }, enabled = !s.busy && !s.storageFailed) { Text(stringResource(R.string.finish_session_action)) } },
+        dismissButton = { AppTextButton({ confirmFinish = false }, enabled = !s.busy) { Text(stringResource(R.string.cancel)) } })
     var readingLocale by androidx.compose.runtime.saveable.rememberSaveable(userId, row?.completionId) { mutableStateOf<String?>(null) }
     var confidence by remember(row?.completionId,q?.id) {mutableStateOf(3)}
     val back: () -> Unit={if(!s.busy) {if(s.selected!=null) vm.back() else if(s.pendingStorage) leaving=true else onBack()}}
     BackHandler(onBack=back)
     DisposableEffect(s.busy,s.pendingStorage) {onBusy(s.busy || s.pendingStorage);onDispose {onBusy(false)}}
-    if(leaving) AlertDialog(onDismissRequest={leaving=false},title={Text(stringResource(R.string.leave_screen_action))},
+    if(leaving) AppConfirmationDialog(onDismissRequest={leaving=false},title={Text(stringResource(R.string.leave_screen_action))},
         text={Text(stringResource(R.string.offline_leave_uncommitted))},
-        confirmButton={TextButton({leaving=false;onBack()}) {Text(stringResource(R.string.leave_screen_action))}},
-        dismissButton={TextButton({leaving=false}) {Text(stringResource(R.string.cancel))}})
-    if(confirmBank) AlertDialog(onDismissRequest={confirmBank=false},
+        confirmButton={AppTextButton({leaving=false;onBack()}) {Text(stringResource(R.string.leave_screen_action))}},
+        dismissButton={AppTextButton({leaving=false}) {Text(stringResource(R.string.cancel))}})
+    if(confirmBank) AppConfirmationDialog(onDismissRequest={confirmBank=false},
         title={Text(stringResource(if(focused) R.string.offline_scoped_download else R.string.offline_bank_download))},
         text={Text(stringResource(if(focused) R.string.offline_scoped_confirm else R.string.offline_bank_confirm))},
-        confirmButton={TextButton({confirmBank=false;vm.downloadBank()},enabled=!s.busy && !s.storageFailed && s.bankAllowed) {Text(stringResource(if(focused) R.string.offline_scoped_download else R.string.offline_bank_download))}},
-        dismissButton={TextButton({confirmBank=false}) {Text(stringResource(R.string.cancel))}})
-    deleting?.let {id -> AlertDialog(onDismissRequest={deleting=null},
+        confirmButton={AppTextButton({confirmBank=false;vm.downloadBank()},enabled=!s.busy && !s.storageFailed && s.bankAllowed) {Text(stringResource(if(focused) R.string.offline_scoped_download else R.string.offline_bank_download))}},
+        dismissButton={AppTextButton({confirmBank=false}) {Text(stringResource(R.string.cancel))}})
+    deleting?.let {id -> AppConfirmationDialog(onDismissRequest={deleting=null},
         title={Text(stringResource(R.string.ux_delete_download))},text={Text(stringResource(R.string.offline_delete_confirm))},
         confirmButton={AppDangerTextButton({vm.delete(id);deleting=null},enabled=s.canDelete) {Text(stringResource(R.string.ux_delete_download))}},
-        dismissButton={TextButton({deleting=null}) {Text(stringResource(R.string.cancel))}})}
+        dismissButton={AppTextButton({deleting=null}) {Text(stringResource(R.string.cancel))}})}
     val collectionTitleForDisplay = row?.displayTitle?.takeIf(String::isNotBlank)
         ?: row?.summaryOnly()?.summary?.title?.takeIf(String::isNotBlank)
         ?: stringResource(R.string.flow_collection)
@@ -154,7 +151,7 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                 if (row.frozenTime == null) AppIconButton({ vm.toggleFlag(shownIndex) }, enabled = !s.busy && !s.storageFailed && !s.pendingStorage) {
                     Icon(Icons.Filled.Flag, stringResource(if (shownIndex in row.flaggedIndices) R.string.flow_unflag else R.string.flow_flag))
                 }
-                if (row.frozenTime == null && row.answers.size == row.pack.questions.size) TextButton({ confirmFinish = true },
+                if (row.frozenTime == null && row.answers.size == row.pack.questions.size) AppTextButton({ confirmFinish = true },
                 enabled = !s.busy && !s.storageFailed) { Text(stringResource(R.string.finish)) } })
         }
     }, bottomBar = {
@@ -200,26 +197,26 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
             }
         }
         if(s.storageFailed) item {
-            com.mukhtabir.android.ui.components.AppRecoveryPanel(
+            AppRecoveryPanel(
                 message=stringResource(R.string.offline_storage_error),onRetry=vm::retryStorage,retryEnabled=!s.busy)
         }
         if(row==null) {
             s.bank?.let {progress -> item {
-                Text(stringResource(R.string.offline_bank_progress,progress.downloaded,progress.total,progress.excluded))
+                Text(stringResource(R.string.offline_bank_progress, com.mukhtabir.android.util.formatNumber(progress.downloaded), com.mukhtabir.android.util.formatNumber(progress.total), com.mukhtabir.android.util.formatNumber(progress.excluded)))
                 Text(stringResource(if(progress.complete) R.string.offline_bank_completed else if(s.bankDownloading) R.string.offline_bank_running else R.string.offline_bank_paused))
                 if(progress.complete && progress.downloaded+progress.excluded!=progress.total) Text(stringResource(R.string.offline_bank_changed))
-                if(s.bankDownloading) OutlinedButton(vm::pauseBank) {Text(stringResource(R.string.offline_bank_pause))}
-                else if(!localOnly && s.bankAllowed && !progress.complete) OutlinedButton(vm::downloadBank,enabled=!s.busy && !s.storageFailed) {
+                if(s.bankDownloading) AppOutlinedButton(vm::pauseBank) {Text(stringResource(R.string.offline_bank_pause))}
+                else if(!localOnly && s.bankAllowed && !progress.complete) AppOutlinedButton(vm::downloadBank,enabled=!s.busy && !s.storageFailed) {
                     Text(stringResource(R.string.offline_bank_resume))
                 }
-                if(!progress.complete && !s.bankDownloading) OutlinedButton(vm::resetBank,
+                if(!progress.complete && !s.bankDownloading) AppOutlinedButton(vm::resetBank,
                     enabled=!s.busy && !s.pendingStorage && !s.storageFailed && s.syncingIds.isEmpty()) {
                     Text(stringResource(R.string.offline_reset_download))
                 }
             } }
             if(!localOnly) item {
                 if(!s.bankAllowed) Text(stringResource(R.string.offline_bank_permission_required))
-                OutlinedButton(vm::refreshDownloadPermission,enabled=!s.busy && !s.pendingStorage) {
+                AppOutlinedButton(vm::refreshDownloadPermission,enabled=!s.busy && !s.pendingStorage) {
                     Text(stringResource(R.string.offline_bank_refresh_permission))
                 }
             }
@@ -228,25 +225,25 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                 val editable = !s.busy && s.bank?.complete != false && s.syncingIds.isEmpty()
                 s.filterError?.let { ErrorState(throwable=it, onRetry=if(s.busy) null else vm::refreshDownloadPermission) }
                 s.filterOptions?.takeIf { s.filterError == null }?.let { options ->
-                    com.mukhtabir.android.ui.components.AppSection(stringResource(R.string.offline_focused_download)) {
+                    AppSection(stringResource(R.string.offline_focused_download)) {
                         Text(stringResource(R.string.offline_filter_hint))
                         Text(stringResource(R.string.quiz_filter_matching), style = MaterialTheme.typography.bodySmall)
                         AppActionRow {
-                            FilterChip(selection.book==null,{vm.selectBook(null)},enabled=editable,
+                            AppFilterChip(selection.book==null,{vm.selectBook(null)},enabled=editable,
                                 label={Text(stringResource(R.string.quiz_no_book_restriction))})
-                            options.books.forEach { book -> FilterChip(selection.book==book.name,{vm.selectBook(book.name)},enabled=editable,
+                            options.books.forEach { book -> AppFilterChip(selection.book==book.name,{vm.selectBook(book.name)},enabled=editable,
                                 label={Text(book.name)}) }
                         }
                         Text(stringResource(R.string.select_categories))
-                        AppActionRow { options.categories.forEach { category -> FilterChip(category.id in selection.categories,
+                        AppActionRow { options.categories.forEach { category -> AppFilterChip(category.id in selection.categories,
                             {vm.toggleCategory(category.id)},enabled=editable,label={Text(category.name)}) } }
                         Text(stringResource(R.string.ux_tags_any))
-                        AppActionRow { options.tags.forEach { tag -> FilterChip(tag.name in selection.tags,
+                        AppActionRow { options.tags.forEach { tag -> AppFilterChip(tag.name in selection.tags,
                             {vm.toggleTag(tag.name)},enabled=editable,label={Text(tag.name)}) } }
                     }
                 }
                 Text(stringResource(if(focused) R.string.offline_scoped_hint else R.string.offline_bank_hint))
-                Button({confirmBank=true},modifier=Modifier.fillMaxWidth(),enabled=!s.busy && !s.storageFailed && s.syncingIds.isEmpty() && s.bank?.complete!=false) {
+                AppButton({confirmBank=true},modifier=Modifier.fillMaxWidth(),enabled=!s.busy && !s.storageFailed && s.syncingIds.isEmpty() && s.bank?.complete!=false) {
                     Text(stringResource(if(focused) R.string.offline_scoped_download else R.string.offline_bank_download))
                 }
             }
@@ -256,13 +253,13 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                         onCheckedChange=vm::includeImages, enabled=!s.busy && s.bank?.complete!=false)
                     Text(stringResource(R.string.offline_include_images))
                 }
-                OutlinedTextField(s.ids,vm::ids,label={Text(stringResource(R.string.offline_ids))},enabled=!s.busy,modifier=Modifier.fillMaxWidth())
-                Text(stringResource(R.string.offline_limits,maxQuestions.coerceAtMost(200)))
-                Button(vm::download,modifier=Modifier.fillMaxWidth(),enabled=!s.busy && !s.storageFailed && s.syncingIds.isEmpty()) {Text(stringResource(R.string.offline_download))}
+                AppTextField(s.ids,vm::ids,label={Text(stringResource(R.string.offline_ids))},enabled=!s.busy,modifier=Modifier.fillMaxWidth())
+                Text(stringResource(R.string.offline_limits, com.mukhtabir.android.util.formatNumber(maxQuestions.coerceAtMost(200))))
+                AppButton(vm::download,modifier=Modifier.fillMaxWidth(),enabled=!s.busy && !s.storageFailed && s.syncingIds.isEmpty()) {Text(stringResource(R.string.offline_download))}
             }
-            if(s.materials.isEmpty() && !s.busy && !s.storageFailed && s.error==null) item {com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.offline_empty))}
+            if(s.materials.isEmpty() && !s.busy && !s.storageFailed && s.error==null) item {EmptyState(stringResource(R.string.offline_empty))}
             s.materials.forEach {material -> item(key=material.pack.id) {
-                Card(Modifier.fillMaxWidth()) {Column(Modifier.padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                AppCard(Modifier.fillMaxWidth()) {Column(Modifier.padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                     val summary = material.summary ?: material.summaryOnly().summary
                     Text(summary?.title?.takeIf(String::isNotBlank) ?: stringResource(R.string.flow_collection), style = MaterialTheme.typography.titleMedium)
                     Text(stringResource(R.string.flow_offline_ready), style = MaterialTheme.typography.labelMedium)
@@ -273,10 +270,8 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                         R.string.flow_studied_date_unknown else R.string.flow_not_studied), style = MaterialTheme.typography.bodySmall)
                     val total = summary?.questionCount ?: material.pack.questions.size
                     val done = summary?.answeredCount ?: material.answers.size
-                    androidx.compose.material3.LinearProgressIndicator(if (total > 0) (done.toFloat() / total).coerceIn(0f,1f) else 0f, Modifier.fillMaxWidth())
-                    com.mukhtabir.android.ui.components.AppMetadataRow(listOf(stringResource(R.string.offline_pack_count,
-                        material.summary?.questionCount ?: material.pack.questions.size,
-                        material.summary?.answeredCount ?: material.answers.size)))
+                    AppProgressBar(if (total > 0) (done.toFloat() / total).coerceIn(0f,1f) else 0f, Modifier.fillMaxWidth())
+                    AppMetadataRow(listOf(stringResource(R.string.offline_pack_count, com.mukhtabir.android.util.formatNumber(material.summary?.questionCount ?: material.pack.questions.size), com.mukhtabir.android.util.formatNumber(material.summary?.answeredCount ?: material.answers.size))))
                     LearningSaveStatus(when {
                         material.pack.id in s.syncingIds -> LearningSaveState.SYNCING
                         s.syncErrors[material.pack.id] != null -> LearningSaveState.REVIEW
@@ -289,61 +284,64 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                         else if(material.summary?.synced==true || material.result!=null) R.string.offline_synced
                         else if(material.summary?.finished==true || material.frozenTime!=null) R.string.offline_ready else R.string.offline_local),
                         )
-                    OutlinedButton({vm.open(material.pack.id)},enabled=!s.busy) {Text(stringResource(R.string.offline_open))}
-                    s.syncErrors[material.pack.id]?.let { com.mukhtabir.android.ui.components.AppRecoveryPanel(throwable=it) }
+                    AppOutlinedButton({vm.open(material.pack.id)},enabled=!s.busy) {Text(stringResource(R.string.offline_open))}
+                    s.syncErrors[material.pack.id]?.let { AppRecoveryPanel(throwable=it) }
                     AppDangerOutlinedButton({deleting=material.pack.id},enabled=s.canDelete && material.pack.id !in s.syncingIds) {Text(stringResource(R.string.ux_delete_download))}
                 } }
             } }
         } else {
             item {
                 AppMetadataRow(row.summaryOnly().summary?.sources.orEmpty())
-                TextButton({ collectionTitle = row.displayTitle.orEmpty(); renameOpen = true },
+                AppTextButton({ collectionTitle = row.displayTitle.orEmpty(); renameOpen = true },
                     enabled = !s.busy && !s.storageFailed && !s.pendingStorage && row.pack.id !in s.syncingIds) { Text(stringResource(R.string.flow_rename)) }
             }
             if(!localOnly && canSync) item {
-                OutlinedButton(vm::refreshPack,enabled=!s.busy && !s.storageFailed && s.syncingIds.isEmpty()) {
+                AppOutlinedButton(vm::refreshPack,enabled=!s.busy && !s.storageFailed && s.syncingIds.isEmpty()) {
                     Text(stringResource(R.string.offline_check_updates))
                 }
             }
-            if(row.completionId==null) item {Button(vm::start,enabled=!s.busy && !s.storageFailed) {Text(stringResource(R.string.offline_start))}}
+            if(row.completionId==null) item {AppButton(vm::start,enabled=!s.busy && !s.storageFailed) {Text(stringResource(R.string.offline_start))}}
             if (row.frozenTime != null && reviewing) item {
                 ResultReviewFilters(reviewFilter, { reviewFilter = it }, visibleReview.size, row.pack.questions.size)
-                OutlinedButton({ reviewing = false }) { Text(stringResource(R.string.results)) }
+                AppOutlinedButton({ reviewing = false }) { Text(stringResource(R.string.results)) }
             }
             if(q!=null && showQuestion) {
                 val display=q.localizedForDisplay(readingLocale ?: java.util.Locale.getDefault().toLanguageTag())
                 val saved=row.answers.firstOrNull {it.questionId==q.id}
-                item { com.mukhtabir.android.ui.components.QuestionLanguageSelector(q.translations, q.choices.size,
+                item { QuestionLanguageSelector(q.translations, q.choices.size,
                     readingLocale, { readingLocale = it }, hasCase = q.case?.stem?.isNotBlank() == true, caseTranslations = q.case?.translations ?: kotlinx.serialization.json.JsonObject(emptyMap()),
                     explanationAvailable = saved != null && !q.explanation.isNullOrBlank(),
                     explanationTranslated = !display.explanation.isNullOrBlank()) }
                 item {ClinicalCaseContext(display.case)}
-                item {com.mukhtabir.android.ui.components.QuestionTextCard(display.question)}
+                item {QuestionTextCard(display.question)}
                 row.pack.images[q.id.toString()]?.let { encoded -> item {
-                    com.mukhtabir.android.ui.components.QuestionImage(url = null, downloadedImage = encoded)
+                    QuestionImage(url = null, downloadedImage = encoded)
                 } }
                 if(q.id in row.pack.imageQuestionIds && row.pack.images[q.id.toString()]==null) item {
                     Text(stringResource(R.string.offline_image_omitted),style=MaterialTheme.typography.bodySmall)
                 }
                 if(saved==null && row.frozenTime==null) item {
                     androidx.compose.runtime.key(q.id) {
-                        com.mukhtabir.android.ui.components.AppSection(stringResource(R.string.confidence_prompt),
+                        AppSection(stringResource(R.string.confidence_prompt),
                             subtitle = stringResource(when (confidence) {
                                 1 -> R.string.confidence_guessing
                                 2 -> R.string.confidence_uncertain
                                 else -> R.string.confidence_certain
                             })) {
                             Text(stringResource(R.string.offline_answer_hint))
-                            AppActionRow() {(1..3).forEach {level ->
-                                FilterChip(confidence==level,{confidence=level},enabled=!s.busy && !s.storageFailed,
+                            AppActionRow(Modifier.selectableGroup()) {(1..3).forEach {level ->
+                                AppFilterChip(confidence==level,{confidence=level},enabled=!s.busy && !s.storageFailed,
                                     label={Text(stringResource(when(level) {1 -> R.string.master_confidence_low;2 -> R.string.master_confidence_medium;else -> R.string.master_confidence_high}))})
                             }}
                         }
                     }
                 }
                 if (reviewing && saved == null) item { AppSaveStatus(stringResource(R.string.unanswered)) }
-                display.choices.forEachIndexed {index,choice -> item(key="choice-${q.id}-$index") {
-                    com.mukhtabir.android.ui.components.AnswerChoice(number=index+1,text=choice,
+                item(key="answer-choices-${q.id}") {
+                    Column(Modifier.fillMaxWidth().selectableGroup(),
+                        verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                    display.choices.forEachIndexed { index, choice ->
+                    AnswerChoice(number=index+1,text=choice,
                         selected=saved?.answer==index+1, onClick={vm.answer(index+1,confidence)},
                         answerCorrect=if(q.correctAnswer==null || (saved==null && !(reviewing && row.frozenTime!=null))) null else when(index+1) {
                             q.correctAnswer -> true
@@ -352,7 +350,9 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                         },
                         enabled=saved==null && row.frozenTime==null && !s.busy && !s.storageFailed,
                         interactiveText=row.frozenTime!=null, reviewMode=reviewing && row.frozenTime!=null)
-                } }
+                    }
+                    }
+                }
                 item { BilingualQuestionComparison(q, choicesVisible = true, explanationVisible = saved != null || row.frozenTime != null) }
                 if(saved!=null) item {
                     display.explanation?.takeIf {it.isNotBlank()}?.let {ExplanationCard(it, title=stringResource(R.string.explanation))}
@@ -364,12 +364,12 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                     row.result?.answeredCount ?: row.answers.size, row.result?.accuracy)
                 if (row.pack.questions.any { it.correctAnswer == null }) Text(stringResource(R.string.ui_review_unknown))
                 Text(stringResource(R.string.offline_review_hint))
-                OutlinedButton({ reviewing = true; reviewFilter = ReviewFilter.ALL; vm.review(); reviewToken += 1 },enabled=!s.busy && !s.storageFailed) {Text(stringResource(R.string.offline_review))}
+                AppOutlinedButton({ reviewing = true; reviewFilter = ReviewFilter.ALL; vm.review(); reviewToken += 1 },enabled=!s.busy && !s.storageFailed) {Text(stringResource(R.string.offline_review))}
                 if(!localOnly && canSync && row.result==null) {
                     Text(stringResource(R.string.offline_sync_hint))
-                    Button(vm::sync,enabled=!s.busy && !s.storageFailed && row.pack.id !in s.syncingIds) {Text(stringResource(R.string.offline_sync))}
+                    AppButton(vm::sync,enabled=!s.busy && !s.storageFailed && row.pack.id !in s.syncingIds) {Text(stringResource(R.string.offline_sync))}
                 }
-                if(row.result!=null) OutlinedButton(vm::restart,enabled=!s.busy && !s.storageFailed) {Text(stringResource(R.string.offline_again))}
+                if(row.result!=null) AppOutlinedButton(vm::restart,enabled=!s.busy && !s.storageFailed) {Text(stringResource(R.string.offline_again))}
             }
             item {AppDangerOutlinedButton({deleting=row.pack.id},enabled=s.canDelete && row.pack.id !in s.syncingIds) {Text(stringResource(R.string.ux_delete_download))}}
         }

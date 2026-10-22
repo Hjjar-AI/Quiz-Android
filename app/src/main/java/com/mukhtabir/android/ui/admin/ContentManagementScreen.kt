@@ -1,38 +1,34 @@
 @file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package com.mukhtabir.android.ui.admin
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPagination
-
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppSuccessText
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
-import com.mukhtabir.android.ui.components.AppActionRow
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppSuccessText
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +38,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
     val vm: ContentManagementViewModel = viewModel(key = "content-management-$kind-${user.id}",
         factory = ContentManagementViewModel.Factory(kind, service, categories, user, pageSize, store))
     vm.permissions(user)
-    val s by vm.state.collectAsState()
+    val s by vm.state.collectAsLifecycleState()
     val recoveryBlocked=editorRecoveryBlocked(vm.recovery)
     RefreshOnResume { if(s.editing) vm.refreshDetail() else vm.refresh() }
     var confirmation by remember { mutableStateOf<String?>(null) }
@@ -59,21 +55,20 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
     val knowledge = kind == ContentKind.KNOWLEDGE
     val editable = !recoveryBlocked && !busy && !s.uncertain && !s.conflict &&
         if (knowledge) vm.mayWriteKnowledge(s.selectedKnowledge) else vm.mayWriteCase(s.selectedCase)
-    if (confirmation != null) AlertDialog(onDismissRequest = { if (!busy) confirmation = null },
+    if (confirmation != null) AppConfirmationDialog(onDismissRequest = { if (!busy) confirmation = null },
         title = { Text(stringResource(if (confirmation == "delete") {
             if (knowledge) R.string.ux_delete_knowledge else R.string.ux_delete_case
         } else R.string.confirm)) },
         text = { Text(stringResource(when (confirmation) {
             "delete" -> if (knowledge) R.string.content_delete_knowledge else R.string.content_delete_case
             else -> R.string.manage_leave_confirm
-        }) + if(confirmation == "delete") "\n" + stringResource(R.string.content_linked_count,
-            if (knowledge) s.selectedKnowledge?.questionCount ?: 0 else s.selectedCase?.questionCount ?: 0) else "") },
-        confirmButton = { com.mukhtabir.android.ui.components.AppConfirmationButton(destructive = confirmation == "delete", onClick = { val action = confirmation; confirmation = null
+        }) + if(confirmation == "delete") "\n" + stringResource(R.string.content_linked_count, com.mukhtabir.android.util.formatNumber(if (knowledge) s.selectedKnowledge?.questionCount ?: 0 else s.selectedCase?.questionCount ?: 0)) else "") },
+        confirmButton = { AppConfirmationButton(destructive = confirmation == "delete", onClick = { val action = confirmation; confirmation = null
             if (action == "delete") vm.delete() else if (s.uncertain) onBack() else vm.close()
         }, enabled = !busy) { Text(stringResource(if (confirmation == "delete") {
             if (knowledge) R.string.ux_delete_knowledge else R.string.ux_delete_case
         } else R.string.confirm)) } },
-        dismissButton = { TextButton({ confirmation = null }, enabled = !busy) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { AppTextButton({ confirmation = null }, enabled = !busy) { Text(stringResource(R.string.cancel)) } })
     LazyColumn(Modifier.fillMaxSize().padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item { EditorRecoveryControls(vm.recovery,busy,vm::restore) }
         item {
@@ -83,7 +78,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
             s.error?.let { ErrorState(throwable = it, onRetry = if (!busy) vm::retryList else null) }
             s.actionError?.let { ErrorState(throwable = it) }
             if (s.saved) AppSuccessText(stringResource(R.string.saved))
-            s.validation?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+            s.validation?.let { AppStatus(stringResource(it)) }
             if (s.uncertain) {
                 Text(stringResource(R.string.content_unknown))
                 if(s.uncertainCreate && s.receiptMissing) AppOutlinedButton(vm::retryCreate, enabled = !busy && !recoveryBlocked) { Text(stringResource(R.string.retry_same_request)) }
@@ -103,15 +98,15 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
         }
         if (!s.editing) {
             item { AppSection(stringResource(R.string.search), initiallyExpanded = true) {
-                OutlinedTextField(s.query, vm::query, enabled = !recoveryBlocked && !busy && !s.uncertain, label = { Text(stringResource(R.string.search)) }, modifier = Modifier.fillMaxWidth())
+                AppTextField(s.query, vm::query, enabled = !recoveryBlocked && !busy && !s.uncertain, label = { Text(stringResource(R.string.search)) }, modifier = Modifier.fillMaxWidth())
                 if (knowledge) {
                     AppActionRow() {
-                        listOf("", "draft", "active", "retired").forEach { status -> FilterChip(s.status == status,
+                        listOf("", "draft", "active", "retired").forEach { status -> AppFilterChip(s.status == status,
                             { vm.filter(status, s.category) }, { Text(contentStatus(status)) }, enabled = !recoveryBlocked && !busy && !s.uncertain) }
                     }
                     AppSection(stringResource(R.string.select_categories)) {
-                        FilterChip(s.category == null, { vm.filter(s.status, null) }, { Text(stringResource(R.string.none)) }, enabled = !busy)
-                        s.categories.forEach { category -> FilterChip(s.category == category.id, { vm.filter(s.status, category.id) }, { Text(category.name) }, enabled = !busy) }
+                        AppFilterChip(s.category == null, { vm.filter(s.status, null) }, { Text(stringResource(R.string.none)) }, enabled = !busy)
+                        s.categories.forEach { category -> AppFilterChip(s.category == category.id, { vm.filter(s.status, category.id) }, { Text(category.name) }, enabled = !busy) }
                     }
                 }
                 AppOutlinedButton(vm::search, enabled = !recoveryBlocked && !busy && !s.uncertain) { Text(stringResource(R.string.search)) }
@@ -121,19 +116,19 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
                     Text(stringResource(R.string.content_applied_category, s.categories.find { it.id==s.appliedCategory }?.name
                         ?: s.appliedCategory?.toString() ?: stringResource(R.string.none)))
                 }
-                Text(stringResource(R.string.content_page_count, if (knowledge) s.knowledge.size else s.cases.size, s.total))
+                Text(stringResource(R.string.content_page_count, com.mukhtabir.android.util.formatNumber(if (knowledge) s.knowledge.size else s.cases.size), com.mukhtabir.android.util.formatNumber(s.total)))
             } }
             if (knowledge && vm.mayWriteKnowledge(null)) item { AppButton(vm::create, enabled = !recoveryBlocked && !busy && !s.uncertain) { Text(stringResource(R.string.create)) } }
             if (knowledge) items(s.knowledge, key = { it.id }) { row -> AppCard {
-                Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                Column(Modifier.padding(AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                     Text(row.title, style = MaterialTheme.typography.titleMedium)
-                    com.mukhtabir.android.ui.components.AppMetadataRow(listOf(contentStatus(row.status),stringResource(R.string.content_linked_count,row.questionCount)))
+                    AppMetadataRow(listOf(contentStatus(row.status),stringResource(R.string.content_linked_count, com.mukhtabir.android.util.formatNumber(row.questionCount))))
                     AppOutlinedButton({ vm.open(row.id, null) }, enabled = !recoveryBlocked && !busy && !s.uncertain) { Text(stringResource(R.string.content_open)) }
                 }
             } } else items(s.cases, key = { it.id }) { row -> AppCard {
-                Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.components.AppLayoutTokens.controlGap)) {
+                Column(Modifier.padding(AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                     Text(row.title ?: row.key, style = MaterialTheme.typography.titleMedium)
-                    com.mukhtabir.android.ui.components.AppMetadataRow(listOf(row.key,stringResource(R.string.content_linked_count,row.questionCount)))
+                    AppMetadataRow(listOf(row.key,stringResource(R.string.content_linked_count, com.mukhtabir.android.util.formatNumber(row.questionCount))))
                     AppOutlinedButton({ vm.open(null, row.key) }, enabled = !recoveryBlocked && !busy && !s.uncertain) { Text(stringResource(R.string.content_open)) }
                 }
             } }
@@ -141,7 +136,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
         } else {
             if (knowledge) item { KnowledgeFields(s, vm, editable) }
             else item { AppSection(stringResource(R.string.content_case_title), initiallyExpanded = true) {
-                OutlinedTextField(s.caseTitle, { vm.field("caseTitle", it) }, enabled = editable,
+                AppTextField(s.caseTitle, { vm.field("caseTitle", it) }, enabled = editable,
                     label = { Text(stringResource(R.string.content_case_title)) }, modifier = Modifier.fillMaxWidth())
                 s.selectedCase?.let { row ->
                     Text(row.key); MarkdownText(row.stem.orEmpty())
@@ -163,7 +158,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
                     }
                     s.linkedError?.let { ErrorState(throwable = it, onRetry = if (!busy) ({ vm.linked(s.linkedRequestedPage) }) else null) }
                     s.linked?.let { page ->
-                        if (page.items.isEmpty() && !busy && s.linkedError==null) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.no_items))
+                        if (page.items.isEmpty() && !busy && s.linkedError==null) EmptyState(stringResource(R.string.no_items))
                         page.items.forEach { question -> AppOutlinedButton({ onQuestion(question.id) }, enabled = !busy && !s.dirty && !s.uncertain) {
                             Text(question.localizedForDisplay().question.take(180))
                         } }
@@ -172,7 +167,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
                 } else s.selectedCase?.questions?.let { questions ->
                     val pages=((questions.size+vm.size-1)/vm.size).coerceAtLeast(1)
                     val page=caseLinksPage.coerceIn(1,pages)
-                    if(questions.isEmpty() && !busy && s.error==null) com.mukhtabir.android.ui.components.EmptyState(stringResource(R.string.no_items))
+                    if(questions.isEmpty() && !busy && s.error==null) EmptyState(stringResource(R.string.no_items))
                     questions.drop((page-1)*vm.size).take(vm.size).forEach { question -> AppOutlinedButton({ onQuestion(question.id) }, enabled = !busy && !s.dirty && !s.uncertain) {
                         Text(question.localizedForDisplay().question.take(180))
                     } }
@@ -188,35 +183,35 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
 private fun KnowledgeFields(s: ContentManagementState, vm: ContentManagementViewModel, enabled: Boolean) {
     val f = s.form; var locale by remember { mutableStateOf("ar") }
     AppSection(stringResource(R.string.content_knowledge_title), initiallyExpanded = true) {
-        OutlinedTextField(f.title, { vm.field("title", it) }, enabled = enabled, label = { Text(stringResource(R.string.knowledge_create_name)) }, modifier = Modifier.fillMaxWidth())
+        AppTextField(f.title, { vm.field("title", it) }, enabled = enabled, label = { Text(stringResource(R.string.knowledge_create_name)) }, modifier = Modifier.fillMaxWidth())
         MarkdownField(f.objective, { vm.field("objective", it) }, stringResource(R.string.explore_objective), enabled, modifier = Modifier.fillMaxWidth())
         MarkdownField(f.answer, { vm.field("answer", it) }, stringResource(R.string.explore_reference_answer), enabled, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(f.facts, { vm.field("facts", it) }, enabled = enabled, label = { Text(stringResource(R.string.knowledge_create_facts)) }, minLines = 2, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(f.misconceptions, { vm.field("misconceptions", it) }, enabled = enabled, label = { Text(stringResource(R.string.explore_misconceptions)) }, minLines = 2, modifier = Modifier.fillMaxWidth())
+        AppTextField(f.facts, { vm.field("facts", it) }, enabled = enabled, label = { Text(stringResource(R.string.knowledge_create_facts)) }, minLines = 2, modifier = Modifier.fillMaxWidth())
+        AppTextField(f.misconceptions, { vm.field("misconceptions", it) }, enabled = enabled, label = { Text(stringResource(R.string.explore_misconceptions)) }, minLines = 2, modifier = Modifier.fillMaxWidth())
         Text(stringResource(R.string.content_one_per_line))
         AppActionRow() { listOf("draft", "active", "retired").forEach { status ->
-            FilterChip(f.status == status, { vm.field("status", status) }, { Text(contentStatus(status)) }, enabled = enabled)
+            AppFilterChip(f.status == status, { vm.field("status", status) }, { Text(contentStatus(status)) }, enabled = enabled)
         } }
     }
     AppSection(stringResource(R.string.select_categories)) {
         s.lookupError?.let { ErrorState(throwable = it, onRetry = vm::loadCategories) }
-        FilterChip(f.category == null, { vm.category(null) }, { Text(stringResource(R.string.none)) }, enabled = enabled)
-        s.categories.forEach { category -> FilterChip(f.category == category.id, { vm.category(category.id) }, { Text(category.name) }, enabled = enabled) }
-        if(f.category != null && s.categories.none { it.id == f.category }) Text(stringResource(R.string.planner_category_unavailable, f.category))
+        AppFilterChip(f.category == null, { vm.category(null) }, { Text(stringResource(R.string.none)) }, enabled = enabled)
+        s.categories.forEach { category -> AppFilterChip(f.category == category.id, { vm.category(category.id) }, { Text(category.name) }, enabled = enabled) }
+        if(f.category != null && s.categories.none { it.id == f.category }) Text(stringResource(R.string.planner_category_unavailable, com.mukhtabir.android.util.formatNumber(f.category)))
     }
     AppSection(stringResource(R.string.content_tags)) {
         f.tags.forEach { tag -> AppDangerOutlinedButton({ vm.tag(false, tag) }, enabled = enabled) { Text(tag + " · " + stringResource(R.string.ux_remove_tag_link)) } }
-        OutlinedTextField(f.tagInput, { vm.field("tagInput", it) }, enabled = enabled, label = { Text(stringResource(R.string.content_tags)) }, modifier = Modifier.fillMaxWidth())
+        AppTextField(f.tagInput, { vm.field("tagInput", it) }, enabled = enabled, label = { Text(stringResource(R.string.content_tags)) }, modifier = Modifier.fillMaxWidth())
         AppOutlinedButton({ vm.tag(true, f.tagInput) }, enabled = enabled) { Text(stringResource(R.string.content_add)) }
     }
     AppSection(stringResource(R.string.content_source)) {
-        OutlinedTextField(f.document, { vm.field("document", it) }, enabled = enabled, label = { Text(stringResource(R.string.editor_source_document)) }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(f.page, { vm.field("page", it) }, enabled = enabled, label = { Text(stringResource(R.string.editor_source_page)) }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(f.revised, { vm.field("revised", it) }, enabled = enabled, label = { Text(stringResource(R.string.content_review_date)) }, modifier = Modifier.fillMaxWidth())
+        AppTextField(f.document, { vm.field("document", it) }, enabled = enabled, label = { Text(stringResource(R.string.editor_source_document)) }, modifier = Modifier.fillMaxWidth())
+        AppTextField(f.page, { vm.field("page", it) }, enabled = enabled, label = { Text(stringResource(R.string.editor_source_page)) }, modifier = Modifier.fillMaxWidth())
+        AppTextField(f.revised, { vm.field("revised", it) }, enabled = enabled, label = { Text(stringResource(R.string.content_review_date)) }, modifier = Modifier.fillMaxWidth())
     }
     AppSection(stringResource(R.string.content_translations)) {
         AppActionRow() { (listOf("ar", "en") + f.translations.keys).distinct().forEach { code ->
-            FilterChip(locale == code, { locale = code }, { Text(code) }, enabled = enabled)
+            AppFilterChip(locale == code, { locale = code }, { Text(code) }, enabled = enabled)
         } }
         val fields = f.translations[locale] as? kotlinx.serialization.json.JsonObject
         listOf("title" to R.string.knowledge_create_name, "learning_objective" to R.string.explore_objective, "canonical_answer" to R.string.explore_reference_answer).forEach { (field, label) ->
@@ -245,7 +240,7 @@ private fun CaseTranslationFields(s: ContentManagementState, vm: ContentManageme
         Text(stringResource(R.string.case_translation_hint))
         AppActionRow {
             (listOf("ar", "en") + s.form.translations.keys).distinct().forEach { code ->
-                FilterChip(locale == code, { locale = code }, { Text(code) }, enabled = enabled)
+                AppFilterChip(locale == code, { locale = code }, { Text(code) }, enabled = enabled)
             }
         }
         val fields = s.form.translations[locale] as? kotlinx.serialization.json.JsonObject

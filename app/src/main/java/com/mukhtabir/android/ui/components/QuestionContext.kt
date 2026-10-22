@@ -23,7 +23,7 @@ fun QuestionContext(question: QuestionDto) {
             Text(stringResource(R.string.question_document, it), style = MaterialTheme.typography.bodySmall)
         }
         question.sourcePage?.let {
-            Text(stringResource(R.string.question_page, it), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.question_page, com.mukhtabir.android.util.formatNumber(it)), style = MaterialTheme.typography.bodySmall)
         }
         question.knowledgeObjectTitle?.takeIf(String::isNotBlank)?.let {
             Text(stringResource(R.string.question_knowledge, it), style = MaterialTheme.typography.titleSmall)

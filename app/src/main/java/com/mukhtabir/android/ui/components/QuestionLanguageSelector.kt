@@ -1,17 +1,16 @@
 package com.mukhtabir.android.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.R
-import com.mukhtabir.android.data.remote.completeQuestionLocales
 import com.mukhtabir.android.data.remote.caseTranslationLocales
+import com.mukhtabir.android.data.remote.completeQuestionLocales
 import com.mukhtabir.android.data.remote.questionTranslationApplied
 import com.mukhtabir.android.data.remote.translationLocale
+import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.util.bidi
 import java.util.Locale
 import kotlinx.serialization.json.JsonObject
@@ -44,10 +43,10 @@ fun QuestionLanguageSelector(translations: JsonObject, choiceCount: Int, selecte
         action?.invoke()
     }
     AppActionRow {
-        FilterChip(selected = !anyApplied, onClick = { onSelected("") }, enabled = enabled,
+        AppFilterChip(selected = !anyApplied, onClick = { onSelected("") }, enabled = enabled,
             label = { Text(stringResource(R.string.question_original)) })
         options.forEach { tag ->
-            FilterChip(selected = anyApplied && tag.replace('_', '-').equals(selectedTag?.replace('_', '-'), ignoreCase = true), onClick = { onSelected(tag) },
+            AppFilterChip(selected = anyApplied && tag.replace('_', '-').equals(selectedTag?.replace('_', '-'), ignoreCase = true), onClick = { onSelected(tag) },
                 enabled = enabled, label = { Text(bidi(Locale.forLanguageTag(tag.replace('_', '-')).getDisplayName(Locale.getDefault()).ifBlank { tag })) })
         }
     }

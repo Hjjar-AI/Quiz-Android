@@ -1,26 +1,12 @@
 package com.mukhtabir.android.ui.masterexams
 
-import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.ui.components.AppPageHeading
-
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
-
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-
-import com.mukhtabir.android.ui.components.AppDangerTextButton
-
-import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import com.mukhtabir.android.ui.components.AppConfirmationDialog as AlertDialog
-import com.mukhtabir.android.ui.components.AppFilterChip as FilterChip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.mukhtabir.android.ui.components.AppTextButton as TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -30,16 +16,28 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
+import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.EmptyState
+import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal data class DraftLibraryState(
     val rows: List<QuestionDto> = emptyList(), val query: String = "", val usage: String = "", val page: Int = 1,
@@ -256,12 +254,12 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
     pageSize: Int, draftStore: com.mukhtabir.android.core.SessionDraftStore, initialId: Long? = null, onBack: () -> Unit, onBusyChanged: (Boolean) -> Unit) {
     if (!user.has("master_exams.drafts_library")) { Text(stringResource(R.string.error_forbidden)); return }
     val vm: ExamDraftLibraryViewModel = viewModel(key = "exam-drafts-${user.id}-$initialId", factory = ExamDraftLibraryViewModel.Factory(user, service, categories, maxChoices, initialId, draftStore))
-    val s by vm.state.collectAsState()
-    val recovery by vm.recovery.collectAsState()
-    val storageError by vm.recoveryError.collectAsState()
-    if (recovery != null) AlertDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
+    val s by vm.state.collectAsLifecycleState()
+    val recovery by vm.recovery.collectAsLifecycleState()
+    val storageError by vm.recoveryError.collectAsLifecycleState()
+    if (recovery != null) AppConfirmationDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
         text = { Text(stringResource(R.string.author_recover_body)) },
-        confirmButton = { TextButton(vm::restoreDraft, enabled = !s.busy) { Text(stringResource(R.string.author_restore)) } },
+        confirmButton = { AppTextButton(vm::restoreDraft, enabled = !s.busy) { Text(stringResource(R.string.author_restore)) } },
         dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
     var query by remember { mutableStateOf("") }
     var leave by remember { mutableStateOf(false) }
@@ -271,15 +269,15 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
     val back: () -> Unit = { if (!s.busy) { if (s.uncertain != null || (s.form != null && s.form?.payload(maxChoices) != s.baseline)) leave = true else if (s.selected != null && initialId == null) vm.close() else onBack() } }
     BackHandler(onBack = back)
     DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
-    if (leave) AlertDialog(onDismissRequest = { leave = false }, title = { Text(stringResource(R.string.unsaved_question_title)) },
+    if (leave) AppConfirmationDialog(onDismissRequest = { leave = false }, title = { Text(stringResource(R.string.unsaved_question_title)) },
         text = { Text(stringResource(if (s.uncertain != null) R.string.author_leave_unknown else R.string.unsaved_question_message)) }, confirmButton = { Column {
-            TextButton({ leave = false; vm.keepDraft(onBack) }) { Text(stringResource(R.string.author_save_later)) }
+            AppTextButton({ leave = false; vm.keepDraft(onBack) }) { Text(stringResource(R.string.author_save_later)) }
             if (s.uncertain == null) AppDangerTextButton({ leave = false; discarding = true; vm.close() }) { Text(stringResource(R.string.ux_discard_question_changes)) }
         } },
-        dismissButton = { TextButton({ leave = false }) { Text(stringResource(R.string.keep_editing)) } })
-    if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text(stringResource(R.string.ux_delete_private_question)) },
+        dismissButton = { AppTextButton({ leave = false }) { Text(stringResource(R.string.keep_editing)) } })
+    if (deleting) AppConfirmationDialog(onDismissRequest = { deleting = false }, title = { Text(stringResource(R.string.ux_delete_private_question)) },
         text = { Text(stringResource(R.string.exam_library_delete_warning)) }, confirmButton = { AppDangerTextButton({ deleting = false; vm.delete() }) { Text(stringResource(R.string.ux_delete_private_question)) } },
-        dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { AppTextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } })
     val validation = DraftValidationUi(if (s.invalid) s.form?.validationErrors(maxChoices).orEmpty() else emptyList(), s.validationAttempt)
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     LaunchedEffect(validation.attempt) { if (validation.errors.isNotEmpty()) listState.scrollToItem(if (s.review) 2 else 1) }
@@ -314,16 +312,16 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
             }
         } else {
             item {
-                OutlinedTextField(query, { query = it }, enabled = !s.busy, label = { Text(stringResource(R.string.search)) }, modifier = Modifier.fillMaxWidth())
+                AppTextField(query, { query = it }, enabled = !s.busy, label = { Text(stringResource(R.string.search)) }, modifier = Modifier.fillMaxWidth())
                 AppOutlinedButton({ vm.search(query, s.usage) }, enabled = !s.busy) { Text(stringResource(R.string.search)) }
                 listOf("" to R.string.all, "orphan" to R.string.exam_library_orphan, "attached" to R.string.exam_library_attached).forEach { (value, label) ->
-                    FilterChip(s.usage == value, { vm.search(query, value) }, enabled = !s.busy, label = { Text(stringResource(label)) })
+                    AppFilterChip(s.usage == value, { vm.search(query, value) }, enabled = !s.busy, label = { Text(stringResource(label)) })
                 }
-                if (!s.busy && s.rows.isEmpty()) Text(stringResource(R.string.master_empty))
+                if (!s.busy && s.rows.isEmpty()) EmptyState(stringResource(R.string.master_empty))
             }
             val size = pageSize.coerceAtLeast(1)
             items(s.rows.drop((s.page - 1) * size).take(size), key = { it.id }) { row ->
-                AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(com.mukhtabir.android.ui.components.AppLayoutTokens.denseCardInsets)) {
+                AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
                     MarkdownText(row.question)
                     AppOutlinedButton({ vm.open(row.id) }, enabled = !s.busy) { Text(stringResource(R.string.exam_author_edit)) }
                 } }

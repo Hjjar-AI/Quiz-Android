@@ -34,4 +34,4 @@ val readingParagraphBaseMargin = 8.dp
 /** Shared paragraph margin; density and Android font scaling are applied by the renderer. */
 @Composable
 fun readingParagraphMargin(compact: Boolean = false): Dp =
-    (if (compact) AppTheme.spacing.tight else readingParagraphBaseMargin) * (LocalReadingComfort.current.readingParagraphs / 100f)
+    (if (compact) AppTheme.spacing.content else readingParagraphBaseMargin) * (LocalReadingComfort.current.readingParagraphs / 100f)
