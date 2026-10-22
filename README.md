@@ -9,8 +9,7 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 | Tools, efficient checks, builds, artifacts, versions and server connection | [Build and setup guide](docs/guides/build-and-setup.md) |
 | Features, source ownership, controls, fonts, accessibility and adaptive layouts | [Native UI/source guide](docs/guides/native-ui.md) |
 | Download permissions, account/server isolation, drafts and uncertain writes | [Offline and recovery guide](docs/guides/offline-and-recovery.md) |
-| Current verification evidence and remaining device/API checks | [Verification checklist](docs/verification/checklist.md) |
-| Compact disposition of the supplied UI findings | [UI review](docs/verification/androidUiReview.md) · [checking.md](checking.md) |
+| Review disposition, current evidence and remaining device/API checks | [Verification status](docs/verification/checklist.md) |
 | Shared server contracts | [Learning](../backend/docs/contracts/learningConsistency.md) · [Writes/recovery](../backend/docs/contracts/writeRecovery.md) · [Schema readiness](../backend/docs/contracts/schemaReadiness.md) |
 | Vue client documentation | [Frontend index](../frontend/docs/README.md) |
 
