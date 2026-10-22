@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,12 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
@@ -36,7 +32,6 @@ import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
-import com.mukhtabir.android.ui.components.AppToggleRow
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownField
@@ -81,13 +76,7 @@ internal fun ExamMetadataFields(form: ExamForm, exam: com.mukhtabir.android.data
 
 @Composable
 private fun ExamCheck(checked: Boolean, label: Int, enabled: Boolean, onChange: (Boolean) -> Unit) {
-    // A labeled checkbox row gives TalkBack the same caption as sighted users.
-    AppToggleRow(Modifier.fillMaxWidth()
-        .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onChange)
-        .semantics(mergeDescendants = true) {}, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        Checkbox(checked, onCheckedChange = null, enabled = enabled)
-        Text(stringResource(label))
-    }
+    AppCheckboxRow(stringResource(label), checked, onChange, enabled = enabled)
 }
 
 @Composable

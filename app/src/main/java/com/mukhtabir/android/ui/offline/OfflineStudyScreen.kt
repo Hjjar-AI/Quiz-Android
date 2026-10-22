@@ -2,7 +2,6 @@
 
 package com.mukhtabir.android.ui.offline
 
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Icon
@@ -248,11 +248,9 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                 }
             }
             if(!localOnly && canSync) item {
-                androidx.compose.foundation.layout.Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                    androidx.compose.material3.Checkbox(checked=s.bank?.takeIf { !it.complete }?.includeImages ?: s.includeImages,
-                        onCheckedChange=vm::includeImages, enabled=!s.busy && s.bank?.complete!=false)
-                    Text(stringResource(R.string.offline_include_images))
-                }
+                AppCheckboxRow(stringResource(R.string.offline_include_images),
+                    checked=s.bank?.takeIf { !it.complete }?.includeImages ?: s.includeImages,
+                    onCheckedChange=vm::includeImages, enabled=!s.busy && s.bank?.complete!=false)
                 AppTextField(s.ids,vm::ids,label={Text(stringResource(R.string.offline_ids))},enabled=!s.busy,modifier=Modifier.fillMaxWidth())
                 Text(stringResource(R.string.offline_limits, com.mukhtabir.android.util.formatNumber(maxQuestions.coerceAtMost(200))))
                 AppButton(vm::download,modifier=Modifier.fillMaxWidth(),enabled=!s.busy && !s.storageFailed && s.syncingIds.isEmpty()) {Text(stringResource(R.string.offline_download))}

@@ -3,6 +3,8 @@
 
 Requires ffmpeg. Run: python3 artwork/generate_launcher_icons.py
 The edited master stays unchanged; FFmpeg handles cropping/scaling/compositing.
+All Android versions use the density PNGs directly. Do not add adaptive-icon
+overrides or roundIcon: those opt into launcher-controlled masks/backgrounds.
 """
 from pathlib import Path
 import re
@@ -55,6 +57,8 @@ def main():
         run_ffmpeg('-v', 'error', '-y', '-i', SOURCE, '-vf', filters,
                     '-frames:v', '1', '-threads', '1', target)
         print(f'{density}: {size}x{size}')
+    # Reference adaptive foreground only; not selected by the manifest. The
+    # app uses the transparent density PNGs on every Android version.
     # Android adaptive foreground: 52dp artwork on the 108dp layer. The
     # asymmetric paper/handle needs more mask clearance than a circular mark.
     target = RES / 'drawable-nodpi/ic_launcher_artwork.png'

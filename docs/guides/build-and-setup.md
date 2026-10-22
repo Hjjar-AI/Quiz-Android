@@ -1,14 +1,16 @@
 # Toolchain, builds and server setup
 
+For the reusable cross-project setup, cache snapshot recipe, ownership model, IDE/Windows differences and troubleshooting, see [Shared build tools and caches](shared-build-tools-and-caches.md). This file covers Mukhtabir-specific commands and policy.
+
 ## Verification workflow
 
-Use tools already installed on the machine and persistent, account-owned caches. A long-running build is not inherently token intensive: redirect its output to one local log, wait/poll without dumping it, then report the exit status and relevant diagnostics. Do not run a build solely for documentation edits. Ask and receive explicit user approval before creating new automated test files or temporary test scripts; relevant existing tests can be reused under the [agent policy](../../Agents.md#efficient-verification).
+Use tools already installed on the machine and persistent, account-owned caches. A long-running build is not inherently token intensive: redirect its output to one local log, wait/poll without dumping it, then report the exit status and relevant diagnostics. Builds (including compilation/packaging) and extensive tests require explicit user confirmation of the proposed command and scope under the [agent policy](../../Agents.md#efficient-verification). Do not run a build solely for documentation edits. Ask and receive explicit user approval before creating new automated test files or temporary test scripts; relevant existing tests can be reused under the [agent policy](../../Agents.md#efficient-verification).
 
 1. Inspect the current project requirements and wrapper version. Check `JAVA_HOME`, PATH, `ANDROID_HOME`/`ANDROID_SDK_ROOT` and ignored `local.properties`; never commit a machine-specific path.
 2. Use the existing helper's `python3 build.py --check` to validate selected JDK/SDK without Gradle or downloads. If PATH selects the wrong Java, first look for an installed JDK 17 and select it for the command. A newer JDK on PATH is not proof that JDK 17 is missing.
-3. Before invoking the wrapper, confirm its pinned distribution is already cached. **Gradle `--offline` does not prevent the wrapper itself downloading a missing distribution.** An already installed matching Gradle is also usable if the repository's account-local cache/output settings are retained. Do not replace the pinned version with an arbitrary system version.
+3. Before invoking the wrapper, confirm its pinned distribution is already cached. **Gradle `--offline` does not prevent the wrapper itself downloading a missing distribution.** The POSIX wrapper can reuse an installed matching distribution through `MUKHTABIR_GRADLE_HOME` or `gradle.home=/absolute/path/to/gradle-8.7` in ignored `local.properties` (environment setting takes precedence). It checks the launcher JAR against the pinned version before reserving an app version, then retains account-local cache/output settings. An invalid configured installation fails explicitly; with neither setting, normal wrapper distribution lookup/download behavior applies. Windows continues to use its wrapper distribution. Do not replace the pinned version with an arbitrary system version.
 4. Check for other active builds across projects/IDEs and available RAM/memory pressure immediately before starting. Use installed process/memory tools (for example, `ps` and `free -h` on Linux or Task Manager/PowerShell on Windows). Idle Gradle daemons alone are not active builds; use available memory rather than counting reclaimable cache as pressure. If another build is running or RAM usage is high/headroom insufficient, continue independent work or wait briefly and recheck. Do not launch a competing build, kill unrelated processes or clear caches. If pressure persists or cannot be assessed, finish with an explicit skipped-build reason and the exact command for the user to run manually.
-5. Start with cached-only dependencies and a relevant focused check. For native changes that require compilation/resource checking, one debug build is allowed. Pass `-Pmukhtabir.autoVersion=false` to packaging commands used for verification. Do not clean caches, force dependency refreshes or repeat successful builds without a new reason.
+5. Start with cached-only dependencies and a relevant focused check. For native changes that require compilation/resource checking, run a debug build only after explicit user confirmation. Pass `-Pmukhtabir.autoVersion=false` to packaging commands used for verification. Do not clean caches, force dependency refreshes or repeat successful builds without a new reason.
 6. If a required tool/distribution/dependency is missing, report exactly what is missing and ask the user to install or approve a **one-time persistent** installation/cache fill. Stop dependent commands while awaiting the answer; continue independent work. Do not fetch throwaway toolchains, disposable virtual environments, SDKs, browsers or emulators repeatedly for verification.
 7. Broaden checks only for new failures, affected integration boundaries or an explicit request. State what actually passed and what remains unverified; compilation does not establish device, API or concurrency behavior.
 
@@ -18,7 +20,7 @@ A cached-distribution check and a verification build from the Android root:
 python3 build.py --check
 # Inspect the existing wrapper cache before any wrapper execution:
 # ~/.gradle/wrapper/dists/gradle-8.7-bin/*/gradle-8.7/bin/gradle
-# Only after toolchain/cache and active-build/RAM preflight succeeds:
+# Only after explicit user confirmation and successful toolchain/cache and active-build/RAM preflight:
 ./gradlew --offline --console=plain -Pmukhtabir.autoVersion=false assembleDebug > /tmp/mukhtabir-build.log 2>&1
 ```
 
@@ -55,6 +57,10 @@ python3 build.py debug --format aab              # Debug AAB
 python3 build.py --install                      # Debug APK; install on connected compatible devices
 python3 build.py --offline                      # Debug APK using cached dependencies
 ```
+
+### Reusing existing dependency downloads
+
+The POSIX wrapper accepts `gradle.readOnlyCache` in ignored `local.properties`, or standard `GRADLE_RO_DEP_CACHE` (environment takes precedence). Both point to the parent of a prepared `modules-2` snapshot. New writes remain account-local; normal mode can download missing dependencies, while `--offline` fails instead. Follow the canonical [snapshot setup and maintenance procedure](shared-build-tools-and-caches.md#4-reuse-previously-downloaded-dependencies); do not use a live writable cache as the seed.
 
 ### Artifacts and caches
 

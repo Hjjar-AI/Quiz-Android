@@ -4,7 +4,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -13,18 +12,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,103 +29,26 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.theme.AppShapes
+import com.mukhtabir.android.ui.theme.AppSurfaces
 import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
 private fun appCardBorder() = BorderStroke(AppLayoutTokens.cardBorderWidth, MaterialTheme.colorScheme.outlineVariant.copy(alpha = AppControlTokens.cardBorderAlpha))
 
-/** Consistent actions: readable wrapping labels and a minimum 48dp touch target. */
-@Composable
-fun AppButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit) {
-    AppFilledButton(onClick, modifier, enabled, MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.onPrimary, content)
-}
-
-/** Filled alternative action that remains distinct from the page and card surfaces. */
-@Composable
-fun AppSecondaryButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit) {
-    AppFilledButton(onClick, modifier, enabled, MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.onSecondary, content)
-}
-
-@Composable
-private fun AppFilledButton(onClick: () -> Unit, modifier: Modifier, enabled: Boolean,
-    containerColor: Color, contentColor: Color, content: @Composable RowScope.() -> Unit) {
-    Button(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget), enabled = enabled,
-        shape = MaterialTheme.shapes.medium, contentPadding = AppLayoutTokens.primaryContentPadding,
-        colors = ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor,
-            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContainerAlpha),
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)), content = content)
-}
-
-@Composable
-fun AppOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit) {
-    AppSecondaryOutlinedButton(onClick, modifier, enabled, MaterialTheme.colorScheme.onSurfaceVariant, content)
-}
-
-/** Short primary frame with the same full-height clickable surface as secondary actions. */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-fun AppCompactButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    val foreground = if (enabled) scheme.onPrimary else scheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)
-    Surface(onClick = onClick, enabled = enabled,
-        modifier = modifier.heightIn(min = AppLayoutTokens.touchTarget).semantics { role = Role.Button },
-        shape = MaterialTheme.shapes.medium, color = Color.Transparent, contentColor = foreground) {
-        Box(Modifier.padding(vertical = AppLayoutTokens.secondaryFrameInset), propagateMinConstraints = true) {
-            Surface(shape = MaterialTheme.shapes.medium,
-                color = if (enabled) scheme.primary else scheme.onSurface.copy(alpha = AppControlTokens.disabledContainerAlpha), contentColor = foreground) {
-                Row(Modifier.heightIn(min = AppLayoutTokens.secondaryVisualHeight).padding(AppLayoutTokens.secondaryContentPadding),
-                    horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    ProvideTextStyle(MaterialTheme.typography.labelLarge) { content() }
-                }
-            }
-        }
-    }
-}
-
-/** Compact visible frame inside a full clickable/keyboard-accessible Material surface. */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-internal fun AppSecondaryOutlinedButton(onClick: () -> Unit, modifier: Modifier, enabled: Boolean,
-    contentColor: Color, content: @Composable RowScope.() -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    val textColor = if (enabled) contentColor else scheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)
-    Surface(onClick = onClick, enabled = enabled,
-        modifier = modifier.heightIn(min = AppLayoutTokens.touchTarget).widthIn(min = AppLayoutTokens.touchTarget)
-            .semantics { role = Role.Button },
-        shape = MaterialTheme.shapes.medium, color = Color.Transparent, contentColor = textColor) {
-        Box(Modifier.padding(vertical = AppLayoutTokens.secondaryFrameInset), propagateMinConstraints = true) {
-            Surface(shape = MaterialTheme.shapes.medium, color = Color.Transparent, contentColor = textColor,
-                border = BorderStroke(AppLayoutTokens.cardBorderWidth, if (enabled) scheme.outlineVariant else scheme.onSurface.copy(alpha = AppControlTokens.disabledBorderAlpha))) {
-                Row(Modifier.heightIn(min = AppLayoutTokens.secondaryVisualHeight).padding(AppLayoutTokens.secondaryContentPadding),
-                    horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    ProvideTextStyle(MaterialTheme.typography.labelLarge) { content() }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun AppCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Card(modifier, shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    Card(modifier, shape = AppShapes.container,
+        colors = CardDefaults.cardColors(containerColor = AppSurfaces.container),
         border = appCardBorder(), content = content)
 }
 
@@ -137,8 +56,8 @@ fun AppCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -
 @Composable
 fun AppCard(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit) {
-    Card(onClick = onClick, modifier = modifier, enabled = enabled, shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    Card(onClick = onClick, modifier = modifier, enabled = enabled, shape = AppShapes.container,
+        colors = CardDefaults.cardColors(containerColor = AppSurfaces.container),
         border = BorderStroke(AppLayoutTokens.cardBorderWidth, MaterialTheme.colorScheme.outline), content = content)
 }
 
@@ -167,7 +86,7 @@ fun AppPageHeading(title: String, subtitle: String? = null, action: @Composable 
                 }
                 subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
-        } else if (headingMaxWidth < AppLayoutTokens.headingBreakpoint || fontScale >= 1.3f) {
+        } else if (AppAdaptiveTokens.stack(headingMaxWidth, AppLayoutTokens.headingBreakpoint, fontScale)) {
             Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 PageHeadingText(title, subtitle, titleAnimationDurationMillis = titleAnimationDurationMillis)
                 action?.invoke()
@@ -267,7 +186,7 @@ fun AppCheckboxRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -
 fun AppSearchRow(field: @Composable (Modifier) -> Unit, action: @Composable () -> Unit) {
     val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-        if (maxWidth < AppLayoutTokens.headingBreakpoint || scale >= 1.3f) {
+        if (AppAdaptiveTokens.stack(maxWidth, AppLayoutTokens.headingBreakpoint, scale)) {
             Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 field(Modifier.fillMaxWidth())
                 action()
@@ -279,5 +198,18 @@ fun AppSearchRow(field: @Composable (Modifier) -> Unit, action: @Composable () -
                 action()
             }
         }
+    }
+}
+
+/** One labelled single-choice target; callers provide a selectableGroup around related rows. */
+@Composable
+fun AppRadioRow(label: String, selected: Boolean, onClick: () -> Unit,
+    modifier: Modifier = Modifier, enabled: Boolean = true,
+    leadingIcon: (@Composable () -> Unit)? = null) {
+    AppToggleRow(modifier.selectable(selected = selected, enabled = enabled,
+        role = Role.RadioButton, onClick = onClick).padding(AppLayoutTokens.pagePadding)) {
+        androidx.compose.material3.RadioButton(selected, onClick = null, enabled = enabled)
+        leadingIcon?.invoke()
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
     }
 }

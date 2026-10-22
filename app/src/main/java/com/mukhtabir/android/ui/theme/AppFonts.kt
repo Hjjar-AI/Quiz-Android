@@ -12,6 +12,10 @@ import androidx.core.content.res.ResourcesCompat
 
 private val variableFonts = setOf("noto-arabic", "inter", "outfit", "cairo")
 
+/** Weight roles follow the actual face, including the Amiri fallback on API 23–25. */
+internal fun supportsAppFontWeights(name: String): Boolean =
+    name in variableFonts && Build.VERSION.SDK_INT >= 26
+
 /** Static fonts expose their real regular face. Variable weights require API 26. */
 @OptIn(ExperimentalTextApi::class)
 internal fun appFontFamily(resource: Int, name: String): FontFamily {

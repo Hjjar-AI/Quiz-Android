@@ -1,7 +1,11 @@
 package com.mukhtabir.android.ui.theme
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.core.ThemePreference
 
@@ -28,4 +32,14 @@ fun themeShapes(preference: ThemePreference): Shapes {
     }
     return Shapes(RoundedCornerShape(radii[0].dp),RoundedCornerShape(radii[1].dp),
         RoundedCornerShape(radii[2].dp),RoundedCornerShape(radii[3].dp),RoundedCornerShape(radii[4].dp))
+}
+
+/** Semantic aliases preserve each selected theme's existing radii. */
+object AppShapes {
+    val control: Shape @Composable get() = MaterialTheme.shapes.medium
+    val container: Shape @Composable get() = MaterialTheme.shapes.medium
+    val chip: Shape @Composable get() = MaterialTheme.shapes.medium
+    val dialog: Shape @Composable get() = MaterialTheme.shapes.large
+    val sheet: Shape @Composable get() = MaterialTheme.shapes.extraLarge
+    val indicator: Shape get() = CircleShape
 }

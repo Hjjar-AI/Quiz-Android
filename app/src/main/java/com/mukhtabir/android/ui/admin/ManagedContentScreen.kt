@@ -5,13 +5,11 @@ package com.mukhtabir.android.ui.admin
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -19,11 +17,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,6 +31,7 @@ import com.mukhtabir.android.data.remote.ManagedKind
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationButton
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
@@ -154,16 +151,13 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
                 s.lookupError?.let { item { ErrorState(throwable=it,onRetry=vm::loadCategories) } }
                 items((s.categories.map { it.id }+s.weights.keys).distinct(),key={"category-$it"}) { id ->
                     val categoryLabel=s.categories.firstOrNull {it.id==id}?.name ?: "#$id"
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        Checkbox(id in s.weights,{checked -> vm.weight(id,if(checked) "1" else null)},enabled=!busy,modifier=Modifier.semantics {contentDescription=categoryLabel})
-                        Column(Modifier.weight(1f)) {
-                            Text(categoryLabel)
-                            if(id in s.weights) AppTextField(s.weights.getValue(id),{vm.weight(id,it)},enabled=!busy,
-                                keyboardOptions=androidx.compose.foundation.text.KeyboardOptions(keyboardType=androidx.compose.ui.text.input.KeyboardType.Decimal),
-                                label={Text(stringResource(R.string.manage_weight))},modifier=Modifier.fillMaxWidth(),
-                textStyle = com.mukhtabir.android.util.ltrInputStyle(),
-            )
-                        }
+                    Column {
+                        AppCheckboxRow(categoryLabel, id in s.weights,
+                            onCheckedChange={checked -> vm.weight(id,if(checked) "1" else null)}, enabled=!busy)
+                        if(id in s.weights) AppTextField(s.weights.getValue(id),{vm.weight(id,it)},enabled=!busy,
+                            keyboardOptions=androidx.compose.foundation.text.KeyboardOptions(keyboardType=androidx.compose.ui.text.input.KeyboardType.Decimal),
+                            label={Text(stringResource(R.string.manage_weight))},modifier=Modifier.fillMaxWidth(),
+                            textStyle = com.mukhtabir.android.util.ltrInputStyle())
                     }
                 }
                 if(!s.categoriesLoaded) item { AppOutlinedButton(vm::loadCategories,enabled=!busy) { Text(stringResource(R.string.retry)) } }
@@ -184,10 +178,9 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
                 s.usersError?.let { item { ErrorState(throwable=it,onRetry=if(!busy) ({vm.searchUsers(s.users?.page ?: 1)}) else null) } }
                 s.users?.let { users ->
                     items(users.items,key={"lookup-${it.id}"}) { user ->
-                        Row(verticalAlignment=Alignment.CenterVertically) {
-                            Checkbox(user.id in parseMemberIds(s.memberIds).orEmpty(),{vm.selectUser(user.id)},enabled=!busy,modifier=Modifier.semantics {contentDescription=com.mukhtabir.android.util.accountIdentity(user.displayName, user.username, user.id)})
-                            Text(com.mukhtabir.android.util.accountIdentity(user.displayName, user.username, user.id))
-                        }
+                        AppCheckboxRow(com.mukhtabir.android.util.accountIdentity(user.displayName, user.username, user.id),
+                            user.id in parseMemberIds(s.memberIds).orEmpty(),
+                            onCheckedChange={vm.selectUser(user.id)}, enabled=!busy)
                     }
                     item { AppActionRow() {
                         AppOutlinedButton({vm.searchUsers(users.page-1)},enabled=!busy && users.page>1) { Text(stringResource(R.string.previous)) }

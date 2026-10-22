@@ -16,6 +16,7 @@ import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppBottomSheet
 import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppSheetSize
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.LearningQuestionChips
 import com.mukhtabir.android.ui.components.LearningSessionHeader
@@ -87,6 +88,7 @@ internal fun SessionNavigation(ui: SessionPresentation, viewModel: QuizViewModel
     var showQuestions by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
     if (showQuestions) AppBottomSheet(
         title = stringResource(R.string.session_question_navigation), onDismiss = { showQuestions = false },
+        size = AppSheetSize.FULL,
         actions = { AppTextButton({ showQuestions = false }) { Text(stringResource(R.string.done)) } },
     ) {
         Text(stringResource(R.string.flow_final_counts,

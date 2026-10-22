@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun Modifier.appVerticalScrollIndicator(state: ScrollState): Modifier {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val track = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=.22f)
-    val thumb = MaterialTheme.colorScheme.primary.copy(alpha=.72f)
+    val track = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=AppControlTokens.scrollTrackAlpha)
+    val thumb = MaterialTheme.colorScheme.primary.copy(alpha=AppControlTokens.scrollThumbAlpha)
     return drawWithContent {
         drawContent()
         val maximum = state.maxValue

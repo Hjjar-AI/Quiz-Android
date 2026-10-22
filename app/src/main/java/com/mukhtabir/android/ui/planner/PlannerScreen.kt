@@ -8,11 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -35,6 +31,7 @@ import com.mukhtabir.android.data.remote.PlannerService
 import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
 import com.mukhtabir.android.ui.components.AppDangerTextButton
@@ -48,7 +45,6 @@ import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
-import com.mukhtabir.android.ui.components.AppToggleRow
 import com.mukhtabir.android.ui.components.BlockedBackHandler
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
@@ -205,12 +201,8 @@ fun PlannerRoute(service: PlannerService, categoryService: CategoryService, ques
                         .map { it to stringResource(R.string.planner_category_unavailable, com.mukhtabir.android.util.formatNumber(it)) }
                 if (options.isEmpty() && !state.optionsLoading && state.optionsError==null && state.loaded) EmptyState(stringResource(R.string.no_items))
                 options.forEach { (id, name) ->
-                    AppToggleRow(Modifier.fillMaxWidth().toggleable(
-                        value = id in state.selectedCategories, enabled = enabled, role = Role.Checkbox,
-                        onValueChange = { vm.toggleCategory(id) }), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                        Checkbox(checked = id in state.selectedCategories, onCheckedChange = null)
-                        Text(name, Modifier.weight(1f))
-                    }
+                    AppCheckboxRow(name, id in state.selectedCategories,
+                        onCheckedChange = { vm.toggleCategory(id) }, enabled = enabled)
                 }
             }
         },

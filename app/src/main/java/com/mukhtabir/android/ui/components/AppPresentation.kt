@@ -19,6 +19,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.theme.AppShapes
+import com.mukhtabir.android.ui.theme.AppSurfaces
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
 
@@ -62,7 +64,7 @@ fun AnswerChoice(number: Int, text: String, modifier: Modifier = Modifier,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (answerCorrect != null) Icon(if (answerCorrect) Icons.Filled.Check else Icons.Filled.Close,
-                        contentDescription = null, modifier = Modifier.size(16.dp))
+                        contentDescription = null, modifier = Modifier.size(AppIconSize.inline))
                     Text(label, style = MaterialTheme.typography.labelMedium)
                 }
             }
@@ -107,7 +109,7 @@ fun AppConfirmationDialog(onDismissRequest: () -> Unit, confirmButton: @Composab
         } }
     }
     AlertDialog(onDismissRequest, confirmButton, modifier = modifier, dismissButton = dismissButton,
-        title = heading, text = body, icon = icon, shape = MaterialTheme.shapes.large)
+        title = heading, text = body, icon = icon, shape = AppShapes.dialog)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,7 +117,7 @@ fun AppConfirmationDialog(onDismissRequest: () -> Unit, confirmButton: @Composab
 fun AppFilterChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit,
     modifier: Modifier = Modifier, enabled: Boolean = true,
     leadingIcon: (@Composable () -> Unit)? = null, trailingIcon: (@Composable () -> Unit)? = null,
-    shape: Shape = MaterialTheme.shapes.medium,
+    shape: Shape = AppShapes.chip,
     colors: SelectableChipColors = FilterChipDefaults.filterChipColors(
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
         labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -167,7 +169,7 @@ fun AppMetadataChips(values: List<String>, modifier: Modifier = Modifier) {
 fun AppMetricRow(label: String, value: String, modifier: Modifier = Modifier) {
     val scale = LocalDensity.current.fontScale
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        if (maxWidth < AppLayoutTokens.sessionHeaderBreakpoint || scale >= 1.5f) {
+        if (AppAdaptiveTokens.stack(maxWidth, AppLayoutTokens.sessionHeaderBreakpoint, scale, AppAdaptiveTokens.extraLargeText)) {
             Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
                 Text(label, style = MaterialTheme.typography.bodyMedium)
                 Text(com.mukhtabir.android.util.bidi(value), style = MaterialTheme.typography.bodyMedium,
@@ -232,7 +234,7 @@ fun AppTileGrid(count: Int, modifier: Modifier = Modifier,
 @Composable
 fun AppMetricTile(value: String, label: String, modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null, accent: Color = MaterialTheme.colorScheme.primary,
-    container: Color = AppTheme.questionSurfaces.choice,
+    container: Color = AppSurfaces.choice,
     valueStyle: TextStyle = MaterialTheme.typography.titleLarge,
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
     val body: @Composable () -> Unit = {
@@ -249,10 +251,10 @@ fun AppMetricTile(value: String, label: String, modifier: Modifier = Modifier,
         }
     }
     val border = BorderStroke(AppLayoutTokens.cardBorderWidth, AppTheme.questionSurfaces.border)
-    if (onClick == null) Surface(modifier, shape = MaterialTheme.shapes.medium, color = container,
+    if (onClick == null) Surface(modifier, shape = AppShapes.container, color = container,
         border = border, content = body)
     else Surface(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget),
-        shape = MaterialTheme.shapes.medium, color = container, border = border, content = body)
+        shape = AppShapes.container, color = container, border = border, content = body)
 }
 
 private object AppPresentationGeometry {

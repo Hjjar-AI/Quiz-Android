@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.auth
 
-import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
@@ -38,6 +36,7 @@ import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppCard
 import com.mukhtabir.android.ui.components.AppCardBody
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.ui.components.AppLaunchHeader
@@ -46,10 +45,10 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
-import com.mukhtabir.android.ui.components.AppToggleRow
 import com.mukhtabir.android.ui.components.DemoLaunchCard
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
@@ -230,14 +229,8 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
         }
         val selectedUrl = if (usingFile) fileUrl else ServerSettings.normalize(input)
         if (settings.read() != null && selectedUrl != settings.read()) {
-            AppToggleRow(
-                modifier = Modifier.fillMaxWidth().toggleable(
-                    value = sameServer, enabled = !busy, role = androidx.compose.ui.semantics.Role.Checkbox,
-                    onValueChange = { sameServer = it }),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                androidx.compose.material3.Checkbox(sameServer, onCheckedChange = null, enabled = !busy)
-                Text(stringResource(R.string.server_same_server), modifier = Modifier.weight(1f))
-            }
+            AppCheckboxRow(stringResource(R.string.server_same_server), sameServer,
+                onCheckedChange = { sameServer = it }, enabled = !busy)
             Text(stringResource(R.string.server_same_server_hint))
         }
         AppSection(stringResource(R.string.server_show_help), enabled = !busy,

@@ -1,15 +1,14 @@
 package com.mukhtabir.android.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -20,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.mukhtabir.android.R
+import com.mukhtabir.android.ui.theme.AppShapes
 import com.mukhtabir.android.util.ltrInputStyle
 
 /** Shared geometry; multiline editors retain Enter while single-line forms default to Next. */
@@ -69,7 +70,7 @@ fun AppTextField(
             onNext = { focus.moveFocus(FocusDirection.Next) },
             onDone = { focus.clearFocus(); keyboard?.hide() }),
         singleLine = singleLine, maxLines = maxLines, minLines = minLines,
-        shape = MaterialTheme.shapes.medium)
+        shape = AppShapes.control)
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
@@ -107,7 +108,7 @@ fun AppTextField(
             onNext = { focus.moveFocus(FocusDirection.Next) },
             onDone = { focus.clearFocus(); keyboard?.hide() }),
         singleLine = singleLine, maxLines = maxLines, minLines = minLines,
-        shape = MaterialTheme.shapes.medium)
+        shape = AppShapes.control)
 }
 
 /** Visibility is memory-only and reset when the form leaves composition. */

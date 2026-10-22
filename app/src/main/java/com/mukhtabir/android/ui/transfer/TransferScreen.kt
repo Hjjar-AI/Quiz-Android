@@ -10,11 +10,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,8 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
@@ -38,6 +33,7 @@ import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.data.remote.TransferService
 import com.mukhtabir.android.data.remote.UserDto
 import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppDangerTextButton
 import com.mukhtabir.android.ui.components.AppFilterChip
@@ -49,7 +45,6 @@ import com.mukhtabir.android.ui.components.AppPasswordField
 import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
-import com.mukhtabir.android.ui.components.AppToggleRow
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
@@ -60,7 +55,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -412,13 +406,7 @@ private fun Choice(value: String, options: List<Pair<String, Int>>, enabled: Boo
 
 @Composable
 private fun Check(value: Boolean, label: Int, enabled: Boolean, change: (Boolean) -> Unit) {
-    AppToggleRow(
-        Modifier.fillMaxWidth().toggleable(value, enabled = enabled, role = Role.Checkbox, onValueChange = change),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-    ) {
-        Checkbox(value, onCheckedChange = null, enabled = enabled)
-        Text(stringResource(label))
-    }
+    AppCheckboxRow(stringResource(label), value, change, enabled = enabled)
 }
 
 @Composable

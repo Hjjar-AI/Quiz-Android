@@ -2,16 +2,13 @@ package com.mukhtabir.android.ui.admin
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,11 +18,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,6 +30,7 @@ import com.mukhtabir.android.data.remote.QuestionRatingRowDto
 import com.mukhtabir.android.data.remote.localizedForDisplay
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.ui.components.AppLayoutTokens
@@ -212,11 +208,7 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
 
 @Composable
 private fun ModerationSelection(selected: Boolean, enabled: Boolean, label: String, toggle: () -> Unit) {
-    Row(modifier=Modifier.fillMaxWidth().toggleable(value=selected,enabled=enabled,role=Role.Checkbox,onValueChange={toggle()}),
-        verticalAlignment=Alignment.CenterVertically) {
-        Checkbox(checked=selected,onCheckedChange=null,enabled=enabled)
-        Text(label,modifier=Modifier.weight(1f))
-    }
+    AppCheckboxRow(label, selected, onCheckedChange={toggle()}, enabled=enabled)
 }
 
 

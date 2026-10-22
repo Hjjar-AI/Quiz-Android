@@ -4,13 +4,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
@@ -269,12 +267,9 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
         title={Text(stringResource(R.string.category_merge))},
         text={Column {
             Text(stringResource(R.string.category_merge_impact,source.name))
-            LazyColumn { items(s.items.filterNot {it.id==source.id},key={it.id}) { target ->
-                Row(Modifier.fillMaxWidth().selectable(selected=mergeTarget?.id==target.id,enabled=editable,
-                    role=Role.RadioButton,onClick={mergeTarget=target}).padding(8.dp)) {
-                    RadioButton(selected=mergeTarget?.id==target.id,onClick=null,enabled=editable)
-                    Text(target.name,Modifier.weight(1f))
-                }
+            LazyColumn(Modifier.selectableGroup()) { items(s.items.filterNot {it.id==source.id},key={it.id}) { target ->
+                AppRadioRow(target.name, selected=mergeTarget?.id==target.id, enabled=editable,
+                    onClick={mergeTarget=target})
             } }
         }},
         confirmButton={AppButton({val target=mergeTarget;mergeSource=null;mergeTarget=null;vm.merge(source,target)},enabled=editable && mergeTarget!=null) {Text(stringResource(R.string.category_merge))}},
@@ -285,11 +280,10 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
         confirmButton={AppDangerTextButton({val target=nextEditor;discardEditor=false;nextEditor=null;vm.cancelEdit();target?.let(vm::edit)},enabled=!s.busy && !blocked) {Text(stringResource(R.string.ux_discard_category_changes))}},
         dismissButton={AppTextButton({discardEditor=false;nextEditor=null}) {Text(stringResource(R.string.cancel))}})
     if(iconPicker) AppConfirmationDialog(onDismissRequest={iconPicker=false},title={Text(stringResource(R.string.category_icon))}, text={
-        LazyColumn { items(categoryIconOptions,key={it.value}) { option ->
-            Row(Modifier.fillMaxWidth().selectable(selected=s.draft.icon==option.value,role=Role.RadioButton,onClick={vm.field(icon=option.value);iconPicker=false}).padding(8.dp)) {
-                RadioButton(selected=s.draft.icon==option.value,onClick=null);Icon(iconFor(option.nativeIcon),contentDescription=null)
-                Text(stringResource(option.label),Modifier.weight(1f))
-            }
+        LazyColumn(Modifier.selectableGroup()) { items(categoryIconOptions,key={it.value}) { option ->
+            AppRadioRow(stringResource(option.label), selected=s.draft.icon==option.value,
+                enabled=editable, onClick={vm.field(icon=option.value);iconPicker=false},
+                leadingIcon={Icon(iconFor(option.nativeIcon),contentDescription=null)})
         }
         if(categoryIconOptions.none {it.value==s.draft.icon}) item {Text(stringResource(R.string.category_icon_selected,s.draft.icon))} }
     },confirmButton={AppTextButton({iconPicker=false}) {Text(stringResource(R.string.close))}})

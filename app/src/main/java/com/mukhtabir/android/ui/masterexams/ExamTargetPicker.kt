@@ -2,36 +2,30 @@ package com.mukhtabir.android.ui.masterexams
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.MasterExamAuthorDto
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
-import com.mukhtabir.android.ui.components.AppToggleRow
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.util.formatNumber
@@ -130,13 +124,8 @@ internal fun ExamTargetPicker(p: ExamTargetPickerState, s: ExamEditorState, vm: 
                     if (!p.busy && p.error == null && p.rows.isEmpty()) EmptyState(stringResource(R.string.exam_target_empty))
                 }
                 items(p.rows, key = { "match-${it.id}" }) { row ->
-                    AppToggleRow(Modifier.fillMaxWidth()
-                        .toggleable(value = row.id in p.selected, enabled = enabled, role = Role.Checkbox,
-                            onValueChange = { vm.toggleTarget(row.id) })
-                        .semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(row.id in p.selected, onCheckedChange = null, enabled = enabled)
-                        Text(targetLabel(row.id, names))
-                    }
+                    AppCheckboxRow(targetLabel(row.id, names), row.id in p.selected,
+                        onCheckedChange = { vm.toggleTarget(row.id) }, enabled = enabled)
                 }
                 item {
                     Text(stringResource(R.string.exam_target_page, formatNumber(p.page), formatNumber(p.totalPages)))

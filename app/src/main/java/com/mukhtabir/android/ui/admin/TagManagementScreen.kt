@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -13,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
@@ -225,10 +223,8 @@ private fun TagRow(node: TagTreeNode, parents: List<TagTreeNode>, s: TagManageme
     AppCard(Modifier.fillMaxWidth().padding(start = (parents.size.coerceAtMost(3) * 8).dp)) {
         Column(Modifier.padding(AppLayoutTokens.denseCardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Row(Modifier.weight(1f).toggleable(node.id in s.selected, enabled=enabled, role=Role.Checkbox, onValueChange={vm.toggle(node.id)})) {
-                    Checkbox(node.id in s.selected, null, enabled=enabled)
-                    Text(node.name, Modifier.weight(1f), style=MaterialTheme.typography.titleMedium)
-                }
+                AppCheckboxRow(node.name, node.id in s.selected, modifier=Modifier.weight(1f),
+                    onCheckedChange={vm.toggle(node.id)}, enabled=enabled)
                 AppIconButton({vm.expand(node.id)}, enabled=!s.loading && !s.busy, modifier=Modifier.semantics { stateDescription=state }) {
                     Icon(if(expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                         stringResource(if(expanded) R.string.taxonomy_collapse else R.string.taxonomy_expand))

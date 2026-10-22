@@ -11,18 +11,18 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.QuestionDto
-import com.mukhtabir.android.data.remote.completeQuestionLocales
 import com.mukhtabir.android.data.remote.caseTranslationLocales
+import com.mukhtabir.android.data.remote.completeQuestionLocales
+import com.mukhtabir.android.data.remote.localizedForDisplay
 import com.mukhtabir.android.data.remote.questionTranslationApplied
 import com.mukhtabir.android.data.remote.translationFor
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import com.mukhtabir.android.data.remote.localizedForDisplay
 import com.mukhtabir.android.data.remote.translationLocale
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.bidi
 import java.util.Locale
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 /** No writes or grading. Callers own recall-choice and explanation reveal permissions. */
 @Composable
@@ -58,7 +58,7 @@ fun BilingualQuestionComparison(question: QuestionDto, choicesVisible: Boolean, 
         }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val readingScale = com.mukhtabir.android.ui.theme.LocalReadingComfort.current.readingSize / 100f
-            if (maxWidth >= AppLayoutTokens.comparisonBreakpoint && LocalDensity.current.fontScale * readingScale < 1.3f) {
+            if (!AppAdaptiveTokens.stack(maxWidth, AppLayoutTokens.comparisonBreakpoint, LocalDensity.current.fontScale * readingScale)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.content)) {
                     ComparisonPane(original, stringResource(R.string.question_original), choicesVisible, explanationVisible, Modifier.weight(1f))
                     ComparisonPane(translated, stringResource(R.string.flow_translation, bidi(locale)), choicesVisible, explanationVisible, Modifier.weight(1f))

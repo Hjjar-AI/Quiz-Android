@@ -37,7 +37,7 @@ fun LearningSessionHeader(index: Int, total: Int, answered: Int, seconds: Int? =
     Surface(color = if (critical) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.medium) {
         BoxWithConstraints {
-            val stacked = maxWidth < AppLayoutTokens.sessionHeaderBreakpoint || LocalDensity.current.fontScale >= 1.3f
+            val stacked = AppAdaptiveTokens.stack(maxWidth, AppLayoutTokens.sessionHeaderBreakpoint, LocalDensity.current.fontScale)
             Column(Modifier.fillMaxWidth().padding(horizontal = AppLayoutTokens.pagePadding, vertical = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,

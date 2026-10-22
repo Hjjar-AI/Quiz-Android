@@ -97,6 +97,39 @@ mukhtabir_account_root="$HOME/.gradle/mukhtabir/$mukhtabir_checkout_id"
 # Ignore inherited shared GRADLE_USER_HOME; an explicit CLI -g can still override.
 set -- --gradle-user-home "$HOME/.gradle" --project-cache-dir "$mukhtabir_account_root/project-cache" "$@"
 
+# Optional persistent dependency snapshot; Gradle reads it without cache locks.
+# Point at the directory containing modules-2, not a live writable Gradle cache.
+mukhtabir_dependency_seed=${GRADLE_RO_DEP_CACHE:-}
+if [ -z "$mukhtabir_dependency_seed" ] && [ -f "$APP_HOME/local.properties" ]; then
+    mukhtabir_dependency_seed=$(sed -n 's/^gradle[.]readOnlyCache[[:space:]]*=[[:space:]]*//p' "$APP_HOME/local.properties" | sed 's/[[:space:]]*$//' | tail -n 1)
+fi
+if [ -n "$mukhtabir_dependency_seed" ]; then
+    if [ ! -d "$mukhtabir_dependency_seed/modules-2/files-2.1" ] ||
+        [ ! -r "$mukhtabir_dependency_seed/modules-2/files-2.1" ]; then
+        echo "Configured read-only dependency cache must contain readable modules-2/files-2.1: $mukhtabir_dependency_seed" >&2
+        exit 1
+    fi
+    GRADLE_RO_DEP_CACHE=$mukhtabir_dependency_seed
+    export GRADLE_RO_DEP_CACHE
+    echo "Mukhtabir: using existing read-only dependency cache" >&2
+fi
+unset mukhtabir_dependency_seed
+
+# Reuse an explicitly configured local distribution without sharing writable caches.
+# Keep machine paths in ignored local.properties, never in the tracked wrapper.
+mukhtabir_gradle_home=${MUKHTABIR_GRADLE_HOME:-}
+if [ -z "$mukhtabir_gradle_home" ] && [ -f "$APP_HOME/local.properties" ]; then
+    mukhtabir_gradle_home=$(sed -n 's/^gradle[.]home[[:space:]]*=[[:space:]]*//p' "$APP_HOME/local.properties" | sed 's/[[:space:]]*$//' | tail -n 1)
+fi
+if [ -n "$mukhtabir_gradle_home" ]; then
+    mukhtabir_gradle_version=$(sed -n 's/^distributionUrl=.*gradle-\([0-9][0-9.]*\)-[[:alpha:]]*[.]zip.*/\1/p' "$APP_HOME/gradle/wrapper/gradle-wrapper.properties")
+    if [ -z "$mukhtabir_gradle_version" ] || [ ! -x "$mukhtabir_gradle_home/bin/gradle" ] ||
+        [ ! -f "$mukhtabir_gradle_home/lib/gradle-launcher-$mukhtabir_gradle_version.jar" ]; then
+        echo "Configured Gradle installation must match the version pinned in gradle-wrapper.properties: $mukhtabir_gradle_home" >&2
+        exit 1
+    fi
+fi
+
 mukhtabir_packaging=false
 mukhtabir_skip_version=false
 mukhtabir_code_override=false
@@ -129,6 +162,12 @@ if [ "$mukhtabir_packaging" = true ] && [ "$mukhtabir_skip_version" = false ] &&
 fi
 unset mukhtabir_checkout_id mukhtabir_account_root mukhtabir_packaging mukhtabir_skip_version
 unset mukhtabir_code_override mukhtabir_name_override mukhtabir_arg mukhtabir_reserved mukhtabir_version_code mukhtabir_version_name
+
+if [ -n "$mukhtabir_gradle_home" ]; then
+    echo "Mukhtabir: using installed Gradle $mukhtabir_gradle_version" >&2
+    GRADLE_USER_HOME="$HOME/.gradle" exec "$mukhtabir_gradle_home/bin/gradle" "$@"
+fi
+unset mukhtabir_gradle_home mukhtabir_gradle_version
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum

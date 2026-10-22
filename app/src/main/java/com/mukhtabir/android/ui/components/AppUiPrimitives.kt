@@ -12,19 +12,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.theme.AppTheme
@@ -34,6 +29,30 @@ object AppControlTokens {
     const val disabledContainerAlpha = .08f
     const val disabledBorderAlpha = .25f
     const val cardBorderAlpha = .35f
+    const val explanationBorderAlpha = .55f
+    const val scrollTrackAlpha = .22f
+    const val scrollThumbAlpha = .72f
+    const val correctChoiceTint = .075f
+    const val incorrectChoiceTint = .06f
+    const val selectedChoiceTint = .08f
+    const val bannerTint = .08f
+}
+
+/** Icon sizes are visual only; interactive controls retain the shared 48dp target. */
+object AppIconSize {
+    val inline = 16.dp
+    val small = 20.dp
+    val standard = 24.dp
+}
+
+/** Width roles differ by content; font-scale thresholds remain shared. */
+object AppAdaptiveTokens {
+    const val largeText = 1.3f
+    const val extraLargeText = 1.5f
+
+    fun stack(width: androidx.compose.ui.unit.Dp, breakpoint: androidx.compose.ui.unit.Dp,
+        fontScale: Float, fontScaleThreshold: Float = largeText): Boolean =
+        width < breakpoint || fontScale >= fontScaleThreshold
 }
 
 /** Page gutters and control spacing stay independent of density and minimum hit targets. */
@@ -51,7 +70,7 @@ object AppLayoutTokens {
     val detailListFraction = .42f
     val homeColumnMinWidth = 360.dp
     val reviewListMaxHeight = 480.dp
-    val sheetViewportFraction = .85f
+    val sheetViewportFraction = AppSheetSize.STANDARD.viewportFraction
     val heroElevation = 2.dp
     val comparisonBreakpoint = 600.dp
     val headingBreakpoint = 360.dp
@@ -78,7 +97,7 @@ object AppLayoutTokens {
     val libraryGap: androidx.compose.ui.unit.Dp
         @Composable get() = AppTheme.spacing.content
     val touchTarget = 48.dp
-    val secondaryIconSize = 20.dp
+    val secondaryIconSize = AppIconSize.small
     val cardBorderWidth = 1.dp
     val selectedBorderWidth = 2.dp
     val answerFeedbackBorderWidth = 1.dp
@@ -92,15 +111,6 @@ object AppLayoutTokens {
 }
 
 @Composable
-fun AppTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit) {
-    TextButton(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget), enabled = enabled,
-        shape = MaterialTheme.shapes.medium, contentPadding = AppLayoutTokens.secondaryContentPadding,
-        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)), content = content)
-}
-
-@Composable
 fun AppIconButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable () -> Unit) {
     IconButton(onClick, modifier.sizeIn(minWidth = AppLayoutTokens.touchTarget, minHeight = AppLayoutTokens.touchTarget),
@@ -109,22 +119,6 @@ fun AppIconButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: B
             disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha))) {
         Box(Modifier.size(AppLayoutTokens.secondaryIconSize), contentAlignment = Alignment.Center) { content() }
     }
-}
-
-/** Destructive labels stay explicit; color is additional feedback, never the only cue. */
-@Composable
-fun AppDangerTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit) {
-    TextButton(onClick, modifier.heightIn(min = AppLayoutTokens.touchTarget), enabled = enabled,
-        shape = MaterialTheme.shapes.medium, contentPadding = AppLayoutTokens.secondaryContentPadding,
-        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = AppControlTokens.disabledContentAlpha)), content = content)
-}
-
-@Composable
-fun AppDangerOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit) {
-    AppSecondaryOutlinedButton(onClick, modifier, enabled, MaterialTheme.colorScheme.error, content)
 }
 
 @OptIn(ExperimentalLayoutApi::class)

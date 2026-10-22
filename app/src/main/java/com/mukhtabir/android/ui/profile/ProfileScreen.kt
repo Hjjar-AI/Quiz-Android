@@ -24,8 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
@@ -34,6 +32,7 @@ import com.mukhtabir.android.ui.components.AppCard
 import com.mukhtabir.android.ui.components.AppIconButton
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppListRow
+import com.mukhtabir.android.ui.components.AppMetricRow
 import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.ErrorState
@@ -97,7 +96,6 @@ fun ProfileScreen(
                             text = user.displayName.firstOrNull()?.uppercase() ?: "?",
                             style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }
@@ -117,12 +115,12 @@ fun ProfileScreen(
         }
 
         AppSection(stringResource(R.string.profile_details)) {
-            StatRow(stringResource(R.string.profile_role), com.mukhtabir.android.util.roleLabel(user.role))
-            StatRow(stringResource(R.string.profile_questions_count), com.mukhtabir.android.util.formatNumber(user.questionsCount))
-            StatRow(stringResource(R.string.profile_trust_score), com.mukhtabir.android.util.bidi("${com.mukhtabir.android.util.formatDecimal(user.trustScore)}%"))
-            StatRow(stringResource(R.string.profile_streak), stringResource(R.string.profile_streak_value, com.mukhtabir.android.util.formatNumber(user.currentStreak), com.mukhtabir.android.util.formatNumber(user.longestStreak)))
-            user.createdAt?.let { StatRow(stringResource(R.string.profile_joined), formatLongDate(it)) }
-            user.lastLogin?.let { StatRow(stringResource(R.string.profile_last_login), formatLongDate(it)) }
+            AppMetricRow(stringResource(R.string.profile_role), com.mukhtabir.android.util.roleLabel(user.role))
+            AppMetricRow(stringResource(R.string.profile_questions_count), com.mukhtabir.android.util.formatNumber(user.questionsCount))
+            AppMetricRow(stringResource(R.string.profile_trust_score), "${com.mukhtabir.android.util.formatDecimal(user.trustScore)}%")
+            AppMetricRow(stringResource(R.string.profile_streak), stringResource(R.string.profile_streak_value, com.mukhtabir.android.util.formatNumber(user.currentStreak), com.mukhtabir.android.util.formatNumber(user.longestStreak)))
+            user.createdAt?.let { AppMetricRow(stringResource(R.string.profile_joined), formatLongDate(it)) }
+            user.lastLogin?.let { AppMetricRow(stringResource(R.string.profile_last_login), formatLongDate(it)) }
         }
 
         // ── Subscription card (item 78) ────────────────────────────
@@ -137,7 +135,7 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.titleMedium,
                     )
                     val days = user.remainingDays()
-                    StatRow(
+                    AppMetricRow(
                         label = stringResource(R.string.profile_expires_on),
                         value = formatLongDate(user.expiresAt),
                     )
@@ -146,7 +144,7 @@ fun ProfileScreen(
                             days > 0 -> stringResource(R.string.profile_days_left, com.mukhtabir.android.util.formatNumber(days))
                             else -> stringResource(R.string.profile_expired)
                         }
-                        StatRow(
+                        AppMetricRow(
                             label = stringResource(R.string.profile_status),
                             value = daysText,
                         )
@@ -212,28 +210,6 @@ fun ProfileScreen(
             }
         }
 
-    }
-}
-
-@Composable
-private fun StatRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.End,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-        )
     }
 }
 

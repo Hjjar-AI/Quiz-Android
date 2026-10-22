@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
@@ -39,6 +38,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -75,13 +75,16 @@ import com.mukhtabir.android.data.remote.PublicConfigDto
 import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.data.remote.UserDto
 import com.mukhtabir.android.ui.components.AppBackBar
+import com.mukhtabir.android.ui.components.AppBanner
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppStatusKind
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTopBar
 import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.navigation.AppDrawerContent
+import com.mukhtabir.android.ui.theme.AppShapes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -226,16 +229,13 @@ internal fun AuthenticatedAppShell(
             selectedTab = selectedTab, scale = scale)
         Column(Modifier.weight(1f).fillMaxHeight()) {
             if (pendingLink != null && currentRoute !in setOf(AppRoutes.HOME, AppRoutes.MORE)) {
-                Text(stringResource(R.string.link_pending), Modifier.fillMaxWidth().padding(horizontal = AppLayoutTokens.pagePadding, vertical = 8.dp))
+                AppBanner(stringResource(R.string.link_pending))
             }
-            if (!isOnline) Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.errorContainer) {
-                Text(stringResource(R.string.offline_banner), Modifier.fillMaxWidth().padding(horizontal = AppLayoutTokens.pagePadding, vertical = 8.dp))
-            }
+            if (!isOnline) AppBanner(stringResource(R.string.offline_banner), kind = AppStatusKind.WARNING)
             if (expiryDays != null && requireNotNull(expiryDays) <= 7) {
-                Surface(color=androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer) {
-                    Text(stringResource(R.string.account_expiry_warning, com.mukhtabir.android.util.formatNumber(requireNotNull(expiryDays).coerceAtLeast(0))),
-                        Modifier.fillMaxWidth().padding(horizontal = AppLayoutTokens.pagePadding, vertical = 8.dp))
-                }
+                AppBanner(stringResource(R.string.account_expiry_warning,
+                    com.mukhtabir.android.util.formatNumber(requireNotNull(expiryDays).coerceAtLeast(0))),
+                    kind = AppStatusKind.WARNING)
             }
         NavHost(
             navController = navController,
@@ -282,15 +282,7 @@ private fun AppNavigationBar(navController: NavHostController, user: UserDto, en
                         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides
                             if(selected) androidx.compose.material3.MaterialTheme.colorScheme.primary
                             else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant) {
-                            Box(Modifier.background(if (selected) androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer
-                                else androidx.compose.ui.graphics.Color.Transparent, CircleShape)
-                                .padding(horizontal = AppLayoutTokens.pagePadding),
-                                contentAlignment = Alignment.Center) {
-                                Icon(if (selected) item.icon else item.unselectedIcon, contentDescription = null,
-                                    tint = if (selected) androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer
-                                        else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(AppLayoutTokens.secondaryIconSize))
-                            }
+                            AppDestinationIcon(item, selected, enabled)
                             Text(stringResource(item.labelRes),style=androidx.compose.material3.MaterialTheme.typography.labelSmall,
                                 textAlign=androidx.compose.ui.text.style.TextAlign.Center)
                         }
@@ -311,8 +303,26 @@ private fun AppNavigationRail(navController: NavHostController, user: UserDto, e
             val selected = selectedTab == item.route
             NavigationRailItem(selected = selected, enabled = enabled,
                 onClick = { if (enabled) navController.navigateTopLevel(item.route) },
-                icon = { Icon(if (selected) item.icon else item.unselectedIcon, contentDescription = null) },
+                colors = NavigationRailItemDefaults.colors(
+                    indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    selectedTextColor = MaterialTheme.colorScheme.primary),
+                icon = { AppDestinationIcon(item, selected, enabled) },
                 label = { Text(stringResource(item.labelRes), textAlign = androidx.compose.ui.text.style.TextAlign.Center) })
         }
+    }
+}
+
+/** Both navigation layouts use the same glyph, selected pill and disabled treatment. */
+@Composable
+private fun AppDestinationIcon(item: TabItem, selected: Boolean, enabled: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    val foreground = if (selected) scheme.onSecondaryContainer else scheme.onSurfaceVariant
+    Box(Modifier.background(if (selected) scheme.secondaryContainer
+        else androidx.compose.ui.graphics.Color.Transparent, AppShapes.indicator)
+        .padding(horizontal = AppLayoutTokens.pagePadding), contentAlignment = Alignment.Center) {
+        Icon(if (selected) item.icon else item.unselectedIcon, contentDescription = null,
+            tint = foreground.copy(alpha = if (enabled) 1f
+                else com.mukhtabir.android.ui.components.AppControlTokens.disabledContentAlpha),
+            modifier = Modifier.size(AppLayoutTokens.secondaryIconSize))
     }
 }

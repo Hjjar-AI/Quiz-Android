@@ -92,7 +92,7 @@ internal fun SessionToolsMenu(state: QuizUiState, ui: SessionPresentation, viewM
     var expanded by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
     var showDetails by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
     val display by preferences.display.collectAsLifecycleState()
-    val menuColors = MenuDefaults.itemColors(disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f))
+    val menuColors = MenuDefaults.itemColors(disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = com.mukhtabir.android.ui.components.AppControlTokens.disabledContentAlpha))
     if (showDetails) AppConfirmationDialog(
         onDismissRequest = { showDetails = false },
         title = { Text(stringResource(R.string.quiz_download_details)) },

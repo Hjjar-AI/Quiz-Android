@@ -1,10 +1,8 @@
 package com.mukhtabir.android.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -22,10 +20,9 @@ fun QuestionListCard(question: QuestionDto, imageRepository: ImageRepository, on
     AppCard(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
         AppCardBody {
             onSelect?.let { select ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(selected, { select() }, enabled = selectionEnabled)
-                    Text(stringResource(R.string.select_question_number, com.mukhtabir.android.util.formatNumber(question.id)))
-                }
+                AppCheckboxRow(stringResource(R.string.select_question_number,
+                    com.mukhtabir.android.util.formatNumber(question.id)), selected,
+                    onCheckedChange = { select() }, enabled = selectionEnabled)
             }
             ClinicalCaseContext(display.case)
             MarkdownText(display.question, Modifier.fillMaxWidth(), interactive = false, maxLines = 3)
