@@ -6,10 +6,10 @@ Canonical record consolidating the former `checking.md` and UI review. Reusable 
 
 | Scope | Result and limit |
 | --- | --- |
-| Production source | Kotlin lexical/delimiter/import, shared-control argument, resource-reference and whitespace checks passed. Compilation/runtime remain unverified. |
+| Production source | Kotlin lexical/delimiter/import, shared-control argument, resource-reference and whitespace checks passed. Debug compilation/package success is recorded below; runtime remains unverified. |
 | Resources/APIs | 1,817 translatable English/Arabic keys/placeholders match; bundled font and installed Compose/icon metadata inspected. Translation quality, clipping and device font behavior remain unverified. |
 | Native contrast | Source calculations across 17 concrete themes reached 4.5:1 for adjusted feedback/error ink on checked surfaces and 3:1 for unselected question/choice borders. No rendered/disabled/selected/image contrast claim. |
-| Build/runtime | Supplied `assembleDebug` for 0.1.8.20261022 (code 9) failed on keyboard/layout opt-ins and `Role.AppButton`. Both field overloads and session navigation now opt in at function scope; Home uses `Role.Button`. Source fixes checked, not rebuilt: user explicitly requested no build. Device/suite/live API verification and unspecified Gradle deprecations remain pending. |
+| Build/runtime | Supplied user-run `./gradlew assembleDebug` for **0.1.9.20261022 (code 10)** succeeded in **4m 57s**: 38 tasks, 15 executed/23 up-to-date; configuration cache stored. Confirms debug compilation/packaging after the opt-in/role corrections. No suite/device/live API result; Gradle deprecations remain unspecified. |
 | Documentation | Local links/heading anchors and whitespace checked; no build needed for documentation edits. |
 
 ## Review disposition
@@ -22,7 +22,7 @@ Material progress bars already had range semantics; unchanged Markdown already a
 
 | Area | Required scenarios |
 | --- | --- |
-| Build | Check other active builds and RAM pressure, then installed JDK 17/SDK 34 and cached pinned Gradle. Run one relevant cached-only check/debug build with version preservation; resolve actual diagnostics. If busy, wait/recheck or report a manual-build command. |
+| Build follow-up | Debug build passed; no repeat needed for the same source. Identify individual Gradle deprecations when requested/needed; the generic warning alone does not identify a fix. Future builds follow contention/RAM/toolchain/cache/version-preservation preflight. |
 | Startup/access | Airplane-mode demo; splash/welcome/login/server Back and keyboard; connection files; downloads after failed saved-login reads; rotation/process restoration; profile isolation and actual HTTP/HTTPS/CSRF configuration. |
 | Learning | Study/exam/recall setup filters/counts, shared/targeted practice, flags/bookmarks/maps and bilingual reading; withheld feedback/results. Measure timer recomposition, deadlines/local finish, master grace and overlapping exams. |
 | Failure/recovery | Lost answer/start/pause/Finish/sync responses; failed reads/storage/review; duplicate/late writes; draft revisions, category exit flush and permission target changes. Retain drafts/selections/confirmed success/frozen identities; no replay or exit after failed pause. |
