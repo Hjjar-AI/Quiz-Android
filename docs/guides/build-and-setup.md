@@ -2,7 +2,7 @@
 
 ## Verification workflow
 
-Use tools already installed on the machine and persistent, account-owned caches. A long-running build is not inherently token intensive: redirect its output to one local log, wait/poll without dumping it, then report the exit status and relevant diagnostics. Do not run a build solely for documentation edits.
+Use tools already installed on the machine and persistent, account-owned caches. A long-running build is not inherently token intensive: redirect its output to one local log, wait/poll without dumping it, then report the exit status and relevant diagnostics. Do not run a build solely for documentation edits. Ask and receive explicit user approval before creating new automated test files or temporary test scripts; relevant existing tests can be reused under the [agent policy](../../Agents.md#efficient-verification).
 
 1. Inspect the current project requirements and wrapper version. Check `JAVA_HOME`, PATH, `ANDROID_HOME`/`ANDROID_SDK_ROOT` and ignored `local.properties`; never commit a machine-specific path.
 2. Use the existing helper's `python3 build.py --check` to validate selected JDK/SDK without Gradle or downloads. If PATH selects the wrong Java, first look for an installed JDK 17 and select it for the command. A newer JDK on PATH is not proof that JDK 17 is missing.
