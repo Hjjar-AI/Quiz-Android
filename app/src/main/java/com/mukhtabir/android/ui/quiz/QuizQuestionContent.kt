@@ -160,7 +160,7 @@ internal fun QuizQuestionContent(
                     1 -> R.string.confidence_guessing
                     2 -> R.string.confidence_uncertain
                     else -> R.string.confidence_certain
-                }) }) {
+                }) } ?: stringResource(R.string.confidence_required_navigation)) {
                 QuizSelectionRow(Modifier.selectableGroup()) {
                     ConfidenceButton(1, R.string.confidence_guessing, state.confidence, !state.isLoading, viewModel::selectConfidence)
                     ConfidenceButton(2, R.string.confidence_uncertain, state.confidence, !state.isLoading, viewModel::selectConfidence)

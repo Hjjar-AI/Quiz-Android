@@ -26,6 +26,7 @@ GradleShare.md
 # Keystores, key properties, and any credential file for release
 # signing. Adding a new file of this kind? Add its pattern here in
 # the same commit.
+.signing/
 *.jks
 *.keystore
 keystore.properties

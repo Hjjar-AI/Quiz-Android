@@ -25,6 +25,16 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+val configuredDebugKeystore = providers.environmentVariable("MUKHTABIR_DEBUG_KEYSTORE")
+    .orElse(localProperties.getProperty("debug.keystore", ""))
+    .get().trim().takeIf { it.isNotEmpty() }?.let { path ->
+        rootProject.file(path).also { file ->
+            require(file.isFile && file.canRead()) {
+                "Configured debug keystore is missing or unreadable; check debug.keystore / MUKHTABIR_DEBUG_KEYSTORE."
+            }
+        }
+    }
+
 val configuredApiBaseUrl = providers.gradleProperty("MUKHTABIR_API_BASE_URL")
     .orElse(Properties().apply {
         val file = rootProject.file("server.properties")
@@ -53,6 +63,12 @@ android {
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        getByName("debug") {
+            configuredDebugKeystore?.let { storeFile = it }
+        }
     }
 
     buildTypes {

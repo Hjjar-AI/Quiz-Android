@@ -34,6 +34,7 @@ import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.util.bidi
 import com.mukhtabir.android.util.formatDecimal
 import com.mukhtabir.android.util.formatNumber
 
@@ -104,7 +105,7 @@ fun AnalyticsRoute(
                     AppProgressMetric(stringResource(R.string.confident_correct), confidence.correctConfident, confidence.totalAttempted)
                     AppProgressMetric(stringResource(R.string.fragile_answers), confidence.correctFragile, confidence.totalAttempted)
                     AppProgressMetric(stringResource(R.string.open_mistakes), confidence.wrongOpen, confidence.totalAttempted)
-                    AppMetricRow(stringResource(R.string.fragile_ratio), "${"%.1f".format(confidence.fragileRatio)}%")
+                    AppMetricRow(stringResource(R.string.fragile_ratio), bidi("${formatDecimal(confidence.fragileRatio)}%"))
                 }
             }
 
@@ -114,7 +115,7 @@ fun AnalyticsRoute(
                         summary.weakCategories.forEach { row ->
                             val name = row["category_name"]?.toString()?.trim('"') ?: "—"
                             val accuracy = row["accuracy"]?.toString()?.toDoubleOrNull() ?: 0.0
-                            AppMetricRow(name, "${"%.1f".format(accuracy)}%")
+                            AppMetricRow(name, bidi("${formatDecimal(accuracy)}%"))
                         }
                     }
                 }
@@ -150,7 +151,7 @@ fun AnalyticsRoute(
                         )
                         AppMetricRow(
                             stringResource(R.string.mastery_details, com.mukhtabir.android.util.formatNumber(category.attempts), com.mukhtabir.android.util.formatNumber(category.distinctQuestions)),
-                            "${"%.1f".format(category.masteryScore)}%",
+                            bidi("${formatDecimal(category.masteryScore)}%"),
                         )
                     }
                 }

@@ -1,82 +1,53 @@
-# Native UI and source guide
+# Native UI/source guide
 
-Use this guide for current behavior and implementation boundaries. Read only the affected sections; verify production source before changing a contract. File identifiers below are relative to `app/src/main/java/com/mukhtabir/android/` unless stated otherwise.
-
-## Functional behavior
-
-- Offline first-launch demo: bundled science questions, quick study, timed exam, recall and result review; no account/server/download required. Demo progress is separate from private learning.
-- Ordinary study/exam/recall, book/category/tag selection, shared practice launcher, targeted practice from results, confidence/reflection, session flags/maps and final review. Bilingual comparison respects answer/explanation reveal rules.
-- Revealed correct/wrong choices use a shared 1dp feedback border with more saturated theme-derived green/red and inline answer-status labels with decorative check/cross icons that wrap when needed; completed review distinguishes unanswered questions and labels selected answers even when the key is unavailable; unrevealed choices retain subdued selection styling without feedback animations. During active questions, save indicators overlay content rather than shifting it; scroll resets remain tied to navigation.
-- Question images share bounded byte/pixel checks, sampled decoding and a memory-only zoom/pan viewer with keyboard/TalkBack sliders, explicit reset and close controls for online and offline readers.
-- Default spacing uses tighter gaps/card padding; Compact reduces them further while preserving 48dp touch targets and text scaling.
-- Amiri is the default font in Arabic and English; explicit font selections are retained. Regular-only bundled faces use real regular weight without synthesis; variable faces select explicit weights on API 26+, with bundled Amiri fallback on Android 6/7. Metadata/labels have a 13sp floor. Reading comfort: saved text size, line/paragraph spacing, reading width and app font, including Help/Privacy readers; offline study preview and independent reading reset.
-- Welcome, startup, login and saved-login recovery share a scrollable, keyboard-aware entry layout capped at 520dp. The first welcome follows the animated wordmark splash and centers sample practice first, server connection second and a single-language selector last. Welcome/recovery keep separate demo/download cards. Login uses the shared wordmark, a plain sign-in form, an alternative-action divider and quieter demo/download links; Help/Privacy/server links stay visible. Password visibility/reset, field validation and Next/Done submission guards remain. Offline practice uses one back/title bar with two-line wrapping titles and fixed navigation controls; list-only guidance stays out of questions. Save feedback remains compact and repeated status text is suppressed.
-- Continue learning, daily planner progress, downloaded collections, bookmarks, personal History, mistakes, fragile knowledge, analytics, groups and knowledge/case browsing. Home leads with a single recovery-aware learning hero, derives its primary label/action together, keeps counts/secondary navigation below it, uses a ring only for fresh planner progress, and lays out secondary cards in two columns when space permits. Icon mode tiles and the shared horizontal heatmap retain calendar alignment and session-only activity. Clickable metrics have a directional cue. Analytics use density-aware strokes, baseline/grid and localized latest/range captions beside accessible detailed values.
-- Filter labels explain any-tag matching and combined restrictions. Import file cards start collapsed with status, reports/error details and explicit uncertain-outcome review; destructive actions name what they remove.
-- Shared text/password fields preserve Markdown cursor/selection, use consistent field shapes and Next/Done handling, and provide memory-only password visibility controls. Inline status uses labelled messages plus small icons and info/success/warning/error colors; shell banners share those roles and live-region semantics with ink derived against the banner fill; progress ranges use shared bounded bars. Shared labelled checkbox/radio/toggle rows (including verified-only setup), wrapping actions/adaptive search, pagination and destructive confirmation roles; draft editors reuse field groups and keyed choice rows. Sections animate expansion with system motion settings while retaining collapsed form state. Question lists show three-line text and bounded image previews with full detail/inspection available; Markdown code, quote, rule and table styles follow the palette. Question flag/bookmark controls and map/dropdown status use vectors with semantic labels. Native bottom tabs pair outlined/filled icons with an icon pill; subpages use Back. Planner server dates use localized display and passive tag/category chips; profile trust uses shared decimal formatting, profile details share adaptive metric rows and its avatar is fixed/circular. Results breakdowns use labelled bars and Finish/New session retain clear primary actions. Master exams reuse the adaptive session header, stable clock, navigation and question-map chips; short-height/large-text layouts scroll the chrome while retaining grace and recovery rules.
-- Permissions protects unsaved role/user edits before target changes or exits. Categories scrolls editor/recovery controls together, guards busy exits and flushes the latest encrypted draft before leaving. Exam draft forms mark field errors, reveal affected sections and focus/scroll to the first invalid field on each submission.
-- Side navigation keeps Settings above the scrolling destinations and adds a Settings shortcut to the main top bar. Learn, Review, Master exams, Account and Help come before content creation, moderation and administration; everyday sections start open, and the current section opens automatically. Short-height/large-text drawers scroll the full header and menu.
-- Capability-gated authoring, private drafts, master exams, moderation and administration. Django is authoritative; personal History always uses the signed-in user, and all-user history requires its separate capability.
+Paths below are relative to `app/src/main/java/com/mukhtabir/android/`. Follow [working rules](../../Agents.md); verification belongs in the [checklist](../verification/checklist.md).
 
 ## Source ownership
 
-`app/src/main/java/com/mukhtabir/android/`: `core` owns storage/preferences/navigation/container, `data` owns auth/HTTP/DTOs/services, `ui` owns Compose screens/shared controls (`ui/navigation/AppDrawerContent.kt` owns the drawer; `ui/more/MoreScreen.kt` only restores the legacy More destination), and `util` owns formatting. Keep endpoints aligned with current Django and applicable Vue behavior. Runtime `/config/` supplies limits, pagination and role options with safe fallbacks; optional reads must not block startup.
+| Owner | Responsibility |
+| --- | --- |
+| `core`, `data`, `ui`, `util` | Storage/preferences/navigation; auth/HTTP/domain DTOs; Compose; formatting. |
+| `MukhtabirApp.kt`, `ui/navigation/AuthenticatedAppShell.kt` | Startup/auth; shell/routes/capability gates. `AppDrawerContent.kt` owns the drawer; More is legacy. |
+| Question editor State/ViewModel/Screen/Preview | Serializable state, writes, form, previews. Other features similarly separate controllers/state/screens. |
+| `QuizSetupController.kt`, `QuizSetupStateStore.kt` | Filters/count jobs; account-checked lightweight restoration. |
+| `QuizViewModel.kt`, session chrome | Writes/deadlines/download/sync/recovery; separate lifecycle-collected clock flow. |
 
-Question editing separates its serializable state (`QuestionEditorState.kt`), ViewModel (`QuestionEditorViewModel.kt`), route/form (`QuestionEditorScreen.kt`) and previews (`QuestionEditorPreview.kt`). Quiz UI separates setup, active questions, results and shared controls; `QuizUiState.kt` holds state models. `QuizSetupController.kt` owns setup selection/filter/count jobs, and `QuizSetupStateStore.kt` owns account-checked lightweight saved-state mapping. `QuizViewModel.kt` retains session writes, deadline checks, download/sync and uncertain-outcome recovery. Its clock has a separate flow collected by session chrome, keeping second ticks out of question state. UI flow collection follows the visible lifecycle through the existing runtime dependency.
+Trace route → controller → service/DTO → Django/Vue before contract changes. Runtime `/config/` supplies limits/pagination/roles; optional reads must not block startup. Reuse controls/controllers; avoid abstractions justified only by line counts.
 
-Library listing and question detail have separate state/ViewModel/UI files; library filters/cards stay in dedicated components. Dashboard, planner, analytics, history and admin users separate state/coordinators from screens. Personal and admin settings are separate; analytics charts and master-exam management/editor/fields/presentation have dedicated files. API models/services are grouped by domain in `data/remote`, retaining class packages and serialization contracts.
+## UI contracts
 
-`MukhtabirApp.kt` owns authentication/startup; `ui/navigation/AuthenticatedAppShell.kt` owns shell chrome, with route IDs, shared shell state, navigation helpers and destination registrations in adjacent files. Route capability checks remain beside registrations; callbacks share the shell’s live Compose state.
-
-Reuse shared controls/tokens, session chrome, practice launcher, result filters, question maps/cards and locale resolver. Keep 48dp targets, selected/non-color states, keyboard focus, RTL, large text, reduced motion and existing fonts/themes. Announce errors/outcomes, never ticking clocks. Theme/palette changes must coordinate web/PDF exports. Frozen results and reveal restrictions remain authoritative; Bookmarks filters explicitly apply to the loaded page. Missing translations/source dates must be labelled rather than invented.
-
-Launcher master: [artwork/app_icon.png](../../artwork/app_icon.png); monochrome icon: [ic_launcher_monochrome.xml](../../app/src/main/res/drawable/ic_launcher_monochrome.xml). Regenerate with `python3 artwork/generate_launcher_icons.py` (FFmpeg) or `python3 artwork/generate_startup_wordmark.py` (Fontconfig/Pango/Cairo). The manifest uses transparent density PNGs on every API level, with no adaptive-icon override or `roundIcon` declaration. Keep the emblem exterior transparent; the white paper and lens belong to the emblem. The adaptive foreground and monochrome vector remain reference artwork, not the selected launcher icon. A launcher/file explorer can still apply its own icon backing or normalization; source transparency cannot override that policy. Labels remain **مُختبِر**; asset conversion does not verify an installed launcher/cache.
-
-Useful diagnostics: `adb devices -l`, `adb shell pidof com.mukhtabir.android`, `adb logcat --pid=PID -v threadtime`. Release signing stays outside version control; verify minified serialization/navigation before distribution.
+- Case precedes question. Preserve frozen/withheld results and exam/recall reveal rules in every reader/translation. Revealed choices use 1dp feedback borders plus wrapping text/icons; unrevealed selection stays subdued. No correctness animation. Save overlays avoid layout shifts; navigation owns scroll reset.
+- Preserve Arabic/English/RTL, 48dp targets, headings/selection groups, keyboard focus, 200% text and reduced motion. Announce outcomes, never clock ticks. Localize display numbers/dates; keep protocol values unchanged and missing translations/dates explicit.
+- Default/Compact spacing stays tight. Amiri defaults in both locales; retain saved fonts, real regular/variable weights, API 23–25 Amiri fallback and 13sp metadata floor. Reading size/spacing/width/reset also apply to Help/Privacy. Coordinate shared palettes/keys with web/PDF.
+- Fields preserve cursor/composition, Next/Done and memory-only password visibility. Collapsed sections retain forms. Editors protect dirty targets/exits, reveal/focus invalid fields and preserve drafts through failure; Categories flushes encrypted drafts before exit. See [recovery policy](offline-and-recovery.md).
+- Home prioritizes recovery/continuation; only fresh planner progress gets a ring. Heatmap includes session-only days; charts retain localized summaries and detailed values. Bookmarks filters apply to the loaded page; library labels explain combined/any-tag restrictions. Import cards retain status/reports/explicit uncertain-outcome review.
+- Welcome/login use a scrollable keyboard-aware 520dp cap; demo → server → language, with downloads/retry/help/privacy reachable. Demo learning stays separate from private progress. Personal History is user-scoped; all-user History and authoring/admin actions require their capabilities.
 
 ## Adaptive layouts
 
-- Theme selection opens a grid of real-palette miniatures; selection applies immediately and Done closes it. Library/bookmark filters and the session question map use searchable/bounded sheets; bookmark filters remain limited to the loaded page. Constrained-height/large-text sheets scroll their actions too.
-- Quiz setup keeps typed counts plus 10/20/40/Max presets within availability and the runtime session cap. Its summary/Start bar stays visible when height permits and joins the scroll content on short/large-text screens. Existing start/recovery guards remain authoritative.
-- Results lead with the saved score/accuracy and answered/unanswered summary. Wide screens pair the review list with the existing frozen-answer reader; narrow screens use expanding rows. Withheld review stays hidden while saved summary/GET refresh remain available.
-- Available width and font scale choose bottom tabs or a capability-gated navigation rail (600dp base); library/results use two panes from a 900dp base. Focused editors/active sessions retain navigation restrictions. Library panes reuse the full permission/recovery-aware detail route, keep current detail through resizing and save only account/server-checked selection metadata. Busy writes/bookmarks and unresolved stored-recovery prompts block pane switching; retained intents stay in existing encrypted recovery without replay. Current spacing, Amiri and dependency versions remain.
+- Font scale/width choose tabs versus rail (600dp base) and library/results panes (900dp base). Preserve selected detail through resize, account/server ownership and busy/recovery locks; reuse the full detail route.
+- Setup validates typed/preset 10/20/40/Max counts against availability/runtime cap. Start summary pins only when height permits; short/large-text layouts scroll chrome/actions together.
+- Results keep saved summary/GET refresh even when review is withheld. Wide review uses list + frozen reader; narrow review expands rows. Settings stays reachable above drawer destinations; short drawers scroll header/menu.
 
 ## Shared design APIs
 
-- Buttons: `AppButton(onClick, size = AppButtonSize.MEDIUM, style = AppButtonStyle.OUTLINED)` provides Small/Medium/Large visual minimums (32/36/48dp), Filled/Secondary/Outlined/Text styles and Default/Danger tone. Every mode retains a 48dp target and grows for wrapped/scaled text. Existing names remain thin aliases: primary/secondary use Large, compact/outlined/text use Medium. Choose the same explicit size for peer actions; do not resize all established screens at once. Danger tone requires an explicit destructive label.
-- Typography: titles use 22/19/17sp, labels 15/14/13sp and headlines 34/30/26sp. Arabic line-height floors, real static/variable weights and reading preferences remain in force. Check wrapping and hierarchy in both locales and at 200% text before claiming rendered quality.
-- `AppScreenBar` owns the common title, insets and navigation/action slots; `AppBackBar`/`AppTopBar` retain their labels, guards and callbacks. Bottom tabs and rail items retain their native semantics and share the selected icon pill.
-- `AppSheetSize` supplies Half/Standard/Full height caps (50/85/100% of screen height), further bounded by the modal's available height. The existing overload defaults to Standard; the question map uses Full. Short content can wrap. When space or text scale constrains the sheet, header/content/actions scroll together.
-- `AppShapes` maps control/container/chip/dialog/sheet/indicator roles to current theme shapes. `AppSurfaces` maps page/container/muted/question/choice roles to current palette and audited reading blends. Reuse these roles without changing base palettes or adding theme axes. Existing caller-selected styles remain supported where meaningful.
-- `SharedComponentPreviews.kt` contains the style/size matrix, typography samples, disabled/destructive controls, narrow Arabic/large text/Compact cases and interactive sheet/bar examples. These are preview sources, not evidence that rendering passed.
+- `AppButton`: Small/Medium/Large visual heights 32/36/48dp; Filled/Secondary/Outlined/Text; Default/Danger. All retain 48dp targets and wrapping. Primary/secondary aliases use Large, compact/outlined/text Medium. Destructive labels stay explicit.
+- `AppScreenBar` shares title/insets/navigation/actions; tabs/rail share the icon pill. `AppSheetSize`: Half/Standard/Full = 50/85/100%, bounded by available height; default Standard, question map Full; constrained sheets scroll actions.
+- `AppShapes`/`AppSurfaces` own semantic geometry/fills; keep component-only dimensions local. Titles 22/19/17sp, labels 15/14/13sp, headlines 34/30/26sp; preserve Arabic line-height floors. `SharedComponentPreviews.kt` covers modes/narrow Arabic/large text/Compact; source is not rendered evidence.
+
+### Optional UI priorities
+
+- Pin results New session/Done and long-editor Save/Discard; simplify exam-row actions.
+- Keep library search/filters reachable; one Practice entry point.
+- Simplify Home metrics/recent cards; add chart axes/inspection and heatmap date/count details.
+- Compare Comfortable spacing on narrow/large-text screens before adding it.
 
 ### Future consolidation shortlist
 
-Design guidance only; implement when a real caller needs it, with existing defaults preserved:
+Only with real callers: labelled multi-series chart colors/markers, progress-size roles, motion-gated state durations and preference/system-gated tick/confirm/reject haptics. Preserve defaults; avoid unused modes, automatic sounds and duplicate announcements.
 
-| Common expected need | Reuse/extend |
-| --- | --- |
-| Comparing two or more chart series | A small theme-derived series palette with markers/dashes and direct labels; retain accessible detailed values. Single-series charts do not need an unused categorical palette. |
-| Compact and prominent progress/metrics | Shared Small/Medium/Large ring/tile dimensions and thin/regular progress thickness, each with large-text behavior. Avoid arbitrary per-screen sizes. |
-| Ordinary control state/expand transitions | Named fast/state/reveal durations using the existing system-motion gate. Keep exam/recall reveal rules and deliberate no-animation answer feedback. |
-| User-initiated haptic outcomes | Tick/confirm/reject intent behind the existing preference, foreground and system haptic gates. Add a reject mode only with a real caller; avoid automatic sounds or duplicate TalkBack announcements. |
+## Artwork and diagnostics
 
-Keep this shortlist here; no speculative components, preference migrations, dependencies or new automated checks are implied.
+Master: [app_icon.png](../../artwork/app_icon.png); reference [monochrome vector](../../app/src/main/res/drawable/ic_launcher_monochrome.xml). Regenerate via `python3 artwork/generate_launcher_icons.py` (FFmpeg) or `python3 artwork/generate_startup_wordmark.py` (Fontconfig/Pango/Cairo). Manifest selects transparent density PNGs, no adaptive/round override. Preserve transparent exterior, white paper/lens and **مُختبِر** label; launcher normalization/caches still need device verification.
 
-## Making a focused change
-
-1. Locate the route, its state/controller, shared control and service/DTO. For payload or permission changes, trace the matching Django implementation and relevant Vue caller.
-2. Reuse the existing control and tokens. Give component-only dimensions a local owner; retain shared hit-target, spacing and breakpoint policies. Avoid a new abstraction solely to reduce a line count.
-3. Trace busy/stale-read guards, account/server ownership, retained drafts and explicit uncertain-write review before editing handlers. Presentation refactoring must not bypass those paths.
-4. Keep protocol values separate from localized labels/counts. Preserve Markdown TextFieldValue selection/composition, reveal restrictions and native image limits.
-5. Select verification using the [build guide](build-and-setup.md#verification-workflow), then record only current results/remaining gates in the [verification checklist](../verification/checklist.md).
-
-## UI review checklist
-
-| Area | Review requirement |
-| --- | --- |
-| Reading and selection | Case before question; hidden exam/recall feedback stays hidden; frozen result identity/content remains authoritative; selections/drafts survive failed reads/writes. |
-| Accessibility | At least 48dp interactive targets; label controls and group single-choice options; mark real headings; retain keyboard focus and explicit status cues. Announce outcomes, never timer ticks. |
-| Layout | Arabic/English, RTL, Compact/default density, 200% system text, short-height/IME and wide/resizing layouts. Keep sheet actions reachable and preserve reader ownership. |
-| Theme and fonts | Preserve keys/aliases, palette coordination, regular/variable font support, reading preferences and reduced motion. Numerical contrast calculations do not establish rendered accessibility. |
-| Performance | Read frequent clock/animation state near its consumer, cache data-derived groups and use stable list keys. Measure before claiming frame-rate/recomposition improvements. |
+Device diagnostics when authorized: `adb devices -l`, `adb shell pidof com.mukhtabir.android`, `adb logcat --pid=PID -v threadtime`. Signing stays external; verify minified serialization/navigation before distribution.

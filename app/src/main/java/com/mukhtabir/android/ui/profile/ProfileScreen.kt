@@ -93,7 +93,9 @@ fun ProfileScreen(
                 ) {
                     Box(Modifier.size(ProfileScreenGeometry.profileAvatarSize), contentAlignment = Alignment.Center) {
                         Text(
-                            text = user.displayName.firstOrNull()?.uppercase() ?: "?",
+                            text = user.displayName.ifEmpty { "?" }.let { name ->
+                                name.substring(0, name.offsetByCodePoints(0, 1)).uppercase()
+                            },
                             style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.onPrimary,
                         )

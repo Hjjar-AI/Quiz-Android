@@ -6,8 +6,7 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 
 | Task | Read |
 | --- | --- |
-| Tools, efficient checks, builds, artifacts, versions and server connection | [Build and setup guide](docs/guides/build-and-setup.md) |
-| Reusable setup for future projects: shared tools, dependency snapshots and account-local outputs | [Shared build tools and caches](docs/guides/shared-build-tools-and-caches.md) |
+| Tools, builds, caches, shared debug signing and server connection | [Build and setup guide](docs/guides/build-and-setup.md) |
 | Features, source ownership, controls, fonts, accessibility and adaptive layouts | [Native UI/source guide](docs/guides/native-ui.md) |
 | Download permissions, account/server isolation, drafts and uncertain writes | [Offline and recovery guide](docs/guides/offline-and-recovery.md) |
 | Review disposition, current evidence and remaining device/API checks | [Verification status](docs/verification/checklist.md) |
@@ -23,8 +22,4 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 
 ## Verification
 
-The supplied user-run `./gradlew assembleDebug` for **0.1.12.20261022 (code 13)** succeeded in **10m 12s**, with all 38 tasks executed and the configuration cache stored. The launcher selected installed Gradle 8.7 and the read-only dependency cache. Confirms debug compilation/packaging of the accumulated changes; device, accessibility, automated-suite and live API verification remain pending. Gradle deprecations are still unspecified. See the [current evidence and remaining checks](docs/verification/checklist.md).
-
-Builds and extensive tests require explicit user confirmation under the [toolchain policy](Agents.md#efficient-verification); lightweight source checks and relevant existing focused tests are permitted. Reuse installed tools and persistent caches, preserve versions for verification and ask before installing missing requirements. Documentation-only changes need link/consistency checks, not a build.
-
-Maintain one canonical guide per topic. Replace stale status and shrink resolved findings; do not append chat transcripts, dated archives or duplicate completed-work lists. Preserve useful setup/recovery procedures when compacting history.
+See [current evidence and pending checks](docs/verification/checklist.md). The latest source changes remain uncompiled. Builds/compilation/packaging and extensive tests require explicit confirmation; follow [verification policy](Agents.md#efficient-verification).

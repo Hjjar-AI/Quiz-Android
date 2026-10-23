@@ -1,94 +1,276 @@
-# Toolchain, builds and server setup
-
-For the reusable cross-project setup, cache snapshot recipe, ownership model, IDE/Windows differences and troubleshooting, see [Shared build tools and caches](shared-build-tools-and-caches.md). This file covers Mukhtabir-specific commands and policy.
+# Build, cache and connection guide
 
 ## Verification workflow
 
-Use tools already installed on the machine and persistent, account-owned caches. A long-running build is not inherently token intensive: redirect its output to one local log, wait/poll without dumping it, then report the exit status and relevant diagnostics. Builds (including compilation/packaging) and extensive tests require explicit user confirmation of the proposed command and scope under the [agent policy](../../Agents.md#efficient-verification). Do not run a build solely for documentation edits. Ask and receive explicit user approval before creating new automated test files or temporary test scripts; relevant existing tests can be reused under the [agent policy](../../Agents.md#efficient-verification).
+Follow [agent authorization](../../Agents.md#efficient-verification): explicit confirmation before builds/compilation/packaging/extensive tests or new test files; no version changes. Documentation edits need link/consistency checks only.
 
-1. Inspect the current project requirements and wrapper version. Check `JAVA_HOME`, PATH, `ANDROID_HOME`/`ANDROID_SDK_ROOT` and ignored `local.properties`; never commit a machine-specific path.
-2. Use the existing helper's `python3 build.py --check` to validate selected JDK/SDK without Gradle or downloads. If PATH selects the wrong Java, first look for an installed JDK 17 and select it for the command. A newer JDK on PATH is not proof that JDK 17 is missing.
-3. Before invoking the wrapper, confirm its pinned distribution is already cached. **Gradle `--offline` does not prevent the wrapper itself downloading a missing distribution.** The POSIX wrapper can reuse an installed matching distribution through `MUKHTABIR_GRADLE_HOME` or `gradle.home=/absolute/path/to/gradle-8.7` in ignored `local.properties` (environment setting takes precedence). It checks the launcher JAR against the pinned version before reserving an app version, then retains account-local cache/output settings. An invalid configured installation fails explicitly; with neither setting, normal wrapper distribution lookup/download behavior applies. Windows continues to use its wrapper distribution. Do not replace the pinned version with an arbitrary system version.
-4. Check for other active builds across projects/IDEs and available RAM/memory pressure immediately before starting. Use installed process/memory tools (for example, `ps` and `free -h` on Linux or Task Manager/PowerShell on Windows). Idle Gradle daemons alone are not active builds; use available memory rather than counting reclaimable cache as pressure. If another build is running or RAM usage is high/headroom insufficient, continue independent work or wait briefly and recheck. Do not launch a competing build, kill unrelated processes or clear caches. If pressure persists or cannot be assessed, finish with an explicit skipped-build reason and the exact command for the user to run manually.
-5. Start with cached-only dependencies and a relevant focused check. For native changes that require compilation/resource checking, run a debug build only after explicit user confirmation. Pass `-Pmukhtabir.autoVersion=false` to packaging commands used for verification. Do not clean caches, force dependency refreshes or repeat successful builds without a new reason.
-6. If a required tool/distribution/dependency is missing, report exactly what is missing and ask the user to install or approve a **one-time persistent** installation/cache fill. Stop dependent commands while awaiting the answer; continue independent work. Do not fetch throwaway toolchains, disposable virtual environments, SDKs, browsers or emulators repeatedly for verification.
-7. Broaden checks only for new failures, affected integration boundaries or an explicit request. State what actually passed and what remains unverified; compilation does not establish device, API or concurrency behavior.
-
-A cached-distribution check and a verification build from the Android root:
+1. Inspect wrapper pin/checksum, Python 3.9+, installed JDK 17 and SDK 34. Check `JAVA_HOME`/PATH, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, ignored `local.properties` (`sdk.dir`). `python3 build.py --check` checks toolchain without Gradle/downloads.
+2. Confirm the pinned distribution is cached **before invoking the wrapper**; `--offline` does not prevent wrapper downloads. POSIX accepts `MUKHTABIR_GRADLE_HOME` or ignored `gradle.home=/absolute/path/to/gradle-8.7` (environment wins). It checks executable/pinned launcher JAR, not authenticity; invalid configuration fails. Otherwise normal wrapper lookup applies.
+3. Check system-wide active builds and available RAM/pressure (`ps`, `free -h`; Windows Task Manager). Idle daemons/reclaimable cache are not active builds/pressure. If busy or headroom unknown, wait/recheck or report skipped build plus manual command; never kill unrelated jobs/delete locks/caches.
+4. After confirmation, run the smallest relevant cached-only check with preserved versions; capture one log and exit status. Broaden/repeat only for changed source/new failures. Missing tools/artifacts require a named, approved persistent installation/cache fill; continue independent work, never loop disposable downloads.
 
 ```bash
 python3 build.py --check
-# Inspect the existing wrapper cache before any wrapper execution:
-# ~/.gradle/wrapper/dists/gradle-8.7-bin/*/gradle-8.7/bin/gradle
-# Only after explicit user confirmation and successful toolchain/cache and active-build/RAM preflight:
+# Inspect ~/.gradle/wrapper/dists/gradle-8.7-bin/*/gradle-8.7/bin/gradle
+# Only after approval and successful cache/toolchain/RAM preflight:
 ./gradlew --offline --console=plain -Pmukhtabir.autoVersion=false assembleDebug > /tmp/mukhtabir-build.log 2>&1
 ```
 
-Inspect the log tail and relevant error context instead of pasting the full file into chat. Keep caches persistent; remove task-specific temporary logs when no longer useful. On Windows use the existing `gradlew.bat` and equivalent output redirection. The version shown here comes from the current wrapper properties; recheck those properties after a future upgrade.
+Read the first relevant diagnostic/log tail; retain reusable caches, remove obsolete temporary logs. Windows uses `gradlew.bat`. Compilation, suites, device and HTTP/concurrency are separate evidence categories. Ask for missing JDK/SDK packages/pinned Gradle/dependency coordinates; adb/emulators only for authorized device work.
 
-## Missing tools: installation handoff
+## Build helper and artifacts
 
-| Requirement | First action | If absent |
-| --- | --- | --- |
-| Python 3.9+ | Check the installed interpreter; the build helper also requires Python. | Ask for a persistent system installation. |
-| JDK 17 | Inspect configured Java and installed JDKs; select the existing 17 installation. | Ask to install JDK 17 through the user's normal package manager/IDE. |
-| Android platform 34/build tools | Inspect the configured SDK and the project's requested packages. | Name the missing packages and ask the user to install them using their SDK Manager. |
-| Pinned Gradle distribution | Inspect the existing wrapper cache or a matching installed distribution. | Ask for a one-time cached wrapper download/install; do not invoke the wrapper silently. |
-| Build/test dependencies | Try the relevant cached-only task once. | Report missing coordinates and request a persistent cache fill; do not loop downloads/retries. |
-| adb/device/emulator | Needed only for explicitly requested device work. Reuse an existing installation/device. | Ask for Platform-Tools or device setup; do not provision an emulator for routine source checks. |
+[build.py](../../build.py) works from any directory. Commands document available operations, not authorization; ordinary packaging may reserve versions/download dependencies.
 
-## Existing build helper and artifact workflow
+| Command | Purpose |
+| --- | --- |
+| `python3 build.py` | Interactive output/offline/build/install menu. |
+| `python3 build.py --interactive --dry-run` | Menu preview; no execution. |
+| `python3 build.py --help` / `--check` | Options / toolchain check. |
+| `python3 build.py debug` / `release` | Debug / unsigned release APK. |
+| Add `--format aab`, `--offline`, `--dry-run` | Bundle / cached dependencies / command preview. |
+| `python3 build.py --install` | Debug APK + connected-device install; requires device authorization. |
 
-The commands below document the normal packaging interface, which can reserve versions and fill caches. For agent verification, use the cached-only, version-preserving wrapper command above after preflight; do not substitute an unqualified packaging command. Installation and release distribution need their own task authorization.
+Signing/keys stay external; helper runs no suites. No native libraries/ABI splits. Account caches stay in `~/.gradle`; checkout-specific task caches/outputs in `~/.gradle/mukhtabir/<checkout-hash>/`, originals under `build/app/outputs/{apk,bundle}/<variant>/`. Shared `.gradle/` and `app/build/` remain untouched. Copies: account/XDG `Desktop/Mukhtabir/<variant>/`, AABs `Mukhtabir/bundles/<variant>/`; APK name `Mukhtabir-<version>-app-<variant>.apk`. Override with `-Pmukhtabir.desktopDir=/absolute/path` or `MUKHTABIR_DESKTOP_DIR`; older copies retained.
 
-Use JDK 17 and SDK 34; set `ANDROID_HOME` or ignored `local.properties` (`sdk.dir`). The optional [build helper](../../build.py) opens an interactive input menu when run without arguments: choose the output type, cached-only dependencies and build/install or preview. It also accepts direct command-line options, checks the toolchain and reports output paths. It works from any working directory; use `python` instead of `python3` where appropriate.
+### Shared debug signing
+
+Reusable procedure for multiple Linux accounts building the same Android project. Same application ID + same signing certificate lets debug APKs update one installation; Linux group membership and shared Gradle executables do not share signing identity. Android normally creates each account's key at `~/.android/debug.keystore`. See [Android signing](https://developer.android.com/studio/publish/app-signing).
+
+#### 1. Separate shared and private state
+
+| Item | Location/ownership |
+| --- | --- |
+| Compatible JDK/SDK/Gradle | Maintained shared tools, optionally under `/opt`; retain the project's pins. |
+| Debug signing key | Ignored `<project-root>/.signing/debug.keystore`, readable by trusted build group. |
+| Writable Gradle caches/output | Separate per account/checkout; sharing the key requires no cache changes. |
+| Optional dependency seed | Shared read-only snapshot; use [snapshot setup](#dependency-snapshot-setup). |
+| Release signing | Separate protected configuration; never substitute the shared debug key. |
+
+One maintained copy per project is sufficient. Separate checkouts/machines need the same selected key via a protected copy or absolute path. Keep a protected backup outside Git; regenerating a key changes signing identity.
+
+#### 2. Select the existing key and group
+
+Prefer the key that signed the installed app. Compare its SHA-256 certificate with an existing APK using step 5 before choosing; an APK contains the certificate, not the private signing key. If the installed signer is unknown, do not assume update compatibility.
 
 ```bash
-python3 build.py                                # Interactive menu
-python3 build.py --interactive --dry-run         # Menu with command preview only
-python3 build.py --help
-python3 build.py release --format aab --dry-run  # Show command; no Java/Gradle execution
-python3 build.py --check                        # Check JDK/SDK; no Gradle execution
-# Packaging/install commands (device installation requires an explicit request):
-python3 build.py debug                          # Debug APK without prompts
-python3 build.py release                        # Release APK (unsigned)
-python3 build.py release --format aab            # Release AAB (unsigned)
-python3 build.py debug --format aab              # Debug AAB
-python3 build.py --install                      # Debug APK; install on connected compatible devices
-python3 build.py --offline                      # Debug APK using cached dependencies
+# Inspection only; substitute your actual group/accounts.
+getent group developer
+id first_account
+id second_account
+keytool -list -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android
 ```
 
-### Reusing existing dependency downloads
+Both accounts need membership in the selected trusted group and traversal access to every parent directory. An administrator can create a missing group/add members; new membership needs a fresh login/session. Do not change unrelated group membership or permissions.
 
-The POSIX wrapper accepts `gradle.readOnlyCache` in ignored `local.properties`, or standard `GRADLE_RO_DEP_CACHE` (environment takes precedence). Both point to the parent of a prepared `modules-2` snapshot. New writes remain account-local; normal mode can download missing dependencies, while `--offline` fails instead. Follow the canonical [snapshot setup and maintenance procedure](shared-build-tools-and-caches.md#4-reuse-previously-downloaded-dependencies); do not use a live writable cache as the seed.
+#### 3. Copy once and restrict permissions
 
-### Artifacts and caches
+Run from the Android project root as the key owner, already a member of the selected group. Select the source deliberately; the example uses this account's existing debug key. The subshell stops on errors and refuses an existing destination. Review commands before applying to another project.
 
-Release signing stays external; the helper does not create keys, sign release outputs or run automated suites. `--offline` also requires the wrapper distribution to be cached to avoid its initial download. Direct `./gradlew assembleDebug` and `./gradlew installDebug` remain available. Gradle user/dependency/daemon caches stay in the building account’s `~/.gradle`; project/task caches and module outputs use `~/.gradle/mukhtabir/<checkout-hash>/`. APK/AAB originals are in `build/app/outputs/{apk,bundle}/<variant>/` beneath that account root. Successful packaged artifacts are copied to that account’s `Desktop/Mukhtabir/<variant>/` (including Linux XDG Desktop settings; AABs use `Mukhtabir/bundles/<variant>/`), named `Mukhtabir-<version>-app-<variant>.apk`. Override Desktop with `-Pmukhtabir.desktopDir=/absolute/path` or `MUKHTABIR_DESKTOP_DIR`; older copies are retained. Existing shared `.gradle/` and `app/build/` folders are left untouched and no longer used by the wrappers. This project has no native libraries or ABI splits, so separate CPU builds are unnecessary.
+```bash
+(
+    set -eu
+    BUILD_GROUP=developer
+    SOURCE_DEBUG_KEY="$HOME/.android/debug.keystore"
+    test -r "$SOURCE_DEBUG_KEY"
+    test ! -L .signing
+    test ! -e .signing/debug.keystore
+    install -d -m 2750 -g "$BUILD_GROUP" .signing
+    # Noclobber also refuses a target created concurrently.
+    (set -C; umask 077; cat "$SOURCE_DEBUG_KEY" > .signing/debug.keystore)
+    chgrp "$BUILD_GROUP" .signing/debug.keystore
+    chmod 0640 .signing/debug.keystore
+)
+```
+
+Directory 2750 = owner manages, group reads/traverses, others denied, group inherited. Key 0640 = owner writes, group reads, others denied. Inspect inherited ACLs with `getfacl`; group access must not grant effective key writes/other-user reads. Do not run recursive permission changes. If copying fails, verify/remove only your incomplete new copy before retrying; never replace the source or a different existing shared key.
+
+Add `.signing/` and `local.properties` to the root `.gitignore`. Confirm with `git check-ignore .signing/debug.keystore local.properties`; ignoring does not untrack a previously committed secret. Do not commit keys or overwrite either account's original keystore.
+
+#### 4. Configure Android Gradle signing
+
+For another Kotlin-DSL project, add the top-level selection before `android {}` in the application module's `build.gradle.kts`. Reuse an existing properties loader if present. `PROJECT_DEBUG_KEYSTORE` is an example environment name chosen by this code, not a built-in Android option.
+
+```kotlin
+val debugSigningProperties = java.util.Properties().apply {
+    val propertiesFile = rootProject.file("local.properties")
+    if (propertiesFile.exists()) propertiesFile.inputStream().use { load(it) }
+}
+val sharedDebugKeystore = providers.environmentVariable("PROJECT_DEBUG_KEYSTORE")
+    .orElse(debugSigningProperties.getProperty("debug.keystore", ""))
+    .get().trim().takeIf { it.isNotEmpty() }?.let { path ->
+        rootProject.file(path).also { key ->
+            require(key.isFile && key.canRead()) {
+                "Configured debug keystore is missing or unreadable."
+            }
+        }
+    }
+```
+
+Merge into the existing `android` block; do not replace its other configuration:
+
+```kotlin
+android {
+    signingConfigs {
+        getByName("debug") {
+            sharedDebugKeystore?.let { storeFile = it }
+        }
+    }
+}
+```
+
+This retains Android's standard debug alias `androiddebugkey` and passwords `android`; a nonstandard source needs its matching credentials supplied privately. It configures debug only. An explicit unreadable/missing key fails instead of silently generating a different identity; no configured selection leaves normal per-account debug signing.
+
+In ignored root `local.properties`, add once without replacing existing SDK/tool settings:
+
+```properties
+debug.keystore=.signing/debug.keystore
+```
+
+Or set `PROJECT_DEBUG_KEYSTORE=/absolute/path/to/debug.keystore` in the build/IDE environment; it takes precedence. Both accounts sharing this checkout read the same local property. Studio uses this Gradle configuration directly; shell environment changes require restarting Studio. On Windows use a readable local path with forward slashes in properties; Linux group permissions do not transfer automatically. [Official signing DSL guidance](https://developer.android.com/build/building-cmdline#sign_cmdline).
+
+#### 5. Verify identity and updates
+
+From **each account**, run these read-only checks with the same project path:
+
+```bash
+namei -l .signing/debug.keystore
+stat -c '%A %U %G %n' .signing .signing/debug.keystore
+getfacl -cp .signing .signing/debug.keystore
+test -r .signing/debug.keystore
+keytool -list -keystore .signing/debug.keystore -alias androiddebugkey -storepass android
+```
+
+SHA-256 certificate fingerprints must match. After a separately authorized build, inspect each produced APK using the installed SDK Build Tools [apksigner](https://developer.android.com/tools/apksigner):
+
+```bash
+/path/to/android-sdk/build-tools/VERSION/apksigner verify --verbose --print-certs /path/to/app-debug.apk
+```
+
+Compare the APK's signer certificate SHA-256 digest with the selected keystore and the previous installed build's APK. Only then verify an actual update on the device. Permission/fingerprint checks do not establish Gradle configuration, packaging or successful installation. Observe the target project's build/version policy; Mukhtabir's flags/helper are not universal.
+
+| Symptom | Check/action |
+| --- | --- |
+| Signature mismatch persists | Wrong existing installed signer, wrong APK, different checkout/property or environment override. A higher version, clean build or cache deletion cannot repair a different signing identity. |
+| Keystore unreadable | Account's active groups, directory traversal, file mode/ACL and correct path; reopen the login session after membership changes. |
+| Wrong alias/password | Check source-key settings; do not regenerate/overwrite an existing signing key. |
+| Version downgrade error | Separate from signatures; use the target project's legitimate version process. |
+| Original signing key unavailable | Recover its backup. Otherwise a separate application ID or explicit uninstall/reinstall is needed for this ordinary debug-key setup; uninstall normally deletes local app data. |
+
+**Mukhtabir configuration:** `.signing/debug.keystore` copies the existing `mhmmd` key; `developer` includes `mhmmd` and `work`. Local property is `debug.keystore=.signing/debug.keystore`; environment override is **`MUKHTABIR_DEBUG_KEYSTORE`**, not the generic example above. [Actual source](../../app/build.gradle.kts) · [verification limits](../verification/checklist.md#shared-debug-signing).
 
 ### Version policy
 
-Versioning follows the ShiftReport launcher pattern: `gradle/app-version.properties` is the shared last-reserved version across both OS accounts. Full packaging task names through `./gradlew`, `gradlew.bat` or `build.py` reserve one patch/code pair per invocation, formatted `major.minor.patch.yyyymmdd` (Asia/Damascus date). Failed/interrupted attempts retain their reservation; help, clean, IDE sync and dry runs do not increment. The POSIX helper locks the stable `gradle/` directory and atomically replaces the counter, avoiding another account’s file ownership; both accounts need write access to that source directory. Keep the version file when copying the project; do not reset it after builds. Python 3.9+ and the Asia/Damascus timezone database are required for automatic reservation. Explicit version overrides must provide both `-Pmukhtabir.versionCode=N` and `-Pmukhtabir.versionName=A.B.C.yyyymmdd`; `-Pmukhtabir.autoVersion=false` deliberately reuses the last reservation. Android Studio/direct system Gradle use the stored version; use the wrappers/helper for automatic increments. Account settings/output paths also apply during IDE sync; the IDE's Gradle User Home should remain account-local.
+`gradle/app-version.properties` stores the shared last reservation. Wrapper/helper packaging reserves one patch/code per invocation: `major.minor.patch.yyyymmdd`, Asia/Damascus date; failures/cancellation retain it. Help/clean/sync/dry runs do not increment. Verification uses `-Pmukhtabir.autoVersion=false`; overrides require both `-Pmukhtabir.versionCode=N` and `-Pmukhtabir.versionName=A.B.C.yyyymmdd`. Preserve the file when copying. POSIX locks `gradle/` and atomically replaces the counter; both accounts need source-directory write access. Automatic reservation needs Python 3.9+/timezone data. IDE/direct Gradle use stored versions and bypass launcher aliases/reservation.
+
+### Dependency snapshot setup
+
+Share one published **read-only dependency snapshot**; keep writable Gradle/task/output caches account-local. Gradle's standard `GRADLE_RO_DEP_CACHE` points to the **parent of `modules-2`**. Mukhtabir's POSIX launcher also reads ignored `gradle.readOnlyCache`; environment wins. This alias is project-specific. Preserve artifact and metadata layout; Gradle 8.7 uses `metadata-2.106`. [Gradle cache guidance](https://docs.gradle.org/current/userguide/dependency_caching.html).
+
+#### Shared location and permissions
+
+Use `/opt/android-shared/dependency-seeds/<project>-v1` or another maintained shared directory, **outside either account's private home**. For single-account reuse, an account-local seed remains valid; never place that path in configuration shared by other accounts. Keep private home permissions intact.
+
+A maintainer prepares a parent writable by the snapshot publisher and traversable by the trusted group; example, where that account already has permission:
+
+```bash
+getent group android-dev
+id first_account
+id second_account
+install -d -m 2750 -g android-dev /opt/android-shared/dependency-seeds
+```
+
+Both accounts need active membership; new membership needs a fresh login. Directory 2750 lets its owner publish snapshots while the group reads/traverses. Published snapshot directories use 0550 and files 0440, group `android-dev`. Do not share writable caches or apply recursive changes to homes/tool installations.
+
+#### Publish once from an existing cache
+
+Choose a populated, compatible **quiescent** source. Stop/coordinate its writers first; do not stop unrelated builds or snapshot a live writable cache. Check disk space/access, then adapt source/group/project name below. It refuses an existing destination and publishes only after copying and permission setup; a failure leaves an unselected staging directory for the publisher to inspect.
+
+```bash
+python3 - <<'SNAPSHOT'
+from pathlib import Path
+import grp
+import os
+import shutil
+import tempfile
+
+source = Path('/path/to/quiescent/cache/modules-2')
+parent = Path('/opt/android-shared/dependency-seeds')
+target = parent / 'project-v1'
+group_id = grp.getgrnam('android-dev').gr_gid
+if not (source / 'files-2.1').is_dir():
+    raise SystemExit('Select a populated modules-2 cache.')
+if target.exists():
+    raise SystemExit('Choose a fresh snapshot name.')
+staging = Path(tempfile.mkdtemp(prefix='.preparing-', dir=parent))
+shutil.copytree(source, staging / 'modules-2',
+                ignore=shutil.ignore_patterns('*.lock', 'gc.properties'))
+for item in staging.rglob('*'):
+    os.chown(item, -1, group_id)
+    os.chmod(item, 0o550 if item.is_dir() else 0o440)
+os.chown(staging, -1, group_id)
+os.chmod(staging, 0o550)
+staging.rename(target)
+print(target)
+SNAPSHOT
+```
+
+Expected layout: `<seed>/modules-2/{files-2.1,metadata-<compatible-format>}/`. Retain complete metadata/artifacts, exclude locks/GC state, never configure partial copies or merge live metadata blindly. Consumers only read; new dependencies require an approved persistent online fill followed by a fresh snapshot. Switch between builds and retain the old seed until consumers migrate. Do not expose private dependencies to untrusted users.
+
+#### Select and check from both accounts
+
+For a standard Gradle project, export the shared path **before** starting the build/IDE:
+
+```bash
+export GRADLE_RO_DEP_CACHE=/opt/android-shared/dependency-seeds/project-v1
+namei -l "$GRADLE_RO_DEP_CACHE/modules-2/files-2.1"
+test -r "$GRADLE_RO_DEP_CACHE/modules-2/files-2.1"
+getfacl -cp "$GRADLE_RO_DEP_CACHE" "$GRADLE_RO_DEP_CACHE/modules-2/files-2.1"
+```
+
+Run these read-only checks in each account's login session; also confirm metadata/artifact files are group-readable. Every parent directory needs traversal permission. A displayed path or matching group name alone does not establish access.
+
+**Mukhtabir's actual shared configuration**, in ignored `local.properties`:
+
+```properties
+gradle.readOnlyCache=/opt/android-shared/dependency-seeds/mukhtabir-v1
+```
+
+The snapshot was copied from the existing `/opt/android-shared/.gradle/caches/modules-2`, group `android-dev` (`mhmmd`/`work`). Writable caches remain in each account's `~/.gradle`; debug signing remains independently configured under `.signing/`.
+
+If an old environment export still points into another account's home, update it to the shared path or run `unset GRADLE_RO_DEP_CACHE` to use Mukhtabir's local property. Update persistent shell/IDE settings too; an already running IDE retains its old environment until restarted.
+
+#### Cache access failure and recovery
+
+`Configured read-only dependency cache must contain readable modules-2/files-2.1: /home/work/...` means launcher validation failed **before Gradle started**. The same validation currently runs for `--stop`; that error does not prove the daemon was stopped or that compilation failed.
+
+1. Inspect both `GRADLE_RO_DEP_CACHE` and `gradle.readOnlyCache`; environment takes precedence.
+2. Confirm the seed points to the parent of `modules-2`, not `files-2.1` or the live source cache.
+3. Inspect `namei -l`, active groups and ACLs. Replace a private-home selection with the published shared seed; do not loosen home permissions or delete caches.
+4. After access checks, retry the intended command under the project's authorization/version policy. For a separately authorized Mukhtabir verification build: `./gradlew --offline --console=plain -Pmukhtabir.autoVersion=false assembleDebug`. `./gradlew --stop` only manages the current account's daemons.
+
+Normal mode may download missing artifacts into the writable account cache; offline fails on missing coordinates. A readable snapshot, selection message or `--version` does not prove complete dependencies/build success. Offline dependency mode is not a network sandbox for custom tasks/SDK/toolchain installers. Source/copy/permission checks remain separate from actual Gradle/device verification; [current evidence](../verification/checklist.md).
+
+### IDE, Windows and other projects
+
+Studio does not run the customized shell wrapper: configure Gradle JDK/User Home and inherited `GRADLE_RO_DEP_CACHE` before launch. Windows uses its pinned wrapper distribution and a Windows-readable seed; POSIX aliases/Linux paths do not apply. For other projects inspect pins/checksums/JDK/SDK/policy first; preserve their output namespaces and actual version mechanism. Moving a checkout changes its hash and can require recomputation. Do not regenerate customized wrappers as routine repair.
 
 ## Server connection
 
-First launch groups sample practice first, server connection second and the saved-language picker afterward; server setup uses the same bounded form width. Learning/setup confirmation buttons name their action. Login options, connection-file slots, connection help and advanced practice controls share the same disclosure component; Back returns to the welcome screen before a server is configured. Enter a reachable HTTP/HTTPS origin or full deployment-prefix `/api/v1/` URL. Manual input starts blank; saved manual addresses reopen. Emulator host access uses `10.0.2.2`; a phone needs a reachable LAN address or USB `adb reverse tcp:PORT tcp:PORT` with its actual backend port. Phone `localhost` means the phone.
+Enter a reachable HTTP/HTTPS origin or deployment-prefix `/api/v1/` URL. Manual input starts blank; saved addresses reopen. Emulator host: `10.0.2.2`; phone: reachable LAN address or `adb reverse tcp:PORT tcp:PORT` using the actual backend port. Phone localhost means the phone. Build-time fallback precedence: `MUKHTABIR_API_BASE_URL`, ignored `server.properties` (`api.base.url`), then `local.properties`; it does not override phone selection. [Example](../../server.properties.example).
 
-A build-time URL can come from `MUKHTABIR_API_BASE_URL`, ignored `server.properties` (`api.base.url`), then `local.properties`; this does not replace the phone-selected address. See [server.properties.example](../../server.properties.example).
-
-HTTP requires confirmation and is restricted to the selected origin; HTTPS cannot downgrade. Private HTTPS needs a trusted Android-installed CA and a certificate matching the host/IP. Never disable chain/hostname validation. Align Django hosts, CSRF origins, cookies and proxy scheme with the actual endpoint: [backend startup](../../../backend/docs/guides/START_HERE.md).
+HTTP requires confirmation and stays selected-origin-only; HTTPS cannot downgrade. Private HTTPS needs Android-trusted CA plus matching host/IP certificate; never disable chain/hostname validation. Align Django hosts/CSRF/cookies/proxy scheme with the endpoint: [backend startup](../../../backend/docs/guides/START_HERE.md).
 
 ### Connection files
 
-Admin Settings can export v1 JSON; the endpoint is `bundle.connection.endpoint.api`. Files are unencrypted convenience data, not credentials or trusted server identities. Import accepts at most 64 KiB and retains three numbered slots without original filenames/URIs. Imported addresses stay hidden in controls; manual entry never copies them. Saving/replacing a slot does not activate it; switching requires confirmation.
+Admin Settings exports v1 JSON: `bundle.connection.endpoint.api`. Unencrypted convenience data, not credentials/identity evidence. Import ≤64 KiB, three numbered slots, no original filenames/URIs; imported addresses stay hidden and never copy into manual input. Save/replace does not activate; switching needs confirmation.
 
-Address changes clear sign-in/reminders, restart navigation and require reauthentication. Encrypted files remain in their local server profile. Only explicit **Same server, different address** associates an unfamiliar alternate address with that profile; imported identities never merge profiles.
+Address changes clear sign-in/reminders, restart navigation and require reauthentication; encrypted files remain server-profile-isolated. Only explicit **Same server, different address** associates an unfamiliar alternate address; imports never merge profiles. See [offline/recovery](offline-and-recovery.md).
 
 ## Troubleshooting order
 
-- **Wrong Java:** select an installed JDK 17 via a command-scoped `JAVA_HOME`/PATH; do not change the repository or download another JDK before checking existing installations.
-- **Missing platform/distribution/dependency:** follow the persistent-install handoff above. Repeated offline failure with the same missing item is not progress.
-- **Another build holds a lock:** identify the owning task and wait or coordinate; do not delete live locks or kill unrelated processes.
-- **Permission/cache ownership failure:** inspect account-local paths and wrapper settings. Do not solve it with broad permission changes, shared caches or cache deletion.
-- **Compile/resource error:** read the first relevant diagnostic with surrounding source, correct the evidenced issue and rerun the affected check once.
-- **Device cannot connect:** distinguish phone localhost, backend bind/port, origin/TLS trust and permissions. Preserve the security policy; never add trust-all validation.
+- Wrong Java: select installed JDK 17; check terminal versus IDE configuration.
+- Missing artifacts: verify pin, seed parent/layout/readability/metadata and exact coordinates; approve persistent fill if needed. Resolution messages alone do not prove downloads.
+- Locks/permissions/sandbox errors: identify owner/active writer/access cause; retain account-local writes, never root/broad chmod/live-lock deletion.
+- Compile/resources: inspect first diagnostic and source; fix evidenced issue, rerun affected check once.
+- Connection: distinguish phone localhost, bind/port, permissions, origin and TLS trust; preserve validation.

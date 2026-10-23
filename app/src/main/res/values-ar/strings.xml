@@ -66,6 +66,7 @@
     <string name="result_summary">الصحيح: %1$s / %2$s — %3$.1f%%</string>
     <string name="total_time">الوقت الكلي: %1$s</string>
     <string name="confidence_prompt">نسبة ثقتك بالإجابة</string>
+    <string name="confidence_required_navigation">اختر مستوى ثقتك بالإجابة للمتابعة.</string>
     <string name="confidence_guessing">تخمين</string>
     <string name="confidence_uncertain">غير متأكد</string>
     <string name="confidence_certain">متأكد</string>

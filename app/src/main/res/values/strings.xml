@@ -67,6 +67,7 @@
     <string name="result_summary">Correct: %1$s / %2$s — %3$.1f%%</string>
     <string name="total_time">Total time: %1$s</string>
     <string name="confidence_prompt">Answer confidence</string>
+    <string name="confidence_required_navigation">Choose answer confidence to continue.</string>
     <string name="confidence_guessing">Guessing</string>
     <string name="confidence_uncertain">Uncertain</string>
     <string name="confidence_certain">Certain</string>

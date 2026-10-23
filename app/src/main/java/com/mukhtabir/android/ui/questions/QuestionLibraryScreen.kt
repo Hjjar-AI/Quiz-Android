@@ -120,6 +120,9 @@ fun QuestionLibraryRoute(
     var detailLocked by remember(userId) { mutableStateOf(false) }
     LaunchedEffect(removedQuestionIds) { if (detailId?.let { it in removedQuestionIds } == true) detailId = null }
     BackHandler(enabled = detailId != null) { if (!detailLocked) detailId = null }
+    val hasActiveFilters = state.mode == LibraryMode.ALL && (state.query.isNotBlank() ||
+        state.categoryId != null || state.difficulty != null || state.tag != null ||
+        state.verifiedOnly || state.customPageSize != null)
     val canLaunch = !detailLocked && !state.isLoading && state.error == null && sessionIds.size in 1..maxQuestions
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -151,7 +154,7 @@ fun QuestionLibraryRoute(
                         if (state.mode == LibraryMode.ALL) {
                             AppOutlinedButton({ showFilters = true }) { Text(stringResource(R.string.library_active_filters, com.mukhtabir.android.util.formatNumber(listOf(state.categoryId != null, state.difficulty != null, state.tag != null,
                                     state.verifiedOnly, state.customPageSize != null).count { it }))) }
-                            AppTextButton(viewModel::resetFilters) { Text(stringResource(R.string.library_reset)) }
+                            if (hasActiveFilters) AppTextButton(viewModel::resetFilters) { Text(stringResource(R.string.library_reset)) }
                         }
                         if (canStartSessions && state.items.isNotEmpty()) AppTextButton(viewModel::selectPage, enabled = !state.isLoading) {
                             Text(stringResource(if (state.items.all { it.id in state.selectedIds }) R.string.deselect_page else R.string.select_page))
@@ -185,7 +188,11 @@ fun QuestionLibraryRoute(
                     ensureActive();if(cleared) recent=recent.copy(lastQuestionId=null)
                 }},enabled=!state.isLoading){Text(stringResource(R.string.library_clear_last))}
             }
-            if (state.items.isEmpty() && !state.isLoading && state.error == null) item { EmptyState(stringResource(R.string.no_questions_found)) }
+            if (state.items.isEmpty() && !state.isLoading && state.error == null) item {
+                EmptyState(stringResource(R.string.no_questions_found),
+                    actionLabel = if (hasActiveFilters) stringResource(R.string.library_reset) else null,
+                    onAction = if (hasActiveFilters) viewModel::resetFilters else null)
+            }
             if (ratings.loading) item { Text(stringResource(R.string.library_ratings_loading)) }
             ratings.error?.let { failure -> item {
                 Text(stringResource(R.string.library_ratings_failed))

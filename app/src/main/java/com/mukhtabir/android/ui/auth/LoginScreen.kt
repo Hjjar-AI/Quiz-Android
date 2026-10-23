@@ -77,7 +77,7 @@ fun LoginScreen(
                     label = { Text(stringResource(R.string.username)) },
                     enabled = !state.isLoading,
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                     textStyle = com.mukhtabir.android.util.ltrInputStyle(),
                 )

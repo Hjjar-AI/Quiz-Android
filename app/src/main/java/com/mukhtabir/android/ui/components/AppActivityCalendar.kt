@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -95,6 +96,11 @@ fun AppActivityWeek(partial: List<StreakDayDto?>, showDetails: Boolean = false) 
 fun AppActivityHeatmap(cells: List<StreakDayDto?>) {
     val cellSize = AppActivityCalendarGeometry.heatmapCellSize * LocalDensity.current.fontScale.coerceAtLeast(1f)
     val gap = AppLayoutTokens.tightGap
+    val scroll = rememberScrollState()
+    // Dates run oldest to newest; scroll offsets are logical-start relative in RTL too.
+    LaunchedEffect(cells.lastOrNull()?.date, scroll.maxValue) {
+        if (scroll.maxValue != Int.MAX_VALUE) scroll.scrollTo(scroll.maxValue)
+    }
     Column(verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(gap)) {
             Column(Modifier.clearAndSetSemantics { },verticalArrangement=Arrangement.spacedBy(gap)) {
@@ -104,7 +110,7 @@ fun AppActivityHeatmap(cells: List<StreakDayDto?>) {
                     }
                 }
             }
-            Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(gap)) {
+            Row(Modifier.weight(1f).horizontalScroll(scroll),horizontalArrangement=Arrangement.spacedBy(gap)) {
                 cells.chunked(7).forEach { partial ->
                     Column(verticalArrangement=Arrangement.spacedBy(gap)) {
                         (partial + List<StreakDayDto?>(7-partial.size) { null }).forEach { day ->
