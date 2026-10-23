@@ -67,7 +67,7 @@ class AdminService(private val api: ApiClient) {
 
     suspend fun deleteUser(id: Long, adminPassword: String) {
         // Production Django supports no transfer/cascade deletion options.
-        api.delete(ApiEndpoints.Admin.user(id),buildJsonObject { put("admin_password",adminPassword) })
+        api.post(ApiEndpoints.Admin.deleteUser(id),buildJsonObject { put("admin_password",adminPassword) })
     }
 
     suspend fun users(
@@ -93,7 +93,7 @@ class AdminService(private val api: ApiClient) {
     )
 
     suspend fun permissionUsers(page: Int, perPage: Int, search: String): PermissionUserPageDto = api.decode(
-        PermissionUserPageDto.serializer(), api.get(ApiEndpoints.Admin.PERMISSIONS + "users/",
+        PermissionUserPageDto.serializer(), api.get(ApiEndpoints.Admin.PERMISSION_USERS,
             mapOf("page" to page.toString(), "per_page" to perPage.toString(), "search" to search.takeIf(String::isNotBlank))),
     )
 

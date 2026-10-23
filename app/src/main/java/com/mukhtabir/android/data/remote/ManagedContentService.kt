@@ -47,7 +47,7 @@ class ManagedContentService(private val api: ApiClient) {
 
     suspend fun detail(kind: ManagedKind,id: Long): ManagedContentDto {
         require(id>0)
-        return api.decode(ManagedContentDto.serializer(),api.get("${kind.path}$id/"))
+        return api.decode(ManagedContentDto.serializer(),api.get(ApiEndpoints.managedItem(kind, id)))
     }
 
     suspend fun save(kind: ManagedKind,id: Long?,name: String,description: String,active: Boolean,
@@ -62,19 +62,19 @@ class ManagedContentService(private val api: ApiClient) {
             })
         }
         return api.decode(ManagedContentDto.serializer(),if(id==null) api.post(kind.path,payload)
-            else api.put("${kind.path}$id/",payload))
+            else api.put(ApiEndpoints.managedItem(kind, id),payload))
     }
 
-    suspend fun delete(kind: ManagedKind,id: Long) { require(id>0);api.delete("${kind.path}$id/") }
+    suspend fun delete(kind: ManagedKind,id: Long) { require(id>0);api.delete(ApiEndpoints.managedItem(kind, id)) }
 
     suspend fun addMembers(id: Long,users: List<Long>): MemberAddResult {
         require(id>0 && users.isNotEmpty() && users.all { it>0 })
-        return api.decode(MemberAddResult.serializer(),api.post("${ManagedKind.GROUP.path}$id/members/",
+        return api.decode(MemberAddResult.serializer(),api.post(ApiEndpoints.Groups.members(id),
             buildJsonObject { put("user_ids",JsonArray(users.map { JsonPrimitive(it) })) }))
     }
 
     suspend fun removeMember(id: Long,user: Long) {
         require(id>0 && user>0)
-        api.delete("${ManagedKind.GROUP.path}$id/members/$user/")
+        api.delete(ApiEndpoints.Groups.member(id, user))
     }
 }

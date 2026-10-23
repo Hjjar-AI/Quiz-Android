@@ -2,6 +2,8 @@ package com.mukhtabir.android.data.remote
 
 import android.content.Context
 import com.mukhtabir.android.R
+import com.mukhtabir.android.core.AppPreferences
+import com.mukhtabir.android.core.apiReasonResource
 import java.io.IOException
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -234,8 +236,7 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
                         response.body?.string().orEmpty()) }.getOrNull()
                     if(response.code==401) expireSession((safeValidationDetails(envelope?.details)?.get("reason") as? kotlinx.serialization.json.JsonPrimitive)?.content)
                     if(response.code==403) _profileRefreshRequests.tryEmit(true)
-                    throw ApiException(response.code, envelope?.message?.takeIf { it.isNotBlank() }
-                        ?: applicationContext.getString(errorResource(response.code)), details=envelope?.details)
+                    throw apiFailure(response.code, envelope?.message.orEmpty(), envelope?.details)
                 }
                 val responseBody = response.body ?: throw IOException("Empty response")
                 responseBody.byteStream().use { input -> target.outputStream().use { output ->
@@ -255,7 +256,7 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
             }
         } catch (error: ApiException) {
             target.delete()
-            if (body != null && retryCsrf && error.statusCode == 403 && error.summary.contains("csrf", true)) {
+            if (body != null && retryCsrf && error.isCsrfFailure) {
                 cachedCsrfToken = null
                 return download(path, target, query, body, false)
             }
@@ -286,8 +287,9 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
 
     suspend fun delete(
         path: String,
-        body: JsonElement = buildJsonObject {},
-    ): JsonElement = requestData("DELETE", path, body = body)
+        body: JsonElement? = null,
+        query: Map<String, String?> = emptyMap(),
+    ): JsonElement = requestData("DELETE", path, body = body, query = query)
 
     fun <T> decode(serializer: DeserializationStrategy<T>, element: JsonElement): T =
         json.decodeFromJsonElement(serializer, element)
@@ -326,7 +328,7 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
             "GET" -> builder.get()
             "POST" -> builder.post(requestBody)
             "PUT" -> builder.put(requestBody)
-            "DELETE" -> builder.delete(requestBody)
+            "DELETE" -> builder.delete(if (body == null) null else requestBody)
             else -> error("Unsupported HTTP method: $method")
         }
 
@@ -334,9 +336,7 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
             execute(builder.build(), expireOnUnauthorized = path.trimStart('/') != ApiEndpoints.Auth.LOGIN)
                 .data ?: JsonNull
         } catch (error: ApiException) {
-            val isCsrfFailure = error.statusCode == 403 &&
-                error.summary.contains("csrf", ignoreCase = true)
-            if (requiresCsrf && allowCsrfRetry && isCsrfFailure) {
+            if (requiresCsrf && allowCsrfRetry && error.isCsrfFailure) {
                 cachedCsrfToken = null
                 requestData(
                     method = method,
@@ -351,6 +351,17 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
                 throw error
             }
         }
+    }
+
+    private fun apiFailure(status: Int, message: String, details: JsonElement?): ApiException {
+        val context = AppPreferences.wrapContext(applicationContext)
+        val reason = (safeValidationDetails(details)?.get("reason") as? kotlinx.serialization.json.JsonPrimitive)?.content
+        val english = Locale.getDefault().language != "ar"
+        val summary = apiReasonResource(reason)?.let { context.getString(it) }
+            ?: message.takeIf { it.isNotBlank() && !(english && it.any { char -> char in '\u0600'..'\u06ff' }) }
+            ?: context.getString(errorResource(status))
+        return ApiException(status, summary, details = details,
+            fieldErrorFallback = context.getString(R.string.api_reason_validation_error).takeIf { english })
     }
 
     private suspend fun csrfToken(): String = cachedCsrfToken ?: csrfMutex.withLock {
@@ -394,13 +405,7 @@ class ApiClient(context: Context, baseUrl: String, private val onSessionCleared:
                 if (!response.isSuccessful) {
                     if(response.code==401 && expireOnUnauthorized) expireSession((safeValidationDetails(envelope.details)?.get("reason") as? kotlinx.serialization.json.JsonPrimitive)?.content)
                     if(response.code==403) _profileRefreshRequests.tryEmit(true)
-                    throw ApiException(
-                        statusCode = response.code,
-                        message = envelope.message.ifBlank {
-                            applicationContext.getString(errorResource(response.code))
-                        },
-                        details = envelope.details,
-                    )
+                    throw apiFailure(response.code, envelope.message, envelope.details)
                 }
                 if(request.method!="GET") _profileRefreshRequests.tryEmit(false)
                 envelope
@@ -472,10 +477,14 @@ class ApiException(
     message: String,
     cause: Throwable? = null,
     details: JsonElement? = null,
+    fieldErrorFallback: String? = null,
 ) : Exception(message, cause) {
     val summary: String = message
     val details = safeValidationDetails(details)
-    val fieldErrors = validationMessages(this.details)
+    val fieldErrors = validationMessages(this.details).map { (field, value) ->
+        field to if (fieldErrorFallback != null && value.any { it in '\u0600'..'\u06ff' }) fieldErrorFallback else value
+    }.distinct()
     val reason: String? get() = (this.details?.get("reason") as? kotlinx.serialization.json.JsonPrimitive)?.content
+    val isCsrfFailure: Boolean get() = statusCode == 403 && reason == "CSRF_FAILED"
     override val message: String get() = (listOf(summary) + fieldErrors.map {it.second}).filter {it.isNotBlank()}.distinct().joinToString("\n")
 }

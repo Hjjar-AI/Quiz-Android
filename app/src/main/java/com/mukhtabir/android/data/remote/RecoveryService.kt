@@ -9,6 +9,6 @@ data class ContentReceiptDto(val action: String, @SerialName("target_id") val ta
 data class ReportStateDto(val reported: Boolean, val reason: String? = null)
 
 suspend fun ApiClient.contentReceipt(operation: String): ContentReceiptDto = decode(
-    ContentReceiptDto.serializer(), get("recovery/operations/$operation/"))
+    ContentReceiptDto.serializer(), get(ApiEndpoints.contentReceipt(operation)))
 
 class ContentTargetGoneException : Exception()

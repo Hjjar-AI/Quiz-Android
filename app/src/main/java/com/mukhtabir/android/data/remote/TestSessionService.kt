@@ -77,7 +77,7 @@ class TestSessionService(private val api: ApiClient) {
     suspend fun discard(mode: TestMode, sessionId: String) {
         api.delete(
             ApiEndpoints.test(mode, "discard"),
-            buildJsonObject { put("session_id", sessionId) },
+            query = mapOf("session_id" to sessionId),
         )
     }
 }

@@ -1,6 +1,6 @@
 # Mukhtabir Android
 
-Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Android 6+ (API 23), compile/target SDK 34 and JDK 17. Read [working rules](Agents.md) before editing.
+Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Android 6+ (API 23), compile/target SDK 34, build JDK 17 or 21 and Java/Kotlin compilation target 17. Read [working rules](Agents.md) before editing.
 
 ## Documentation map
 
@@ -15,11 +15,11 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 
 ## Current capabilities
 
-- Bundled offline demo; ordinary study/exam/recall; downloaded practice and explicit synchronization; master exams and frozen result review.
+- Offline learner demo with local library/bookmarks, study/exam/recall, history, analytics and planner; ordinary study/exam/recall; downloaded practice and explicit synchronization; master exams and frozen result review.
 - Home/planner/activity, bookmarks, personal History, mistakes/fragile notebooks, analytics, groups, question/case/knowledge browsing.
 - Capability-gated authoring, draft editors, imports/exports, moderation and administration; Django remains authoritative.
 - Shared accessible controls, Arabic/English resources, themes/density/reading preferences, adaptive rail/panes, bounded images and recovery-aware forms.
 
 ## Verification
 
-See [current evidence and pending checks](docs/verification/checklist.md). The latest source changes remain uncompiled. Builds/compilation/packaging and extensive tests require explicit confirmation; follow [verification policy](Agents.md#efficient-verification).
+See [current evidence and pending checks](docs/verification/checklist.md) for compilation, focused tests and remaining device checks. Builds/compilation/packaging and test runs require explicit confirmation; follow [verification policy](Agents.md#milestone-test-approval).

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="demo_scope">بيانات متعلّم تجريبية · دون اتصال بالكامل</string>
+    <string name="demo_menu">فتح قائمة التنقل</string>
+    <string name="demo_learner">متعلّم تجريبي</string>
+    <string name="demo_greeting">مرحباً بعودتك، أيها المتعلّم التجريبي</string>
+    <string name="demo_profile_hint">اكتشف تجربة المتعلّم باستخدام ملف تجريبي محلي.</string>
+    <string name="demo_account_limits">تتطلب إدارة الحساب والاستيراد والتنزيل والمزامنة حساباً متصلاً، وهي غير متاحة في هذا العرض.</string>
+    <string name="demo_history_hint">يتضمن العرض جلستين مثاليتين. تظهر هنا أيضاً الجلسات التجريبية المكتملة؛ افتح إحداها لمراجعتها.</string>
+    <string name="demo_answered_total">الإجابات المسجّلة</string>
+    <string name="demo_accuracy">دقة الأسئلة المجابة</string>
+    <string name="demo_percentage">%1$s%%</string>
+    <string name="demo_category_circulation">القلب والدم والرئتان</string>
+    <string name="demo_category_systems">الخلايا وأجهزة الجسم</string>
+    <string name="demo_add_bookmark">إضافة إشارة مرجعية</string>
+    <string name="demo_daily_target">الهدف اليومي للأسئلة (١–١٠٠)</string>
+    <string name="demo_planner_hint">عدّل هدفك التجريبي. يُحدَّث تقدّم اليوم عند إكمال جلسة تجريبية.</string>
+    <string name="demo_paused_hint">لديك جلسة تجريبية جارية. استأنفها قبل بدء جلسة أخرى أو فتح نتيجة سابقة. يستمر وقت الامتحان أثناء التصفح.</string>
+    <string name="demo_pause">الاحتفاظ بالجلسة والعودة</string>
+    <string name="demo_discard">تجاهل الجلسة</string>
+    <string name="demo_exit_message">هل تريد مغادرة العرض ومسح تغييراته التجريبية؟ لن يتأثر حسابك أو دراستك المنزّلة.</string>
+    <string name="demo_case">حالة: في درس لعلم وظائف الأعضاء، يتتبّع متعلّم مسار الأكسجين من الرئتين إلى الدم ثم أنحاء الجسم. استخدم هذا السياق للإجابة عن السؤال التالي.</string>
+    <string name="demo_recalled_limit">حتى ٥٠٠ حرف.</string>
+    <string name="demo_return">العودة إلى العرض</string>
+</resources>

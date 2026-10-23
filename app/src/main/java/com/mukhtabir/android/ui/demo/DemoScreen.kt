@@ -1,218 +1,301 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.mukhtabir.android.ui.demo
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.Quiz
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.R
+import com.mukhtabir.android.data.remote.StreakDayDto
+import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.ui.components.*
-import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.theme.AppTheme
-import kotlinx.coroutines.delay
+import com.mukhtabir.android.util.formatCalendarDate
+import com.mukhtabir.android.util.formatNumber
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
-private data class DemoQuestion(val stem: Int, val choices: List<Int>, val correct: Int, val explanation: Int)
+private enum class DemoDestination(val label: Int, val icon: ImageVector) {
+    HOME(R.string.home, Icons.Filled.Home),
+    LIBRARY(R.string.nav_library_short, Icons.Filled.ListAlt),
+    QUIZZES(R.string.quizzes, Icons.Filled.Quiz),
+    BOOKMARKS(R.string.bookmarks, Icons.Filled.Bookmark),
+    HISTORY(R.string.history, Icons.Filled.History),
+    ANALYTICS(R.string.analytics, Icons.Filled.BarChart),
+    PLANNER(R.string.nav_planner, Icons.Filled.DateRange),
+    PROFILE(R.string.nav_profile, Icons.Filled.Person),
+}
+private val demoTabs = listOf(DemoDestination.HOME, DemoDestination.LIBRARY, DemoDestination.QUIZZES, DemoDestination.BOOKMARKS)
 
-private val demoQuestions = listOf(
-    DemoQuestion(R.string.demo_q1, listOf(R.string.demo_q1_c1, R.string.demo_q1_c2, R.string.demo_q1_c3, R.string.demo_q1_c4), 0, R.string.demo_q1_explanation),
-    DemoQuestion(R.string.demo_q2, listOf(R.string.demo_q2_c1, R.string.demo_q2_c2, R.string.demo_q2_c3, R.string.demo_q2_c4), 1, R.string.demo_q2_explanation),
-    DemoQuestion(R.string.demo_q3, listOf(R.string.demo_q3_c1, R.string.demo_q3_c2, R.string.demo_q3_c3, R.string.demo_q3_c4), 2, R.string.demo_q3_explanation),
-    DemoQuestion(R.string.demo_q4, listOf(R.string.demo_q4_c1, R.string.demo_q4_c2, R.string.demo_q4_c3, R.string.demo_q4_c4), 3, R.string.demo_q4_explanation),
-    DemoQuestion(R.string.demo_q5, listOf(R.string.demo_q5_c1, R.string.demo_q5_c2, R.string.demo_q5_c3, R.string.demo_q5_c4), 0, R.string.demo_q5_explanation),
-    DemoQuestion(R.string.demo_q6, listOf(R.string.demo_q6_c1, R.string.demo_q6_c2, R.string.demo_q6_c3, R.string.demo_q6_c4), 1, R.string.demo_q6_explanation),
-    DemoQuestion(R.string.demo_q7, listOf(R.string.demo_q7_c1, R.string.demo_q7_c2, R.string.demo_q7_c3, R.string.demo_q7_c4), 2, R.string.demo_q7_explanation),
-    DemoQuestion(R.string.demo_q8, listOf(R.string.demo_q8_c1, R.string.demo_q8_c2, R.string.demo_q8_c3, R.string.demo_q8_c4), 3, R.string.demo_q8_explanation),
-)
-
+/** Offline learner shell. Dependencies are deliberately limited to the local fake repository. */
 @Composable
-private fun DemoHero(content: @Composable ColumnScope.() -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    Surface(shape = MaterialTheme.shapes.large, color = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer) {
-        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(scheme.primaryContainer, lerp(scheme.primaryContainer, scheme.surface, .25f))))
-            .padding(AppLayoutTokens.authInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
-            Text(stringResource(R.string.demo_badge), style = MaterialTheme.typography.labelMedium)
-            content()
+fun DemoScreen(onExit: () -> Unit) {
+    val repository = rememberSaveable(saver = DemoRepository.StateSaver) { DemoRepository() }
+    var destination by rememberSaveable { mutableStateOf(DemoDestination.HOME) }
+    var detail by rememberSaveable { mutableStateOf<Int?>(null) }
+    var practicing by rememberSaveable { mutableStateOf(false) }
+    var launchIds by rememberSaveable { mutableStateOf<List<Int>?>(null) }
+    var exitDialog by rememberSaveable { mutableStateOf(false) }
+    var mode by rememberSaveable { mutableStateOf(TestMode.STUDY) }
+    val drawer = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    val active = repository.state.session.page == DemoPage.SESSION
+    fun navigate(target: DemoDestination) { destination = target; detail = null }
+    fun practice(ids: List<Int>, initial: TestMode = TestMode.STUDY) {
+        if (active) practicing = true
+        else { mode = initial; launchIds = ids }
+    }
+    BackHandler {
+        when {
+            drawer.isOpen -> scope.launch { drawer.close() }
+            detail != null -> detail = null
+            destination != DemoDestination.HOME -> navigate(DemoDestination.HOME)
+            else -> exitDialog = true
+        }
+    }
+    if (exitDialog) AppConfirmationDialog(onDismissRequest = { exitDialog = false },
+        title = { Text(stringResource(R.string.demo_exit)) }, text = { Text(stringResource(R.string.demo_exit_message)) },
+        confirmButton = { AppDangerTextButton(onExit) { Text(stringResource(R.string.demo_exit)) } },
+        dismissButton = { AppTextButton({ exitDialog = false }) { Text(stringResource(R.string.cancel)) } })
+    launchIds?.let { ids -> PracticeLauncher(stringResource(R.string.demo_collection), ids.map(Int::toLong), repository.ids.size, true,
+        onDismiss = { launchIds = null }, initialMode = mode,
+        onStart = { chosen, selected, _ ->
+            repository.start(DemoMode.valueOf(chosen.name), selected.map(Long::toInt))
+            launchIds = null; practicing = true
+        }) }
+    if (practicing && repository.state.session.total > 0) {
+        key(repository.state.session.id) { DemoPracticeScreen(repository) { practicing = false } }
+        return
+    }
+    ModalNavigationDrawer(drawerState = drawer, drawerContent = {
+        ModalDrawerSheet {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(AppLayoutTokens.pageInsets),
+                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.content)) {
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.demo_learner))
+                Text(stringResource(R.string.demo_badge), style = MaterialTheme.typography.labelMedium)
+                DemoDestination.values().forEach { target ->
+                    NavigationDrawerItem(label = { Text(stringResource(target.label)) }, selected = destination == target,
+                        icon = { Icon(target.icon, null) }, onClick = {
+                            navigate(target); scope.launch { drawer.close() }
+                        })
+                }
+                AppOutlinedButton({ exitDialog = true; scope.launch { drawer.close() } }) { Text(stringResource(R.string.demo_exit)) }
+            }
+        }
+    }) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val rail = maxWidth >= AppLayoutTokens.navigationRailBreakpoint * androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+            Row(Modifier.fillMaxSize()) {
+                if (rail) NavigationRail(Modifier.fillMaxHeight().verticalScroll(rememberScrollState())) {
+                    demoTabs.forEach { target -> NavigationRailItem(selected = destination == target,
+                        onClick = { navigate(target) }, icon = { Icon(target.icon, null) }, label = { Text(stringResource(target.label)) }) }
+                }
+                Scaffold(modifier = Modifier.weight(1f), topBar = {
+                    AppScreenBar(stringResource(if (detail != null) R.string.question_library else destination.label) +
+                        " · " + stringResource(R.string.demo_badge), navigation = {
+                        if (detail != null) AppIconButton({ detail = null }) { Icon(Icons.Filled.ArrowBack, stringResource(R.string.back), modifier = Modifier.directionalIcon()) }
+                        else AppIconButton({ scope.launch { drawer.open() } }) { Icon(Icons.Filled.Menu, stringResource(R.string.demo_menu)) }
+                    })
+                }, bottomBar = {
+                    if (!rail) NavigationBar {
+                        demoTabs.forEach { target -> NavigationBarItem(selected = destination == target,
+                            onClick = { navigate(target) }, icon = { Icon(target.icon, null) }, label = { Text(stringResource(target.label)) }) }
+                    }
+                }) { insets ->
+                    key(destination, detail) {
+                        Column(Modifier.fillMaxSize().padding(insets).consumeWindowInsets(insets).imePadding()
+                            .verticalScroll(rememberScrollState()).padding(AppLayoutTokens.pageInsets),
+                            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
+                            Text(stringResource(R.string.demo_scope), style = MaterialTheme.typography.bodySmall)
+                            if (active) AppCard(Modifier.fillMaxWidth()) { AppCardBody {
+                                Text(stringResource(R.string.demo_paused_hint))
+                                AppButton({ practicing = true }) { Text(stringResource(R.string.flow_resume)) }
+                            } }
+                            val questionId = detail
+                            if (questionId != null) {
+                                DemoQuestionDetail(repository, questionId) { practice(listOf(questionId)) }
+                            } else when (destination) {
+                                DemoDestination.HOME -> DemoDashboard(repository, ::navigate, { detail = it }, { ids -> practice(ids) })
+                                DemoDestination.LIBRARY -> DemoLibrary(repository, false, { detail = it }, { practice(it) })
+                                DemoDestination.BOOKMARKS -> DemoLibrary(repository, true, { detail = it }, { practice(it) })
+                                DemoDestination.QUIZZES -> {
+                                    AppPageHeading(stringResource(R.string.home_study_modes), stringResource(R.string.demo_collection_hint))
+                                    listOf(Triple(TestMode.STUDY, R.string.study, R.string.demo_study_hint),
+                                        Triple(TestMode.EXAM, R.string.exam, R.string.demo_exam_hint),
+                                        Triple(TestMode.RECALL, R.string.recall, R.string.demo_recall_hint)).forEach { (option, title, hint) ->
+                                        AppCard(onClick = { practice(repository.ids, option) }, modifier = Modifier.fillMaxWidth()) { AppCardBody {
+                                            Text(stringResource(title), style = MaterialTheme.typography.titleLarge)
+                                            Text(stringResource(hint))
+                                        } }
+                                    }
+                                }
+                                DemoDestination.HISTORY -> DemoHistory(repository, active) { record ->
+                                    if (repository.review(record)) practicing = true
+                                }
+                                DemoDestination.ANALYTICS -> DemoAnalytics(repository)
+                                DemoDestination.PLANNER -> DemoPlanner(repository) { practice(repository.ids.take(3)) }
+                                DemoDestination.PROFILE -> {
+                                    AppPageHeading(stringResource(R.string.demo_learner), stringResource(R.string.demo_profile_hint))
+                                    DemoMetrics(repository)
+                                    Text(stringResource(R.string.demo_account_limits))
+                                }
+                            }
+                            AppTextButton({ exitDialog = true }) { Text(stringResource(R.string.demo_exit)) }
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun DemoScreen(onExit: () -> Unit) {
-    var session by rememberSaveable { mutableStateOf(DemoSession()) }
-    var dialog by rememberSaveable { mutableStateOf<DemoDialog?>(null) }
-    var showMap by rememberSaveable { mutableStateOf(false) }
-    var filter by rememberSaveable { mutableStateOf(ReviewFilter.ALL) }
-    var remaining by remember { mutableStateOf(480) }
-    val scroll = rememberScrollState()
-    val focus = androidx.compose.ui.platform.LocalFocusManager.current
-    val reviewing = session.page == DemoPage.REVIEW
-    val active = session.page == DemoPage.SESSION
-    val visible = session.answers.indices.filter { filter.includes(session.answers[it] >= 0, session.answers[it] == demoQuestions[it].correct) }
-    val displayIndex = if (reviewing) session.index.takeIf { it in visible } ?: visible.firstOrNull() else session.index
-    val index = displayIndex ?: 0
-    fun start(mode: DemoMode, count: Int = demoQuestions.size) {
-        session = DemoSession.start(mode, count); filter = ReviewFilter.ALL; dialog = null
-    }
-    fun back() {
-        when (session.page) {
-            DemoPage.HOME -> onExit()
-            DemoPage.SESSION -> dialog = DemoDialog.DISCARD
-            DemoPage.REVIEW -> session = session.copy(page = DemoPage.RESULTS)
-            DemoPage.RESULTS -> session = DemoSession()
-        }
-    }
-    BackHandler { back() }
-    LaunchedEffect(index, session.page, filter) { focus.clearFocus(); scroll.scrollTo(0) }
-    LaunchedEffect(session.mode, session.page, session.deadline) {
-        if (active && session.mode == DemoMode.EXAM) while (true) {
-            if (session.deadlineReached()) { session = session.finish(true); dialog = null; break }
-            remaining = ((session.remainingMillis() + 999) / 1000).coerceIn(0, 480).toInt()
-            delay(250)
-        }
-    }
-    if (showMap && (active || reviewing)) AppConfirmationDialog(onDismissRequest = { showMap = false },
-        title = { Text(stringResource(R.string.session_question_navigation)) },
-        text = { LearningQuestionMap(index, session.total, session.answers.indices.filter { session.answers[it] >= 0 }.toSet(),
-            session.flagged, reviewing || session.mode == DemoMode.EXAM || session.answers[index] >= 0) { target ->
-                filter = ReviewFilter.ALL; session = session.copy(index = target); showMap = false
-            } }, confirmButton = { AppTextButton({ showMap = false }) { Text(stringResource(R.string.done)) } })
-    dialog?.let { current -> AppConfirmationDialog(
-        onDismissRequest = { dialog = null },
-        title = { Text(stringResource(if (current == DemoDialog.FINISH) R.string.finish_session_title else R.string.demo_leave_title)) },
-        text = { Column {
-            Text(stringResource(if (current == DemoDialog.FINISH) R.string.demo_finish_message else R.string.demo_leave_message))
-            if (current == DemoDialog.FINISH) LearningQuestionMap(index, session.total,
-                session.answers.indices.filter { session.answers[it] >= 0 }.toSet(), session.flagged, true) { target ->
-                    session = session.copy(index = target); dialog = null
-                }
-        } },
-        confirmButton = {
-            if (current == DemoDialog.DISCARD) AppDangerTextButton({ session = DemoSession(); dialog = null }) {
-                Text(stringResource(R.string.ui_demo_home))
-            } else AppTextButton({ session = session.finish(session.deadlineReached()); dialog = null }) { Text(stringResource(R.string.finish_session_action)) }
-        },
-        dismissButton = { AppTextButton({ dialog = null }) { Text(stringResource(R.string.cancel)) } },
-    ) }
-    Scaffold(
-        topBar = { Column {
-            AppBackBar(stringResource(R.string.demo_badge) + if (active || reviewing) " · " + stringResource(when (session.mode) {
-                DemoMode.STUDY -> R.string.study; DemoMode.EXAM -> R.string.exam; DemoMode.RECALL -> R.string.recall
-            }) else "", enabled = true, onBack = { back() })
-            if (active || (reviewing && visible.isNotEmpty())) LearningSessionHeader(index, session.total, session.answered,
-                seconds = if (active && session.mode == DemoMode.EXAM) remaining else null,
-                critical = active && session.mode == DemoMode.EXAM && remaining <= 48,
-                tools = { if (active) {
-                    AppIconButton({ session = session.copy(flagged = if (index in session.flagged) session.flagged - index else session.flagged + index) }) {
-                        Icon(Icons.Filled.Flag, stringResource(if (index in session.flagged) R.string.flow_unflag else R.string.flow_flag))
-                    }
-                    AppTextButton({ dialog = DemoDialog.FINISH }) { Text(stringResource(R.string.finish)) }
-                } })
-        } },
-        bottomBar = {
-            if (active || (reviewing && visible.isNotEmpty())) {
-                val position = visible.indexOf(index)
-                val last = if (reviewing) position == visible.lastIndex else index == session.total - 1
-                LearningSessionNavigation(onQuestions = { showMap = true },
-                    onPrevious = { session = session.copy(index = if (reviewing) visible[position - 1] else index - 1) },
-                    previousEnabled = if (reviewing) position > 0 else index > 0,
-                    nextEnabled = reviewing || session.mode == DemoMode.EXAM || session.answers[index] >= 0,
-                    nextLabel = stringResource(if (!last) R.string.next else if (reviewing) R.string.results else R.string.finish),
-                    onNext = {
-                        if (last) { if (reviewing) session = session.copy(page = DemoPage.RESULTS) else dialog = DemoDialog.FINISH }
-                        else session = session.copy(index = if (reviewing) visible[position + 1] else index + 1)
-                    })
+private fun DemoDashboard(repository: DemoRepository, navigate: (DemoDestination) -> Unit, open: (Int) -> Unit, practice: (List<Int>) -> Unit) {
+    AppPageHeading(stringResource(R.string.demo_greeting), stringResource(R.string.home_next_action))
+    AppHero {
+        AppHeroRow(decoration = { AppProgressRing(repository.todayAnswered.toFloat() / repository.state.target,
+            formatNumber(repository.todayAnswered), stringResource(R.string.flow_daily)) }, content = {
+            Column {
+                Text(stringResource(R.string.study_now_title), style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.study_now_description))
             }
-        },
-    ) { insets ->
-        Column(Modifier.fillMaxSize().padding(insets).consumeWindowInsets(insets).imePadding()
-            .verticalScroll(scroll).padding(AppLayoutTokens.pageInsets),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
-            when (session.page) {
-                DemoPage.HOME -> {
-                    DemoHero {
-                        Text(stringResource(R.string.demo_title), style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.semantics { heading() })
-                        Text(stringResource(R.string.demo_intro))
-                        Text(stringResource(R.string.ui_quick_hint))
-                        AppButton({ start(DemoMode.STUDY, 3) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.ui_quick_study)) }
-                    }
-                    AppPageHeading(stringResource(R.string.demo_collection), stringResource(R.string.demo_collection_hint))
-                    listOf(Triple(DemoMode.STUDY, R.string.ui_full_study, R.string.demo_study_hint),
-                        Triple(DemoMode.EXAM, R.string.exam, R.string.demo_exam_hint),
-                        Triple(DemoMode.RECALL, R.string.recall, R.string.demo_recall_hint)).forEach { (mode, title, hint) ->
-                        AppCard(onClick = { start(mode) }, modifier = Modifier.fillMaxWidth()) {
-                            AppCardBody {
-                                Icon(when (mode) { DemoMode.EXAM -> Icons.Filled.Quiz; DemoMode.RECALL -> Icons.Filled.Lightbulb; else -> Icons.Filled.School }, null,
-                                    tint = MaterialTheme.colorScheme.primary)
-                                Text(stringResource(title), style = MaterialTheme.typography.titleLarge)
-                                Text(stringResource(hint), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                    Text(stringResource(R.string.demo_local_notice), style = MaterialTheme.typography.bodySmall)
-                    AppOutlinedButton(onExit, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_exit)) }
-                }
-                DemoPage.RESULTS -> {
-                    DemoHero { Text(stringResource(R.string.demo_result_title), style = MaterialTheme.typography.headlineSmall) }
-                    LearningResultsSummary(session.answers.indices.count { session.answers[it] == demoQuestions[it].correct }, session.total, session.answered)
-                    if (session.expired) Text(stringResource(R.string.demo_expired), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                    AppButton({ filter = ReviewFilter.ALL; session = session.copy(index = 0, page = DemoPage.REVIEW) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_review)) }
-                    AppOutlinedButton({ start(session.mode, session.total) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_retry)) }
-                    AppOutlinedButton({ session = DemoSession() }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.ui_demo_home)) }
-                    Text(stringResource(R.string.demo_local_notice), style = MaterialTheme.typography.bodySmall)
-                }
-                DemoPage.SESSION, DemoPage.REVIEW -> {
-                    if (reviewing) ResultReviewFilters(filter, { filter = it }, visible.size, session.total)
-                    if (!reviewing || displayIndex != null) {
-                        val question = demoQuestions[index]
-                        val answer = session.answers[index]
-                        val feedback = session.finished || (session.mode != DemoMode.EXAM && answer >= 0)
-                        QuestionTextCard(stringResource(question.stem))
-                        if (session.mode == DemoMode.RECALL) {
-                            if (index !in session.revealed && active) {
-                                Text(stringResource(R.string.demo_recall_prompt))
-                                AppTextField(session.recalled[index], { value -> session = session.copy(recalled = session.recalled.mapIndexed { i, old -> if (i == index) value else old }) },
-                                    Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.demo_recalled)) })
-                                AppButton({ session = session.copy(revealed = session.revealed + index); focus.clearFocus() }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_reveal)) }
-                            } else if (session.recalled[index].isNotBlank()) {
-                                Text(stringResource(R.string.demo_recalled), style = MaterialTheme.typography.labelLarge)
-                                Text(session.recalled[index])
-                            }
-                        }
-                        if (session.mode != DemoMode.RECALL || index in session.revealed || reviewing) Column(Modifier.selectableGroup(),
-                            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.content)) {
-                            question.choices.forEachIndexed { choice, label ->
-                                val status = if (!feedback) null else when (choice) { question.correct -> true; answer -> false; else -> null }
-                                AnswerChoice(number = choice + 1, text = stringResource(label), selected = answer == choice,
-                                    enabled = active && !feedback, onClick = if (active) ({ session = session.copy(index = index).answer(choice) }) else null,
-                                    answerCorrect = status, neutralSelection = session.mode == DemoMode.EXAM && active, interactiveText = reviewing, reviewMode = reviewing)
-                            }
-                        }
-                        if (feedback) ExplanationCard(stringResource(question.explanation), title = stringResource(R.string.explanation))
-                        if (reviewing && answer < 0) Text(stringResource(R.string.unanswered))
-                        if (active && session.mode != DemoMode.EXAM && answer < 0) Text(stringResource(R.string.demo_answer_hint), style = MaterialTheme.typography.bodySmall)
-                    }
-                    if (reviewing) AppTextButton({ session = session.copy(page = DemoPage.RESULTS) }) { Text(stringResource(R.string.results)) }
-                }
-            }
+        })
+        AppButton({ practice(repository.ids.take(3)) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.study_now_start)) }
+        AppTextButton({ navigate(DemoDestination.PLANNER) }) { Text(stringResource(R.string.nav_planner)) }
+    }
+    DemoMetrics(repository)
+    AppActionRow {
+        AppOutlinedButton({ navigate(DemoDestination.HISTORY) }) { Text(stringResource(R.string.history)) }
+        AppOutlinedButton({ navigate(DemoDestination.ANALYTICS) }) { Text(stringResource(R.string.analytics)) }
+    }
+    AppPageHeading(stringResource(R.string.home_recent_questions))
+    repository.ids.take(3).forEach { id -> DemoQuestionRow(repository, id) { open(id) } }
+    AppOutlinedButton({ navigate(DemoDestination.LIBRARY) }) { Text(stringResource(R.string.all_questions)) }
+}
+
+@Composable
+private fun DemoMetrics(repository: DemoRepository) {
+    val metrics = listOf(
+        formatNumber(repository.ids.size) to stringResource(R.string.home_bank_total),
+        formatNumber(repository.state.bookmarks.size) to stringResource(R.string.bookmarks),
+        formatNumber(repository.answered) to stringResource(R.string.demo_answered_total),
+        stringResource(R.string.demo_percentage, formatNumber(repository.accuracy)) to stringResource(R.string.demo_accuracy),
+    )
+    AppTileGrid(metrics.size) { index, modifier ->
+        AppMetricTile(metrics[index].first, metrics[index].second, modifier)
+    }
+}
+
+@Composable
+private fun DemoLibrary(repository: DemoRepository, bookmarksOnly: Boolean, open: (Int) -> Unit, practice: (List<Int>) -> Unit) {
+    var query by rememberSaveable { mutableStateOf("") }
+    var category by rememberSaveable { mutableStateOf(0) }
+    AppTextField(query, { query = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.search_questions)) }, singleLine = true)
+    AppActionRow {
+        listOf(0 to R.string.all, 1 to R.string.demo_category_circulation, 2 to R.string.demo_category_systems).forEach { (id, label) ->
+            AppFilterChip(category == id, { category = id }, label = { Text(stringResource(label)) })
         }
     }
+    val rows = repository.ids.filter { id ->
+        (!bookmarksOnly || id in repository.state.bookmarks) && (category == 0 || repository.category(id) == category) &&
+            stringResource(repository.question(id).stem).contains(query.trim(), ignoreCase = true)
+    }
+    Text(stringResource(R.string.flow_material_count, formatNumber(rows.size)))
+    if (rows.isEmpty()) {
+        EmptyState(stringResource(R.string.no_questions_found))
+        if (query.isNotBlank() || category != 0) AppTextButton({ query = ""; category = 0 }) { Text(stringResource(R.string.library_reset)) }
+    } else {
+        AppButton({ practice(rows) }) { Text(stringResource(R.string.flow_practice)) }
+        rows.forEach { id -> DemoQuestionRow(repository, id) { open(id) } }
+    }
+}
+
+@Composable
+private fun DemoQuestionRow(repository: DemoRepository, id: Int, open: () -> Unit) {
+    AppCard(onClick = open, modifier = Modifier.fillMaxWidth()) { AppCardBody {
+        Text(stringResource(if (repository.category(id) == 1) R.string.demo_category_circulation else R.string.demo_category_systems),
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        Text(stringResource(repository.question(id).stem), style = MaterialTheme.typography.titleMedium)
+        AppTextButton({ repository.toggleBookmark(id) }) { Text(stringResource(if (id in repository.state.bookmarks) R.string.remove_bookmark else R.string.demo_add_bookmark)) }
+    } }
+}
+
+@Composable
+private fun DemoQuestionDetail(repository: DemoRepository, id: Int, practice: () -> Unit) {
+    val question = repository.question(id)
+    question.caseStem?.let { QuestionTextCard(stringResource(it)) }
+    QuestionTextCard(stringResource(question.stem))
+    question.choices.forEachIndexed { index, text -> AnswerChoice(number = index + 1, text = stringResource(text),
+        selected = false, enabled = false, onClick = null, answerCorrect = if (index == question.correct) true else null, reviewMode = true, interactiveText = true) }
+    ExplanationCard(stringResource(question.explanation), title = stringResource(R.string.explanation))
+    AppTextButton({ repository.toggleBookmark(id) }) { Text(stringResource(if (id in repository.state.bookmarks) R.string.remove_bookmark else R.string.demo_add_bookmark)) }
+    AppButton(practice) { Text(stringResource(R.string.flow_practice)) }
+}
+
+@Composable
+private fun DemoHistory(repository: DemoRepository, active: Boolean, review: (DemoRecord) -> Unit) {
+    Text(stringResource(R.string.demo_history_hint))
+    repository.state.records.forEach { record ->
+        val session = record.session
+        AppCard(onClick = { review(record) }, modifier = Modifier.fillMaxWidth(), enabled = !active) { AppCardBody {
+            Text(stringResource(when (session.mode) { DemoMode.STUDY -> R.string.study; DemoMode.EXAM -> R.string.exam; DemoMode.RECALL -> R.string.recall }), style = MaterialTheme.typography.titleMedium)
+            Text(formatCalendarDate(record.date))
+            Text(stringResource(R.string.demo_score, formatNumber(repository.correct(session)), formatNumber(session.total)))
+            Text(stringResource(R.string.history_answered, formatNumber(session.answered), formatNumber(session.total)))
+            Text(stringResource(R.string.demo_review), color = MaterialTheme.colorScheme.primary)
+        } }
+    }
+}
+
+@Composable
+private fun DemoAnalytics(repository: DemoRepository) {
+    DemoMetrics(repository)
+    AppPageHeading(stringResource(R.string.activity_title))
+    val today = LocalDate.now()
+    val days = (27L downTo 0L).map { offset ->
+        val date = today.minusDays(offset).toString()
+        val records = repository.state.records.filter { it.date == date }
+        StreakDayDto(date, records.size, records.sumOf { it.session.answered })
+    }
+    AppActivityHeatmap(activityCalendarCells(days))
+    AppPageHeading(stringResource(R.string.category_mastery))
+    listOf(1 to R.string.demo_category_circulation, 2 to R.string.demo_category_systems).forEach { (category, label) ->
+        val attempts = repository.state.records.flatMap { record -> record.session.questionIds.mapIndexedNotNull { i, id ->
+            if (repository.category(id) == category && record.session.answers[i] >= 0) record.session.answers[i] == repository.question(id).correct else null
+        } }
+        AppCard(Modifier.fillMaxWidth()) { AppCardBody {
+            Text(stringResource(label), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.demo_score, formatNumber(attempts.count { it }), formatNumber(attempts.size)))
+        } }
+    }
+}
+
+@Composable
+private fun DemoPlanner(repository: DemoRepository, practice: () -> Unit) {
+    var target by rememberSaveable { mutableStateOf(repository.state.target.toString()) }
+    var saved by rememberSaveable { mutableStateOf(false) }
+    val number = target.toIntOrNull()?.takeIf { it in 1..100 }
+    AppPageHeading(stringResource(R.string.nav_planner), stringResource(R.string.demo_planner_hint))
+    AppTextField(target, { value -> target = value.map { c -> Character.digit(c, 10).takeIf { it >= 0 }?.digitToChar() ?: c }.joinToString(""); saved = false },
+        Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.demo_daily_target)) }, isError = number == null,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number), singleLine = true)
+    AppButton({ number?.let(repository::setTarget); saved = true }, enabled = number != null) { Text(stringResource(R.string.save)) }
+    if (saved) Text(stringResource(R.string.saved), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+    Text(stringResource(R.string.flow_daily_counts, formatNumber(repository.todayAnswered), formatNumber(repository.state.target),
+        formatNumber((repository.state.target - repository.todayAnswered).coerceAtLeast(0))))
+    if (repository.todayAnswered >= repository.state.target) Text(stringResource(R.string.flow_daily_optional))
+    AppButton(practice) { Text(stringResource(R.string.study_now_start)) }
 }

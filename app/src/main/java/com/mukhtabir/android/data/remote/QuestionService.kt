@@ -32,10 +32,10 @@ class QuestionService(private val api: ApiClient) {
             MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("delete","true").build()))
 
     suspend fun sourceBookFilters(name: String): SourceBookFiltersDto = api.decode(
-        SourceBookFiltersDto.serializer(), api.get("questions/source-book-filters/", mapOf("source_document" to name)))
+        SourceBookFiltersDto.serializer(), api.get(ApiEndpoints.Questions.SOURCE_BOOK_FILTERS, mapOf("source_document" to name)))
 
     suspend fun sourceBooks(): SourceBookListDto =
-        api.decode(SourceBookListDto.serializer(), api.get("questions/source-books/"))
+        api.decode(SourceBookListDto.serializer(), api.get(ApiEndpoints.Questions.SOURCE_BOOKS))
 
     suspend fun tags(): TagListDto =
         api.decode(TagListDto.serializer(), api.get(ApiEndpoints.Questions.TAGS))
@@ -86,12 +86,12 @@ class QuestionService(private val api: ApiClient) {
         api.get(
             ApiEndpoints.Questions.AVAILABLE_COUNT,
             mapOf(
-                "category_ids" to categoryIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+                "category_ids" to categoryIds.takeIf { it.isNotEmpty() }?.let { JsonArray(it.map { id -> JsonPrimitive(id) }).toString() },
                 "difficulty" to difficulty,
                 "verified_only" to verifiedOnly.takeIf { it }?.toString(),
                 "use_bookmarks" to useBookmarks.takeIf { it }?.toString(),
                 "use_srs" to useSrs.takeIf { it }?.toString(),
-                "tags_filter" to tags.takeIf { it.isNotEmpty() }?.joinToString(","),
+                "tags_filter" to tags.takeIf { it.isNotEmpty() }?.let { JsonArray(it.map { tag -> JsonPrimitive(tag) }).toString() },
                 "blueprint_id" to blueprintId?.toString(),
                 "source_document" to sourceDocument,
             ),
@@ -222,7 +222,7 @@ class QuestionService(private val api: ApiClient) {
     suspend fun ratings(ids: List<Long>): Map<Long, QuestionRatingRowDto> {
         val requested = ids.filter { it > 0 }.distinct()
         return requested.chunked(500).flatMap { chunk ->
-            api.decode(QuestionRatingsPageDto.serializer(), api.get("questions/ratings/",
+            api.decode(QuestionRatingsPageDto.serializer(), api.get(ApiEndpoints.Questions.RATINGS,
                 mapOf("ids" to chunk.joinToString(",")))).items
         }.filter { it.questionId in requested }.associateBy { it.questionId }
     }

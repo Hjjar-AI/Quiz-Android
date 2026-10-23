@@ -12,16 +12,8 @@ import java.net.UnknownHostException
 /**
  * Translate a [Throwable] to a user-facing message.
  *
- * The API's `ApiException.message` is already localized by the backend
- * for every error that carries a Django envelope. This mapper covers
- * the cases where the backend did NOT supply a message — network
- * failures, HTTP status codes the backend did not wrap, or any
- * unexpected exception type.
- *
- * Server-supplied messages take priority: if the backend already
- * rendered Arabic (or English) text for the specific failure, we
- * forward it verbatim. The status-code branches exist only as a
- * fallback when that message is missing or empty.
+ * Stable backend reasons use native bilingual resources. The transport
+ * localizes legacy summaries and field fallbacks for callers outside Compose.
  *
  * Call sites should not branch on `statusCode` themselves — they
  * should call [userMessage] and render the result.
@@ -31,11 +23,7 @@ fun Throwable.userMessage(): String {
     val fallback = stringResource(R.string.error_unknown)
     val api = this as? ApiException
     val apiMessage = api?.let { error ->
-        val reason = when(error.reason) {
-            "ACCOUNT_EXPIRED" -> stringResource(R.string.api_account_expired)
-            "MUST_CHANGE_PASSWORD" -> stringResource(R.string.api_password_required)
-            else -> error.summary
-        }
+        val reason = apiReasonResource(error.reason)?.let { stringResource(it) } ?: error.summary
         val fields = error.fieldErrors.map { (field,value) ->
             val label = when(field) {
                 "username" -> stringResource(R.string.username)
@@ -89,7 +77,7 @@ fun Throwable.userMessage(): String {
  */
 @StringRes
 fun Throwable.userMessageRes(): Int = when (this) {
-    is ApiException -> when (statusCode) {
+    is ApiException -> apiReasonResource(reason) ?: when (statusCode) {
         400 -> R.string.error_bad_request
         401 -> R.string.error_unauthorized
         403 -> R.string.error_forbidden

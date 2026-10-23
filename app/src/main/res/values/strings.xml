@@ -1578,19 +1578,19 @@
     <string name="quiz_review_read_failed">Could not read question review. Your completed result is still saved.</string>
 
     <!-- Bundled, account-independent offline demonstration. -->
-    <string name="demo_open">Start sample practice</string>
+    <string name="demo_open">Explore the offline demo</string>
     <string name="demo_title">Your first session starts here</string>
     <string name="demo_badge">OFFLINE DEMO</string>
-    <string name="demo_intro">Explore Mukhtabir with a ready-to-use science collection. No account, server or download needed.</string>
+    <string name="demo_intro">Explore the library, bookmarks, practice, history, analytics and planner with local sample data. No account or server needed.</string>
     <string name="demo_collection">Inside the human body</string>
     <string name="demo_collection_hint">8 original sample questions · Biology essentials</string>
     <string name="demo_study_hint">Learn at your pace. Get feedback and explanations as you answer.</string>
     <string name="demo_exam_hint">An 8-minute challenge. Answers stay hidden until you finish.</string>
     <string name="demo_recall_hint">Think first, then reveal the choices and check your understanding.</string>
-    <string name="demo_local_notice">Sample practice only. Progress stays in this demo and is never uploaded. Leaving the demo clears it.</string>
+    <string name="demo_local_notice">Sample data only. Changes stay in this demo and are never uploaded. Leaving the demo clears them.</string>
     <string name="demo_exit">Leave demo</string>
     <string name="demo_leave_title">Leave this practice?</string>
-    <string name="demo_leave_message">Your demo answers will be cleared. You can start a fresh session anytime.</string>
+    <string name="demo_leave_message">Keep this session to resume it later, or discard its answers. Exam time keeps running.</string>
     <string name="demo_modes">Explore another mode</string>
     <string name="demo_reveal">Reveal choices</string>
     <string name="demo_recall_prompt">Pause and form your answer before revealing the choices.</string>

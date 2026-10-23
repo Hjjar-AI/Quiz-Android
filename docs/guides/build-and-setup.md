@@ -4,7 +4,7 @@
 
 Follow [agent authorization](../../Agents.md#efficient-verification): explicit confirmation before builds/compilation/packaging/extensive tests or new test files; no version changes. Documentation edits need link/consistency checks only.
 
-1. Inspect wrapper pin/checksum, Python 3.9+, installed JDK 17 and SDK 34. Check `JAVA_HOME`/PATH, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, ignored `local.properties` (`sdk.dir`). `python3 build.py --check` checks toolchain without Gradle/downloads.
+1. Inspect wrapper pin/checksum, Python 3.9+, installed JDK 17 or 21 and SDK 34. Check `JAVA_HOME`/PATH, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, ignored `local.properties` (`sdk.dir`). `python3 build.py --check` checks toolchain without Gradle/downloads and reports the selected JDK. Java/Kotlin compilation targets remain 17.
 2. Confirm the pinned distribution is cached **before invoking the wrapper**; `--offline` does not prevent wrapper downloads. POSIX accepts `MUKHTABIR_GRADLE_HOME` or ignored `gradle.home=/absolute/path/to/gradle-8.7` (environment wins). It checks executable/pinned launcher JAR, not authenticity; invalid configuration fails. Otherwise normal wrapper lookup applies.
 3. Check system-wide active builds and available RAM/pressure (`ps`, `free -h`; Windows Task Manager). Idle daemons/reclaimable cache are not active builds/pressure. If busy or headroom unknown, wait/recheck or report skipped build plus manual command; never kill unrelated jobs/delete locks/caches.
 4. After confirmation, run the smallest relevant cached-only check with preserved versions; capture one log and exit status. Broaden/repeat only for changed source/new failures. Missing tools/artifacts require a named, approved persistent installation/cache fill; continue independent work, never loop disposable downloads.
@@ -17,6 +17,8 @@ python3 build.py --check
 ```
 
 Read the first relevant diagnostic/log tail; retain reusable caches, remove obsolete temporary logs. Windows uses `gradlew.bat`. Compilation, suites, device and HTTP/concurrency are separate evidence categories. Ask for missing JDK/SDK packages/pinned Gradle/dependency coordinates; adb/emulators only for authorized device work.
+
+JDK 17 and 21 are supported build runtimes for this project's pinned Gradle 8.7. Use an already-installed supported JDK; no additional installation or system-default change is needed when 21 is selected. This is separate from the Java/Kotlin target of 17 and Android SDK/minimum-device settings. The helper and direct wrapper use `JAVA_HOME` when set, otherwise Java on `PATH`; Android Studio has its own Gradle JDK selection. [Gradle Java 21 support](https://docs.gradle.org/8.5/release-notes.html#full-java-21-support) · [Android JDK/target guidance](https://developer.android.com/build/jdks).
 
 ## Build helper and artifacts
 
@@ -269,7 +271,7 @@ Address changes clear sign-in/reminders, restart navigation and require reauthen
 
 ## Troubleshooting order
 
-- Wrong Java: select installed JDK 17; check terminal versus IDE configuration.
+- Wrong Java: select installed JDK 17 or 21 through `JAVA_HOME` or `PATH`; check Android Studio's Gradle JDK separately. Keep Java/Kotlin compilation targets at 17.
 - Missing artifacts: verify pin, seed parent/layout/readability/metadata and exact coordinates; approve persistent fill if needed. Resolution messages alone do not prove downloads.
 - Locks/permissions/sandbox errors: identify owner/active writer/access cause; retain account-local writes, never root/broad chmod/live-lock deletion.
 - Compile/resources: inspect first diagnostic and source; fix evidenced issue, rerun affected check once.

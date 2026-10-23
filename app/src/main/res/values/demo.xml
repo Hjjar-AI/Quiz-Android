@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="demo_scope">Sample learner data · Fully offline</string>
+    <string name="demo_menu">Open navigation menu</string>
+    <string name="demo_learner">Sample learner</string>
+    <string name="demo_greeting">Welcome back, sample learner</string>
+    <string name="demo_profile_hint">Explore the learner experience with a local sample profile.</string>
+    <string name="demo_account_limits">Account administration, imports, downloads and server synchronization require a connected account and are outside this demo.</string>
+    <string name="demo_history_hint">Two example sessions are included. Finished demo sessions appear here too; open one to review it.</string>
+    <string name="demo_answered_total">Answers recorded</string>
+    <string name="demo_accuracy">Accuracy of answered questions</string>
+    <string name="demo_percentage">%1$s%%</string>
+    <string name="demo_category_circulation">Heart, blood and lungs</string>
+    <string name="demo_category_systems">Cells and body systems</string>
+    <string name="demo_add_bookmark">Add bookmark</string>
+    <string name="demo_daily_target">Daily question target (1–100)</string>
+    <string name="demo_planner_hint">Change your sample goal. Finishing a demo session updates today’s progress.</string>
+    <string name="demo_paused_hint">A sample session is in progress. Resume it before starting another session or opening a past result. Exam time continues while you browse.</string>
+    <string name="demo_pause">Keep session and return</string>
+    <string name="demo_discard">Discard session</string>
+    <string name="demo_exit_message">Leave the demo and clear its sample changes? Your account and downloaded study are unaffected.</string>
+    <string name="demo_case">Case: During a physiology lesson, a learner follows oxygen from the lungs into the blood and around the body. Use this context for the following question.</string>
+    <string name="demo_recalled_limit">Up to 500 characters.</string>
+    <string name="demo_return">Return to demo</string>
+</resources>

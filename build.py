@@ -20,11 +20,11 @@ def toolchain_check(install):
     java_home = os.environ.get("JAVA_HOME")
     java = str(Path(java_home) / "bin" / java_name) if java_home else shutil.which(java_name)
     if not java or not Path(java).is_file():
-        raise RuntimeError("JDK 17 is required. Set JAVA_HOME or add its bin directory to PATH.")
+        raise RuntimeError("JDK 17 or 21 is required. Set JAVA_HOME or add its bin directory to PATH.")
     result = subprocess.run([java, "-version"], capture_output=True, text=True, timeout=10)
     version = re.search(r'version\s+"(\d+)', result.stderr + result.stdout)
-    if result.returncode or not version or int(version[1]) != 17:
-        raise RuntimeError("Select JDK 17 through JAVA_HOME or PATH before building this project.")
+    if result.returncode or not version or int(version[1]) not in (17, 21):
+        raise RuntimeError("Select JDK 17 or 21 through JAVA_HOME or PATH before building this project.")
 
     sdk_value = None
     local = ROOT / "local.properties"
@@ -44,6 +44,7 @@ def toolchain_check(install):
         raise RuntimeError("Android SDK platform 34 is missing. Install it with your SDK tools.")
     if install and not (sdk / "platform-tools" / ("adb.exe" if os.name == "nt" else "adb")).is_file():
         raise RuntimeError("Debug installation requires Android SDK Platform-Tools (adb).")
+    return int(version[1])
 
 
 def choose(prompt, options, default=None):
@@ -135,9 +136,10 @@ def main():
     if args.dry_run:
         return 0
 
-    toolchain_check(args.install)
+    java_version = toolchain_check(args.install)
     if args.check:
-        print("JDK 17, SDK platform 34 and wrapper files are available. Gradle was not run.")
+        print(f"JDK {java_version}, SDK platform 34 and wrapper files are available. "
+              "Java/Kotlin compilation targets remain 17. Gradle was not run.")
         return 0
     if args.variant == "release":
         print("Release signing is not configured in this project; outputs need signing before distribution.", flush=True)

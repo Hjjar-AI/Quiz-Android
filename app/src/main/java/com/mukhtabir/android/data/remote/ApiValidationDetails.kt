@@ -2,7 +2,7 @@ package com.mukhtabir.android.data.remote
 
 import kotlinx.serialization.json.*
 
-/** Only bounded serializer fields and recognized auth reasons are retained for UI use. */
+/** Only bounded serializer fields and machine-readable reason tokens are retained. */
 internal fun safeValidationDetails(value: JsonElement?): JsonObject? {
     val fields = setOf("username", "password", "current_password", "new_password", "admin_password", "full_name", "email",
         "name", "title", "description", "question", "explanation", "choices", "correct_answer", "translations",
@@ -30,7 +30,7 @@ internal fun safeValidationDetails(value: JsonElement?): JsonObject? {
     return JsonObject(root.entries.take(50).mapNotNull { (key,child) ->
         if(key !in fields) null
         else if(key=="reason") (child as? JsonPrimitive)?.contentOrNull?.takeIf {
-            it in setOf("ACCOUNT_EXPIRED","MUST_CHANGE_PASSWORD")
+            it.matches(Regex("[A-Z][A-Z0-9_]{0,79}"))
         }?.let {key to JsonPrimitive(it)}
         else clean(child,0)?.let {key to it}
     }.toMap()).takeIf {it.isNotEmpty()}

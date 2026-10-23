@@ -10,6 +10,14 @@
 
 Server contracts: [learning](../../../backend/docs/contracts/learningConsistency.md), [writes/recovery](../../../backend/docs/contracts/writeRecovery.md), [schema readiness](../../../backend/docs/contracts/schemaReadiness.md). Matching deployment/schema must be verified; this guide does not authorize setup or migrations.
 
+## Bundled demo
+
+The demo mirrors the learner shell: Home, Library, Quizzes and Bookmarks tabs with a width/font-aware rail, plus History, Analytics, Planner and a sample Profile in its drawer. Search/category filters, question details, bookmarks and the shared practice launcher use eight bilingual public fixtures, including a shared case stem. Two completed example sessions seed history and analytics.
+
+`DemoRepository` owns all sample changes. Finishing records a result once, updates answer-based accuracy/activity and today's question goal, and enables frozen review. Paused work prevents another session or past result from replacing it; timed exams keep their deadline while browsing. Study feedback and recall reveal guards remain in practice. The Android saved-state registry restores public demo state through recreation; confirmed demo exit clears it. Demo actions neither construct API/auth services nor write account/server/preferences/download stores.
+
+This is a representative learner preview, not every production destination. Administrative writes, imports/exports, downloading/synchronization and connection failures require a connected account and are excluded. The demo inherits the current app language/theme/reading configuration without changing those preferences. See the [verification checklist](../verification/checklist.md) for compilation/test evidence and pending device checks.
+
 ## Recovery decisions
 
 | Situation | Required behavior |

@@ -25,10 +25,10 @@ class TransferService(private val api: ApiClient) {
             (data["expires_in"] as? JsonPrimitive)?.intOrNull?.coerceIn(0, 600) ?: 0)
     }
 
-    suspend fun importLimitStatus(): ImportLimitStatus = importLimitStatus(api.get("database/import/unlock/"))
+    suspend fun importLimitStatus(): ImportLimitStatus = importLimitStatus(api.get(ApiEndpoints.Database.IMPORT_UNLOCK))
 
     suspend fun unlockImportLimit(password: String): ImportLimitStatus = importLimitStatus(
-        api.post("database/import/unlock/", buildJsonObject { put("admin_password", password) }))
+        api.post(ApiEndpoints.Database.IMPORT_UNLOCK, buildJsonObject { put("admin_password", password) }))
 
     suspend fun exportExam(file: File, examId: Long, kind: String): DownloadInfo {
         require(examId > 0 && kind in setOf("summary", "matrix"))
@@ -41,9 +41,9 @@ class TransferService(private val api: ApiClient) {
             .addFormDataPart("file", name, file.asRequestBody("application/octet-stream".toMediaType()))
         options.forEach { (key, value) -> body.addFormDataPart(key, value) }
         val path = when (kind) {
-            "telegram" -> "database/import/telegram/"
-            "state" -> "database/import/state/"
-            else -> "database/import/"
+            "telegram" -> ApiEndpoints.Database.IMPORT_TELEGRAM
+            "state" -> ApiEndpoints.Database.IMPORT_STATE
+            else -> ApiEndpoints.Database.IMPORT
         }
         return api.postMultipart(path, body.build()) as JsonObject
     }
@@ -53,10 +53,10 @@ class TransferService(private val api: ApiClient) {
         require(format in setOf("json", "csv", "xlsx", "pdf"))
         if (state) {
             require(format in setOf("json", "xlsx"))
-            return api.download("database/export/state/", file, filters + mapOf(
+            return api.download(ApiEndpoints.Database.EXPORT_STATE, file, filters + mapOf(
                 "format" to format, "include_images" to images.toString(), "verified_only" to verified.toString()))
         }
-        return api.download("database/export/$format/" + if (verified) "verified/" else "", file, body = body)
+        return api.download(ApiEndpoints.Database.export(format, verified), file, body = body)
     }
 }
 

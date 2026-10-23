@@ -2,6 +2,68 @@
 
 Current evidence and pending verification only. Reusable implementation guidance stays in the [native UI](../guides/native-ui.md) and [offline/recovery](../guides/offline-and-recovery.md) guides.
 
+## 2026-10-23 complete Android unit suite
+
+User-authorized full `:app:testDebugUnitTest` selection passes **63/63**, zero failures/errors/skips: ApiClientTest 22, ApiErrorContractTest 8, PersistentCookieJarTest 9, DemoRepositoryTest 14 and DemoSessionTest 10. Initial full run: 62 passed/one failed because the newly prepared interrupted-export test had not consumed its two expected requests before checking for extra traffic. Corrected the test to validate the CSRF GET and export POST, then assert no additional request; production code and cleanup/no-replay assertions are unchanged. Complete rerun: **BUILD SUCCESSFUL in 1m**, 28 tasks, two executed/26 up-to-date. App compilation up-to-date; test Kotlin recompiled successfully.
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain
+```
+
+Used installed/cached Gradle 8.7, JDK 21, SDK 34 and Robolectric API 33 offline; no versions, dependencies, defaults or caches changed. Log (initial failure followed by successful rerun): `/tmp/mukhtabir-android-full-tests.log`. JUnit XML reports under the account checkout cache `build/app/test-results/testDebugUnitTest/` confirm all five class totals. No APK assembly, device instrumentation, live HTTP, encryption or UI/accessibility evidence. No device-test suite currently exists. Higher-value future additions are real screen/navigation tests and DTO deserialization contracts for analytics/admin/moderation/transfer/groups/planner; passing this suite does not establish complete app coverage.
+
+## 2026-10-23 representative offline learner demo
+
+Implemented the four learner tabs and a drawer/large-screen rail with local fake repository state: searchable/category-filtered library, details/case-before-question, bookmarks, study/exam/recall setup, pause/discard/resume, seeded and newly finished History with review, derived accuracy/activity, editable daily target and sample Profile. Finish records once; active work cannot be overwritten by another start/review. Demo state is saved only through the public saved-state registry, separate from API/account/download/preferences stores. Confirmed exit resets sample changes. Existing Arabic/English, theme/reading controls and shared presentation components remain in use.
+
+Source checks passed: demo Kotlin lexical delimiters/resource references, bilingual XML/unique keys/placeholders, direct dependency isolation and documentation links. After explicit milestone approval, added and ran **24/24 demo unit tests**, zero failures/errors/skips: DemoRepositoryTest (14; 6.337s) and DemoSessionTest (10; 0.439s). Covers finish deduplication/frozen history/cross-screen totals, bookmark-based selection, invalid/empty selection, paused-session protection, stale updates/discard, daily targets, bounded history, fresh-demo isolation, study/recall/exam answer and deadline guards, and a saver round trip through Android Bundle/Parcel.
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests 'com.mukhtabir.android.ui.demo.*' -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain
+```
+
+**BUILD SUCCESSFUL in 4m 42s**; 28 tasks, 15 executed/13 up-to-date. App and unit-test Kotlin compilation succeeded. Existing Gradle 8.7/JDK 21/SDK 34 and cached Robolectric API 33 were used offline; no dependency/version/default changes or downloads. Log: `/tmp/mukhtabir-demo-tests.log`; XML reports under the account checkout cache `build/app/test-results/testDebugUnitTest/`. Existing unused shadow-parameter and Gradle-deprecation warnings remain. Task-owned Gradle/test Java processes exited.
+
+No APK assembly/installation, broader test run or device verification. Pending device: airplane-mode entry and absence of demo-triggered connections, search/category/empty-filter controls, exit/reset, rotation/process restoration, exam resume/timeout, Arabic/RTL/TalkBack/200% text and rail/keyboard layouts. The later user-authorized complete-suite run above also includes the API/persistence tests.
+
+## 2026-10-23 additional lifecycle/persistence coverage prepared
+
+Added seven ApiClient transport cases for response loss after request receipt, interrupted export cleanup, successful-login cookie/token rotation, confirmed versus failed logout, cancellation and non-JSON proxy 401 handling. Added nine PersistentCookieJar cases for stale-generation reads/writes, persistence round trips, host/path/HTTPS restrictions, expired replacement, recognized session names, server-change clearing, path identity and corrupt storage. Android selection is now 39 source cases across ApiClientTest (22), ApiErrorContractTest (8) and PersistentCookieJarTest (9).
+
+Prepared 13 backend database-backed API cases in `tests/api/test_android_persistence_contracts.py` for real session ownership/discard, POST user-deletion safeguards, login/CSRF/account-switch persistence and exact category/comma-tag agreement across list/count/catalog/start/JSON export. Existing test factories and isolated test settings are reused. SQLite outcomes will not establish production row-lock/concurrency behavior.
+
+Python AST, Kotlin lexical delimiters and whitespace checks passed. All 16 additional Android lifecycle/cookie cases now pass in the complete 63-test Android run above. The 13 database-backed backend cases execute in the user-authorized full backend suite; see [current backend results](../../../backend/docs/verification/pythonTests.md). No production application code, frontend source, migrations, versions or caches changed in this milestone. The earlier 23/23 Android API and 32/32 backend results below describe the narrower preceding selections.
+
+## 2026-10-23 build-JDK preflight alignment
+
+The build helper now accepts installed JDK 17 or 21 and reports the selected runtime, matching the documented Gradle setup. Java/Kotlin compilation targets remain 17. Updated README/build guidance to distinguish build runtime from compilation targets and Android compatibility; no JDK installation, default changes, versions or frontend application changes.
+
+`python3 build.py --check` passed on the current JDK 21 with SDK platform 34 and wrapper files available; Python AST, documentation links and whitespace checks passed. No Gradle command, compilation, packaging or test rerun was performed for this helper/documentation correction. The earlier 23/23 Android results below remain the latest test evidence; device/deployed gates remain.
+
+## 2026-10-23 compatibility and test milestone
+
+Updated agent policies across Android/backend/Vue: matching post-fix versions only, scoped milestone test approval and no recurring/watch-mode verification. Frontend application source remains unchanged. Typed `CSRF_FAILED` is the only CSRF retry signal; formats still used by current Vue callers remain supported.
+
+Focused Android run: **23/23 passed, zero failures/errors/skips** (eight ApiErrorContractTest cases; 15 ApiClientTest cases). Covers typed CSRF refresh/retry limits, non-retryable permission/uncertain failures, expiry/login behavior, app-language headers/native messages, export artifact cleanup, bodyless discard and opaque string session revocation. The successful cached run took **37s**; JUnit case totals: 0.019s helpers and 7.259s transport. Log: `/tmp/mukhtabir-android-api-tests.log`; reports under the account checkout cache `build/app/reports/tests/testDebugUnitTest/`.
+
+Command from Android (authorized test compilation/execution):
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests com.mukhtabir.android.data.remote.ApiErrorContractTest --tests com.mukhtabir.android.data.remote.ApiClientTest -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain
+```
+
+Used existing Gradle 8.7/SDK 34 and JDK 21; Java/Kotlin targets remain 17. No JDK installation, system-default changes, dependency/version changes or cache deletion. A preceding online resolution populated the missing pinned native-runtime dependency; Robolectric also cached its API 33 runtime. Initial compilation caught/corrected the centralized revocation builder's Long-versus-String handle mismatch. The first executing run passed eight helpers but failed all 15 transports because JVM tests have no AndroidKeyStore; test-only shadows now substitute encrypted preference creation while exercising real ApiClient/CookieJar behavior. Android resources are enabled for actual bilingual resource checks. Production encryption is unchanged and not established by these tests. Harmless unused shadow-parameter and existing Gradle-deprecation warnings remain.
+
+Backend focused contracts pass **32/32**, including 29 new behavioral cases; they exposed/corrected missing password-attempt throttling on POST user deletion and omitted offline-tag default validation. [Shared evidence](../../../backend/docs/workDone.md#2026-10-23-focused-androidbackend-regression-run). No database/schema setup, migrations, full suites, APK assembly, installation, frontend application changes or live device/proxy/concurrency verification. Build/test workers exited; no recurring runner was left. Stored-data encryption, real database locks and deployed HTTP remain manual/integration gates.
+
+## 2026-10-23 API contract corrections
+
+Centralized all API paths and mapped stable backend reasons through 159 new bilingual strings, including direct exception displays. Retained bounded reason tokens; CSRF retry uses typed rejection for requests/exports. DELETE identifiers/options move to query parameters; administrator deletion uses the matching password-authorized POST route. JSON arrays preserve category/tag selections across bodies/query/export filters, including commas in tag names. Existing in-app locale headers, shared local-time activity data, group/blueprint management and admin latest-exam fields were confirmed in source.
+
+Backend Android contract checks passed **3/3** (registry routes, inline-path guard, directly identifiable verbs; no database setup). Lexical delimiters/resource references passed for 17 Kotlin files; XML/duplicates and 159 new bilingual keys/placeholders passed. Python AST and whitespace checks passed. No Android build/compilation/suite/device or deployed HTTP/proxy verification. [Shared changes and command](../../../backend/docs/workDone.md#2026-10-23-android-api-findings).
+
+Pending device/deployed verification: matching backend-first rollout; English/Arabic field errors and language changes; CSRF rotation/login/write/export retry versus ordinary permission failures; proxy host/port/scheme/trusted origins; query/POST deletions and uncertain-write review; JSON filters, comma-containing tags and legacy web requests. Unmapped dynamic Arabic validation messages use localized general guidance for English users. Existing deployment/device/build gates remain.
+
 ## 2026-10-23 review corrections
 
 Fixed analytics formatting/bidi, heatmap latest-week positioning, username autocorrect, Unicode code-point initials, filtered-empty Reset and bilingual required-confidence guidance. Source/XML/whitespace checks passed; no build, suites or device verification.

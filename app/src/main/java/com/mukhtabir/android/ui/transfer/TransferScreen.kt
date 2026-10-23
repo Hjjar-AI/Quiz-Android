@@ -363,7 +363,9 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
             }
             AppOutlinedButton({
                 val ids = parseTransferIds(categoryIds)
-                val filters = mapOf("search" to search, "category_ids" to ids.orEmpty().joinToString(","), "difficulty" to difficulty.joinToString(","), "tags_filter" to tags.lineSequence().map(String::trim).filter(String::isNotEmpty).joinToString(","))
+                val categoryArray = JsonArray(ids.orEmpty().map { JsonPrimitive(it) })
+                val tagArray = JsonArray(tags.lineSequence().map(String::trim).filter(String::isNotEmpty).map { JsonPrimitive(it) }.toList())
+                val filters = mapOf("search" to search, "category_ids" to categoryArray.toString(), "difficulty" to difficulty.joinToString(","), "tags_filter" to tagArray.toString())
                 val filtered = !manual || statePackage
                 val invalidPdf = format == "pdf" && (title.codePointsCount() > 150 || (about &&
                     (aboutTitle.codePointsCount() > 150 || aboutBody.codePointsCount() > 3000 || fields.any {
@@ -372,7 +374,13 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                     (!filtered && selected.isEmpty()) || invalidPdf) { validation = true; return@AppOutlinedButton }
                 validation = false
                 val body = buildJsonObject {
-                    if (manual && !statePackage) put("question_ids", JsonArray(selected.map { JsonPrimitive(it) })) else put("filters", JsonObject(filters.mapValues { JsonPrimitive(it.value) }))
+                    if (manual && !statePackage) put("question_ids", JsonArray(selected.map { JsonPrimitive(it) })) else put("filters", JsonObject(filters.mapValues { (key, value) ->
+                        when (key) {
+                            "category_ids" -> categoryArray
+                            "tags_filter" -> tagArray
+                            else -> JsonPrimitive(value)
+                        }
+                    }))
                     if (format == "pdf") put("title", title)
                     if (format == "pdf") {
                         put("pdf_mode", pdfMode); put("answer_layout", if (pdfMode == "quiz") "none" else answers); put("theme", pdfTheme); put("locale", locale)

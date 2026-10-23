@@ -8,6 +8,7 @@ Paths below are relative to `app/src/main/java/com/mukhtabir/android/`. Follow [
 | --- | --- |
 | `core`, `data`, `ui`, `util` | Storage/preferences/navigation; auth/HTTP/domain DTOs; Compose; formatting. |
 | `MukhtabirApp.kt`, `ui/navigation/AuthenticatedAppShell.kt` | Startup/auth; shell/routes/capability gates. `AppDrawerContent.kt` owns the drawer; More is legacy. |
+| `ui/demo/DemoScreen.kt`, `DemoRepository.kt`, `DemoPracticeScreen.kt` | Local learner shell/fixtures, shared sample state and practice. No API/account-storage dependency. |
 | Question editor State/ViewModel/Screen/Preview | Serializable state, writes, form, previews. Other features similarly separate controllers/state/screens. |
 | `QuizSetupController.kt`, `QuizSetupStateStore.kt` | Filters/count jobs; account-checked lightweight restoration. |
 | `QuizViewModel.kt`, session chrome | Writes/deadlines/download/sync/recovery; separate lifecycle-collected clock flow. |

@@ -29,10 +29,10 @@ data class CaseAdminListDto(val items: List<CaseAdminDto> = emptyList(), val tot
     @SerialName("total_pages") val totalPages: Int = 1)
 
 class ContentManagementService(private val api: ApiClient) {
-    suspend fun tags(): TagTreeDto = api.decode(TagTreeDto.serializer(), api.get("questions/admin/tags/tree/"))
-    suspend fun renameTag(old: String, name: String, version: Int) { api.post("questions/admin/tags/${android.net.Uri.encode(old)}/rename/", buildJsonObject { put("new_name", name); put("expected_version",version) }) }
-    suspend fun deleteTag(name: String, version: Int) { api.delete("questions/admin/tags/${android.net.Uri.encode(name)}/delete/?expected_version=$version") }
-    suspend fun mergeTags(sources: List<String>, target: String, version: Int) { api.post("questions/admin/tags/merge/", buildJsonObject {
+    suspend fun tags(): TagTreeDto = api.decode(TagTreeDto.serializer(), api.get(ApiEndpoints.Tags.TREE))
+    suspend fun renameTag(old: String, name: String, version: Int) { api.post(ApiEndpoints.Tags.rename(old), buildJsonObject { put("new_name", name); put("expected_version",version) }) }
+    suspend fun deleteTag(name: String, version: Int) { api.delete(ApiEndpoints.Tags.delete(name), query = mapOf("expected_version" to version.toString())) }
+    suspend fun mergeTags(sources: List<String>, target: String, version: Int) { api.post(ApiEndpoints.Tags.MERGE, buildJsonObject {
         put("expected_version",version)
         put("source_tags", JsonArray(sources.map { JsonPrimitive(it) })); put("target_tag", target)
     }) }
@@ -49,7 +49,7 @@ class ContentManagementService(private val api: ApiClient) {
     }
     suspend fun deleteKnowledge(id: Long, version: Int) { api.delete(ApiEndpoints.Questions.knowledgeObject(id)+"?expected_version=$version") }
     suspend fun linkedKnowledge(id: Long, page: Int, size: Int): QuestionPageDto = api.decode(QuestionPageDto.serializer(),
-        api.get(ApiEndpoints.Questions.knowledgeObject(id) + "questions/", mapOf("page" to page.toString(), "per_page" to size.toString())))
+        api.get(ApiEndpoints.Questions.linkedKnowledge(id), mapOf("page" to page.toString(), "per_page" to size.toString())))
     suspend fun cases(search: String, page: Int, size: Int): CaseAdminListDto = api.decode(CaseAdminListDto.serializer(),
         api.get(ApiEndpoints.Questions.CASES, mapOf("search" to search, "page" to page.toString(), "per_page" to size.toString())))
     suspend fun caseDetail(key: String): CaseAdminDto = api.decode(CaseAdminDto.serializer(), api.get(ApiEndpoints.Questions.clinicalCase(key)))

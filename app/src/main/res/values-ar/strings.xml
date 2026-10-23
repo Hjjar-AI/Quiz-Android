@@ -1577,19 +1577,19 @@
     <string name="quiz_review_read_failed">تعذرت قراءة مراجعة الأسئلة. نتيجتك المكتملة ما زالت محفوظة.</string>
 
     <!-- Bundled, account-independent offline demonstration. -->
-    <string name="demo_open">ابدأ التدريب التجريبي</string>
+    <string name="demo_open">استكشف العرض دون اتصال</string>
     <string name="demo_title">جلستك الأولى تبدأ هنا</string>
     <string name="demo_badge">عرض تجريبي دون إنترنت</string>
-    <string name="demo_intro">اكتشف مُختبِر مع مجموعة علمية جاهزة. لا حاجة إلى حساب أو خادم أو تنزيل.</string>
+    <string name="demo_intro">استكشف المكتبة والإشارات المرجعية والتدريب والسجل والتحليلات والمخطط ببيانات تجريبية محلية. لا حاجة إلى حساب أو خادم.</string>
     <string name="demo_collection">داخل جسم الإنسان</string>
     <string name="demo_collection_hint">٨ أسئلة نموذجية أصلية · أساسيات علم الأحياء</string>
     <string name="demo_study_hint">تعلّم على مهل، مع تصحيح وشرح فوريين بعد كل إجابة.</string>
     <string name="demo_exam_hint">تحدٍّ لمدة ٨ دقائق. تبقى الإجابات الصحيحة مخفية حتى تنتهي.</string>
     <string name="demo_recall_hint">تذكّر أولاً، ثم أظهر الخيارات وتحقّق من فهمك.</string>
-    <string name="demo_local_notice">تدريب نموذجي فقط. يبقى التقدّم داخل هذا العرض ولا يُرفع إلى الخادم. يُمسح عند مغادرة العرض.</string>
+    <string name="demo_local_notice">بيانات تجريبية فقط. تبقى التغييرات داخل العرض ولا تُرفع إلى أي خادم. تُمسح عند مغادرة العرض.</string>
     <string name="demo_exit">مغادرة العرض</string>
     <string name="demo_leave_title">مغادرة هذا التدريب؟</string>
-    <string name="demo_leave_message">ستُمسح إجاباتك التجريبية. يمكنك بدء جلسة جديدة في أي وقت.</string>
+    <string name="demo_leave_message">احتفظ بالجلسة لاستئنافها لاحقاً، أو تجاهل إجاباتها. يستمر وقت الامتحان في العدّ.</string>
     <string name="demo_modes">استكشف وضعاً آخر</string>
     <string name="demo_reveal">إظهار الخيارات</string>
     <string name="demo_recall_prompt">تمهّل وصُغ إجابتك قبل إظهار الخيارات.</string>

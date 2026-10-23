@@ -91,7 +91,7 @@ class MasterExamService(private val api: ApiClient) {
 
     suspend fun deleteExam(id: Long, mode: String) {
         require(mode in setOf("keep_drafts", "delete_drafts", "publish_drafts"))
-        api.delete(ApiEndpoints.MasterExams.item(id), buildJsonObject { put("delete_mode", mode) })
+        api.delete(ApiEndpoints.MasterExams.item(id), query = mapOf("delete_mode" to mode))
     }
 
     suspend fun compose(id: Long, version: Int, action: String, ids: List<Long>): MasterExamAuthorDto {
@@ -110,14 +110,14 @@ class MasterExamService(private val api: ApiClient) {
             api.encode(MasterExamDraftWrite.serializer(), request)))
 
     suspend fun drafts(search: String, usage: String): QuestionBatchDto = api.decode(
-        QuestionBatchDto.serializer(), api.get(ApiEndpoints.MasterExams.BASE + "drafts/", mapOf("search" to search, "usage" to usage)))
-    suspend fun draft(id: Long): QuestionDto = api.decode(QuestionDto.serializer(), api.get(ApiEndpoints.MasterExams.BASE + "drafts/$id/"))
+        QuestionBatchDto.serializer(), api.get(ApiEndpoints.MasterExams.DRAFTS, mapOf("search" to search, "usage" to usage)))
+    suspend fun draft(id: Long): QuestionDto = api.decode(QuestionDto.serializer(), api.get(ApiEndpoints.MasterExams.draft(id)))
     suspend fun updateDraft(id: Long, version: Int, request: MasterExamDraftWrite): QuestionDto {
         val data = api.encode(MasterExamDraftWrite.serializer(), request) as JsonObject
-        return api.decode(QuestionDto.serializer(), api.put(ApiEndpoints.MasterExams.BASE + "drafts/$id/",
+        return api.decode(QuestionDto.serializer(), api.put(ApiEndpoints.MasterExams.draft(id),
             JsonObject(data + ("expected_version" to JsonPrimitive(version)))))
     }
-    suspend fun deleteDraft(id: Long, version: Int) { api.delete(ApiEndpoints.MasterExams.BASE + "drafts/$id/?expected_version=$version") }
+    suspend fun deleteDraft(id: Long, version: Int) { api.delete(ApiEndpoints.MasterExams.draft(id), query = mapOf("expected_version" to version.toString())) }
     suspend fun lifecycle(id: Long, action: String): MasterExamAuthorDto {
         require(action in setOf("publish", "cancel", "publish-to-bank"))
         return api.decode(MasterExamAuthorDto.serializer(), api.post(ApiEndpoints.MasterExams.action(id, action)))
