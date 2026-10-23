@@ -22,4 +22,4 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 
 ## Verification
 
-See [current evidence and pending checks](docs/verification/checklist.md) for compilation, focused tests and remaining device checks. Builds/compilation/packaging and test runs require explicit confirmation; follow [verification policy](Agents.md#milestone-test-approval).
+See the [test suite coverage map and run commands](app/src/test/README.md) and [current evidence and pending checks](docs/verification/checklist.md) for compilation, focused tests and remaining device checks. Builds/compilation/packaging and test runs require explicit confirmation; follow [verification policy](Agents.md#milestone-test-approval).

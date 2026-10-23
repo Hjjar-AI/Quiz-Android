@@ -2,6 +2,18 @@
 
 Current evidence and pending verification only. Reusable implementation guidance stays in the [native UI](../guides/native-ui.md) and [offline/recovery](../guides/offline-and-recovery.md) guides.
 
+## 2026-10-23 broader Android regression suites prepared
+
+User requested continuing comprehensive Android test-file work. Added **167 source cases across 17 classes**, plus a shared bounded HTTP/ViewModel harness. The complete JVM source selection now contains **298 cases across 31 classes**. Coverage includes server connections/profile authentication/imported slots; account-bound editor/session/master recovery; saved navigation; bounded validation/image handling; localization/reveal guards; authoring translation/tag inputs; auth restore/profile deferral; History filters/details/pagination; planner validation/revisions/uncertain saves; device revocation/reconciliation; and theme-derived contrast. See the [suite coverage map, fixture limits and commands](../../app/src/test/README.md).
+
+Lightweight source checks passed for the 18 new Kotlin files: lexical delimiters, unique case names, whitespace and 23 static JSON fixtures. No production application files, dependencies, versions, backend or frontend source changed. **No compilation or automated execution has been performed for these additions.** Previous passing selections below predate these files and do not validate them. Device/encryption/deployed HTTP/concurrency remain unverified; major remaining automated areas are listed in the suite coverage map.
+
+User approved one full Android JVM suite run, including app/test compilation. Toolchain preflight passed: installed JDK 21, SDK 34 and the readable pinned Gradle 8.7 launcher. Execution was deferred before invoking Gradle because system-wide checks found an active ShiftReport Gradle build throughout two spaced rechecks; available RAM declined from 2.8 GiB to 2.3 GiB. No unrelated process was stopped. Approval remains valid for this suite once the machine is available. No APK assembly or installation. Approved version-preserving command:
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-android-regression-tests.log 2>&1
+```
+
 ## 2026-10-23 DTO, screen/navigation and offline-sync coverage verified
 
 User requested filling the Android coverage gaps and approved the pinned dependency download, compilation and test run. Added and ran **68 cases across nine new test classes: 68 passed, zero failures/errors/skips**:
