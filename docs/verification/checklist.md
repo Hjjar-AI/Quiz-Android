@@ -2,6 +2,28 @@
 
 Current evidence and pending verification only. Reusable implementation guidance stays in the [native UI](../guides/native-ui.md) and [offline/recovery](../guides/offline-and-recovery.md) guides.
 
+## 2026-10-23 DTO, screen/navigation and offline-sync coverage verified
+
+User requested filling the Android coverage gaps and approved the pinned dependency download, compilation and test run. Added and ran **68 cases across nine new test classes: 68 passed, zero failures/errors/skips**:
+
+- DtoContractTest (16): production ApiClient decoding of 12 synthetic, source-reviewed analytics/admin/moderation/groups/planner payloads, fractions/nulls/exact tags, capability denial/reset, revisions and outgoing planner/moderation/visibility/import-unlock service contracts. Fixture provenance and limits: `app/src/test/resources/contracts/README.md`.
+- NavigationContractTest (5) and SessionPresentationTest (7): segment/query/draft identity, capability gates, confidence/recall/navigation/pause guards and draft acknowledgement/baselines.
+- DownloadedSessionSyncTest (8): real QuizViewModel/session-store/services, restore with no automatic requests, preconditioned answer confirmation, lost committed answer response reconciled without another POST, explicit conflicts/foreign identity, failed pause, local study completion versus exam restrictions.
+- OfflineStudyFlowTest (11): real offline controller/store/services, no-connection local practice/restoration, answer/completion freeze, explicit sync, lost-response retry with identical frozen body, acknowledgement identity, upload denial, failed local persistence without answer loss or HTTP replay, account/expiry/server isolation and corrupt-file handling.
+- AppNavigationInteractionTest (4), DemoScreenInteractionTest (11), QuizQuestionInteractionTest (4) and OfflineStudyScreenInteractionTest (2): rendered Compose screens and real navigation stack operations, save/restore, library/reset/bookmarks, study/exam/recall, pause/history/exit confirmation, RTL/200% text, wide rail, case-before-question, 48dp answer targets, production reader feedback locks and local-only offline-screen completion without HTTP.
+
+Compose test support follows the existing BOM (1.5.4 UI artifacts): `testImplementation(ui-test-junit4)` plus debug-only `ui-test-manifest`. The approved one-time online run cached the missing pinned Compose UI-test binaries and transitives; subsequent runs succeeded offline using Gradle 8.7, installed JDK 21, SDK 34 and Robolectric API 33. App and test compilation succeeded without version upgrades or default toolchain changes. Helpers substitute AndroidKeyStore preferences and encrypted-file I/O only inside JVM tests; real storage checksums/indexes/ownership/controllers run, but encryption is not verified.
+
+The first 68-case run passed 61 and exposed seven demo test-harness failures. Corrected selectors to distinguish displayed controls from duplicate closed-drawer labels and editable search text from results. Text-field dialog cases now use Robolectric's default width to avoid its documented [custom-width dialog idle loop](https://github.com/robolectric/robolectric/issues/8460); explicit RTL/200%-text and wide-screen qualifiers remain on their respective cases. No production application changes were needed. Focused reruns resolved the failures, followed by the complete 68-case selection below.
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests '*.DtoContractTest' --tests '*.NavigationContractTest' --tests '*.ui.quiz.*' --tests '*.ui.offline.*' --tests '*.ui.navigation.*' --tests '*.DemoScreenInteractionTest' -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain
+```
+
+Final run: **BUILD SUCCESSFUL in 1m 6s**, 28 tasks, one executed/27 up-to-date. Nine JUnit XML reports under the account checkout cache `build/app/test-results/testDebugUnitTest/` confirm all 68 cases. Log (initial failures, focused corrections and final successful selection): `/tmp/mukhtabir-android-coverage-tests.log`. Existing Gradle-deprecation warnings remain. Task-owned Gradle/test runners exited; no watcher or recurring work remains.
+
+Source/fixture/whitespace checks passed. No APK assembly, device connection, release dependency/version change or frontend modification. Saved-state/RTL/size/semantics assertions are JVM UI tests, not actual process death, TalkBack, hardware encryption, deployed HTTP/proxy or production concurrency evidence. DTO fixtures are synthetic and source-reviewed, not a live backend serialization run. The previous 63-case Android suite and backend/Vue results below predate these additions; this milestone ran the 68 new cases only and does not establish complete app coverage.
+
 ## 2026-10-23 complete Android unit suite
 
 User-authorized full `:app:testDebugUnitTest` selection passes **63/63**, zero failures/errors/skips: ApiClientTest 22, ApiErrorContractTest 8, PersistentCookieJarTest 9, DemoRepositoryTest 14 and DemoSessionTest 10. Initial full run: 62 passed/one failed because the newly prepared interrupted-export test had not consumed its two expected requests before checking for extra traffic. Corrected the test to validate the CSRF GET and export POST, then assert no additional request; production code and cleanup/no-replay assertions are unchanged. Complete rerun: **BUILD SUCCESSFUL in 1m**, 28 tasks, two executed/26 up-to-date. App compilation up-to-date; test Kotlin recompiled successfully.
@@ -10,7 +32,7 @@ User-authorized full `:app:testDebugUnitTest` selection passes **63/63**, zero f
 JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain
 ```
 
-Used installed/cached Gradle 8.7, JDK 21, SDK 34 and Robolectric API 33 offline; no versions, dependencies, defaults or caches changed. Log (initial failure followed by successful rerun): `/tmp/mukhtabir-android-full-tests.log`. JUnit XML reports under the account checkout cache `build/app/test-results/testDebugUnitTest/` confirm all five class totals. No APK assembly, device instrumentation, live HTTP, encryption or UI/accessibility evidence. No device-test suite currently exists. Higher-value future additions are real screen/navigation tests and DTO deserialization contracts for analytics/admin/moderation/transfer/groups/planner; passing this suite does not establish complete app coverage.
+Used installed/cached Gradle 8.7, JDK 21, SDK 34 and Robolectric API 33 offline; no versions, dependencies, defaults or caches changed. Log (initial failure followed by successful rerun): `/tmp/mukhtabir-android-full-tests.log`. JUnit XML reports under the account checkout cache `build/app/test-results/testDebugUnitTest/` confirm all five class totals. No APK assembly, device instrumentation, live HTTP, encryption or UI/accessibility evidence. No device-test suite currently exists. The subsequent verified coverage above adds 68 DTO and screen/navigation/offline-sync cases; the earlier 63 cases were not rerun in that selection. Passing the existing suite does not establish complete app coverage.
 
 ## 2026-10-23 representative offline learner demo
 
@@ -87,7 +109,7 @@ Configured ignored `.signing/debug.keystore` from the existing `mhmmd` key; `dev
 
 | Area | Required scenarios |
 | --- | --- |
-| Build follow-up | Authorized compilation of 2026-10-23 changes; deprecation diagnostics with `--warning-mode all`; offline-cache completeness. Follow build policy. |
+| Build follow-up | Current app/test compilation and the 68-case offline selection passed. Deprecation diagnostics with `--warning-mode all` remain unrun. Follow build policy for future commands or changed dependencies. |
 | Startup/access | Transparent emblem on API 23/current launchers/file explorers, including themed/normalized icons and refreshed caches. Airplane-mode demo; splash/welcome/login/server Back and keyboard; connection files; downloads after failed saved-login reads; rotation/process restoration; profile isolation and actual HTTP/HTTPS/CSRF configuration. |
 | Learning | Study/exam/recall setup filters/counts, shared/targeted practice, flags/bookmarks/maps and bilingual reading; withheld feedback/results. Measure timer recomposition, deadlines/local finish, master grace and overlapping exams. |
 | Failure/recovery | Lost answer/start/pause/Finish/sync responses; failed reads/storage/review; duplicate/late writes; draft revisions, category exit flush and permission target changes. Retain drafts/selections/confirmed success/frozen identities; no replay or exit after failed pause. |

@@ -153,6 +153,10 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.test:core:1.5.0")
+    // Real Compose screen/navigation interactions on the existing Robolectric runner.
+    // Versions follow the existing Compose BOM; no production/release dependency changes.
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 // Successful package artifacts are exported; no stale-output glob after a failed build.

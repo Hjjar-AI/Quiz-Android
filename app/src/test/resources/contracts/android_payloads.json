@@ -1,0 +1,261 @@
+{
+  "analytics": {
+    "user_performance": [
+      {
+        "date": "2026-10-20",
+        "accuracy": 62.5,
+        "questions_answered": 8
+      }
+    ],
+    "weak_categories": [
+      {
+        "category_id": 7,
+        "accuracy": 37.5,
+        "mastery_score": 37.5
+      }
+    ],
+    "confidence_stats": {
+      "total_attempted": 8,
+      "correct_confident": 3,
+      "correct_fragile": 2,
+      "wrong_open": 3,
+      "fragile_ratio": 40.0
+    },
+    "category_coverage": [
+      {
+        "category_id": 7,
+        "category_name": "القلق",
+        "total": 8,
+        "verified": 6,
+        "avg_accuracy": 62.5,
+        "color": null
+      }
+    ],
+    "tag_coverage": [
+      {
+        "tag_name": "Mood, anxiety",
+        "count": 8,
+        "verified_count": 6
+      }
+    ],
+    "difficulty_stats": [
+      {
+        "difficulty": "hard",
+        "count": 3,
+        "avg_correct_rate": 33.3
+      }
+    ],
+    "active_users": [
+      {
+        "date": "2026-10-20",
+        "active_users": 3,
+        "new_users": 1,
+        "total_sessions": 4,
+        "avg_session_duration": 72.5
+      }
+    ]
+  },
+  "mastery": {
+    "categories": [
+      {
+        "category_id": 7,
+        "category_name": "القلق",
+        "category_color": null,
+        "distinct_questions": 3,
+        "total_questions": 8,
+        "coverage": 37.5,
+        "attempts": 4,
+        "wrong_count": 1,
+        "accuracy": 75.0,
+        "mastery_score": 52.5,
+        "mastered": false
+      }
+    ],
+    "total_categories": 1
+  },
+  "streak": {
+    "days": [
+      {
+        "date": "2026-10-20",
+        "sessions": 1,
+        "questions": 0
+      },
+      {
+        "date": "2026-10-21",
+        "sessions": 2,
+        "questions": 5
+      }
+    ],
+    "current_streak": 2,
+    "longest_streak": 4,
+    "active_days": 2,
+    "total_sessions": 3,
+    "total_questions": 5,
+    "unique_questions": 4,
+    "unique_concepts": 3,
+    "due_reviews": 2,
+    "mastery_gain": 12.5
+  },
+  "users": {
+    "items": [
+      {
+        "id": 41,
+        "username": "reader",
+        "full_name": "متعلّم",
+        "role": "member",
+        "is_active": false,
+        "must_change_password": true,
+        "capabilities": [
+          "tests.start"
+        ],
+        "expires_at": null,
+        "auto_renew_days": 0,
+        "trust_score": 2.5,
+        "questions_count": 3,
+        "created_at": "2026-10-01T10:00:00Z",
+        "last_login": null,
+        "latest_exam_accuracy": 62.5,
+        "latest_exam_tag": "Mood, anxiety",
+        "author_rank": null,
+        "author_rank_label_ar": null,
+        "current_streak": 2,
+        "longest_streak": 4,
+        "last_study_date": "2026-10-21",
+        "uuid": "00000000-0000-4000-8000-000000000041",
+        "is_stub": false,
+        "expiry_days_left": null
+      }
+    ],
+    "total": 21,
+    "page": 2,
+    "per_page": 20,
+    "total_pages": 2
+  },
+  "active_accounts": {
+    "users": {
+      "41": {
+        "name": "متعلّم",
+        "ip": null,
+        "role": "member",
+        "last_seen": "2026-10-21T10:00:00Z"
+      }
+    }
+  },
+  "permissions": {
+    "user_id": 41,
+    "username": "reader",
+    "role": "member",
+    "role_capabilities": [
+      "tests.start"
+    ],
+    "overrides": {
+      "admin.users": false,
+      "tests.download_full_bank": true
+    },
+    "resolved": [
+      "tests.start",
+      "tests.download_full_bank"
+    ]
+  },
+  "roles": {
+    "capabilities": [
+      "tests.start",
+      "admin.users"
+    ],
+    "groups": [
+      {
+        "label": "Study",
+        "capabilities": [
+          "tests.start"
+        ]
+      }
+    ],
+    "roles": {
+      "member": [
+        "tests.start"
+      ],
+      "admin": [
+        "tests.start",
+        "admin.users"
+      ]
+    }
+  },
+  "flags": {
+    "items": [
+      {
+        "id": 9,
+        "question_id": 13,
+        "user_id": 41,
+        "reason": "Ambiguous option",
+        "created_at": "2026-10-21T09:30:00Z",
+        "resolved": false,
+        "question_text": "السؤال",
+        "question_author": "author",
+        "flagger_username": "reader"
+      }
+    ],
+    "total": 21,
+    "page": 2,
+    "per_page": 20,
+    "total_pages": 2
+  },
+  "groups": {
+    "items": [
+      {
+        "id": 7,
+        "name": "Study group",
+        "description": "",
+        "member_count": 3,
+        "version": 4,
+        "show_in_leaderboard": false
+      }
+    ]
+  },
+  "leaderboard": {
+    "group": {
+      "id": 7,
+      "name": "Study group",
+      "description": "",
+      "member_count": 3,
+      "version": 4
+    },
+    "days": 30,
+    "rows": [
+      {
+        "user_id": 41,
+        "username": "reader",
+        "full_name": "متعلّم",
+        "questions_answered": 8,
+        "accuracy": 62.5,
+        "current_streak": 2,
+        "rank": 1
+      }
+    ]
+  },
+  "planner": {
+    "id": 5,
+    "version": 8,
+    "target_questions_per_day": 12,
+    "target_categories": [
+      7,
+      9
+    ],
+    "target_tags": [
+      "Mood, anxiety",
+      "القلق"
+    ],
+    "start_date": "2026-10-01",
+    "end_date": null,
+    "daily_progress": {
+      "2026-10-20": 0,
+      "2026-10-21": 12
+    },
+    "today": "2026-10-21"
+  },
+  "settings": {
+    "version": 6,
+    "default_expiry_days": "60",
+    "default_renewal_days": "0",
+    "exam_duration_minutes": "45"
+  }
+}

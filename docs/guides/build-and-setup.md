@@ -18,6 +18,8 @@ python3 build.py --check
 
 Read the first relevant diagnostic/log tail; retain reusable caches, remove obsolete temporary logs. Windows uses `gradlew.bat`. Compilation, suites, device and HTTP/concurrency are separate evidence categories. Ask for missing JDK/SDK packages/pinned Gradle/dependency coordinates; adb/emulators only for authorized device work.
 
+Compose screen tests use the existing Robolectric SDK 33 runner and BOM-selected `ui-test-junit4`/`ui-test-manifest` artifacts (1.5.4). A metadata POM in the cache does not establish that the AAR/JAR is cached. Obtain a named, one-time cache-fill approval if any pinned UI-test/transitive artifact is missing; do not upgrade the BOM or repeatedly download disposable runtimes. The approved 2026-10-23 cache fill completed, and the 68-case selection passed offline with these pinned versions; future dependency changes need their own cache check. JVM UI tests do not require an emulator/device installation and do not establish device accessibility or encryption.
+
 JDK 17 and 21 are supported build runtimes for this project's pinned Gradle 8.7. Use an already-installed supported JDK; no additional installation or system-default change is needed when 21 is selected. This is separate from the Java/Kotlin target of 17 and Android SDK/minimum-device settings. The helper and direct wrapper use `JAVA_HOME` when set, otherwise Java on `PATH`; Android Studio has its own Gradle JDK selection. [Gradle Java 21 support](https://docs.gradle.org/8.5/release-notes.html#full-java-21-support) · [Android JDK/target guidance](https://developer.android.com/build/jdks).
 
 ## Build helper and artifacts
