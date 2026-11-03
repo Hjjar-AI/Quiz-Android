@@ -22,6 +22,7 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.core.AppPreferences
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLanguageChoices
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
@@ -29,6 +30,7 @@ import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppSwitchRow
 import com.mukhtabir.android.ui.components.AppThemePicker
+import com.mukhtabir.android.ui.components.appLanguageLabel
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -73,15 +75,11 @@ fun SettingsRoute(preferences: AppPreferences, serverUrl: String, serverAddressH
             AppThemePicker(preferences)
 
         }
-        AppSection(stringResource(R.string.language), subtitle = when (language) { "ar" -> "العربية"; "en" -> "English"; else -> stringResource(R.string.system_default) }) {
-            AppActionRow() {
-                listOf(AppPreferences.LANGUAGE_SYSTEM, "en", "ar").forEach { code ->
-                    AppFilterChip(language == code, {
-                        preferences.setLanguage(code)
-                        (context as? Activity)?.recreate()
-                    }, label = { Text(when (code) { "ar" -> "العربية"; "en" -> "English"; else -> stringResource(R.string.system_default) }) })
-                }
-            }
+        AppSection(stringResource(R.string.language), subtitle = appLanguageLabel(language)) {
+            AppLanguageChoices(language, onSelect = { code ->
+                preferences.setLanguage(code)
+                (context as? Activity)?.recreate()
+            })
         }
         AppSection(stringResource(R.string.server_address), subtitle = stringResource(if (serverAddressHidden) R.string.server_file_selected else R.string.ui_manual_connection)) {
             if (serverAddressHidden) Text(stringResource(R.string.server_file_selected), style = MaterialTheme.typography.bodyMedium)

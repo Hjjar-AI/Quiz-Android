@@ -7,9 +7,7 @@ import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,13 +20,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import com.mukhtabir.android.R
-import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppCard
 import com.mukhtabir.android.ui.components.AppCheckboxRow
-import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppLayoutTokens
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppSearchPicker
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
@@ -105,34 +102,35 @@ private fun ExamDateTime(value: String, label: Int, enabled: Boolean, onChange: 
 @Composable
 internal fun ExamBankPicker(s: ExamEditorState, vm: MasterExamEditorViewModel) {
     var query by remember { mutableStateOf(s.query) }
-    AppConfirmationDialog(onDismissRequest = vm::closePicker,
-        title = { Text(stringResource(R.string.exam_author_add_bank)) },
-        text = {
-            LazyColumn(Modifier.heightIn(max = AppLayoutTokens.pickerMaxHeight), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                item {
-                    AppTextField(query, { query = it }, enabled = !s.busy, label = { Text(stringResource(R.string.search)) })
-                    AppOutlinedButton({ vm.search(query, 1) }, enabled = !s.busy && !s.pickerBusy) { Text(stringResource(R.string.search)) }
-                    if (s.pickerBusy || s.busy) AppLoadingIndicator()
-                    s.pickerError?.let { ErrorState(throwable = it, onRetry = if (s.pickerBusy || s.busy) null else ({ vm.search(s.query, s.pickerRequestedPage) })) }
-                    s.error?.let { ErrorState(throwable = it, onRetry = if (s.needsSync && !s.busy) vm::refresh else null) }
-                    Text(stringResource(R.string.exam_author_selected, formatNumber(s.selected.size)))
-                    if (!s.pickerBusy && s.pickerError == null && s.pickerPage.items.isEmpty()) EmptyState(stringResource(R.string.exam_author_no_questions))
+    AppSearchPicker(stringResource(R.string.exam_author_add_bank), vm::closePicker,
+        query, { query = it }, onSearch = { vm.search(query, 1) },
+        queryEnabled = !s.busy, searchEnabled = !s.busy && !s.pickerBusy,
+        loading = s.pickerBusy || s.busy, error = s.pickerError,
+        onRetry = if (s.pickerBusy || s.busy) null else ({ vm.search(s.query, s.pickerRequestedPage) }),
+        status = {
+            s.error?.let { ErrorState(throwable = it, onRetry = if (s.needsSync && !s.busy) vm::refresh else null) }
+            Text(stringResource(R.string.exam_author_selected, formatNumber(s.selected.size)))
+            if (!s.pickerBusy && s.pickerError == null && s.pickerPage.items.isEmpty()) EmptyState(stringResource(R.string.exam_author_no_questions))
+        },
+        confirmButton = { AppTextButton(vm::addSelected, enabled = vm.editable(s) && !s.dirty && !s.pickerBusy && s.pickerError == null && s.selected.isNotEmpty()) { Text(stringResource(R.string.exam_author_add_selected)) } },
+        dismissButton = { AppTextButton(vm::closePicker, enabled = !s.busy) { Text(stringResource(R.string.cancel)) } }) {
+        items(s.pickerPage.items, key = { it.id }) { row ->
+            AppCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
+                    AuthorQuestionPreview(row)
+                    val already = row.id in s.exam?.questionIds.orEmpty()
+                    if (already) Text(stringResource(R.string.exam_author_already_added))
+                    ExamCheck(row.id in s.selected || already, R.string.exam_author_select,
+                        !already && !s.busy && !s.pickerBusy && s.pickerError == null && !s.needsSync) { vm.toggle(row.id) }
                 }
-                items(s.pickerPage.items, key = { it.id }) { row ->
-                    AppCard(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
-                            AuthorQuestionPreview(row)
-                            val already = row.id in s.exam?.questionIds.orEmpty()
-                            if (already) Text(stringResource(R.string.exam_author_already_added))
-                            ExamCheck(row.id in s.selected || already, R.string.exam_author_select, !already && !s.busy && !s.pickerBusy && s.pickerError == null && !s.needsSync) { vm.toggle(row.id) }
-                        }
-                    }
-                }
-                item { AppActionRow() {
-                    AppOutlinedButton({ vm.search(s.query, s.pickerPage.page - 1) }, enabled = !s.busy && !s.needsSync && !s.pickerBusy && s.pickerError == null && s.pickerPage.page > 1) { Text(stringResource(R.string.previous)) }
-                    AppOutlinedButton({ vm.search(s.query, s.pickerPage.page + 1) }, enabled = !s.busy && !s.needsSync && !s.pickerBusy && s.pickerError == null && s.pickerPage.page < s.pickerPage.totalPages) { Text(stringResource(R.string.next)) }
-                } }
             }
-        }, confirmButton = { AppTextButton(vm::addSelected, enabled = vm.editable(s) && !s.dirty && !s.pickerBusy && s.pickerError == null && s.selected.isNotEmpty()) { Text(stringResource(R.string.exam_author_add_selected)) } },
-        dismissButton = { AppTextButton(vm::closePicker, enabled = !s.busy) { Text(stringResource(R.string.cancel)) } })
+        }
+        item {
+            AppPagination(s.pickerPage.page, s.pickerPage.totalPages,
+                onPrevious = { vm.search(s.query, s.pickerPage.page - 1) },
+                onNext = { vm.search(s.query, s.pickerPage.page + 1) },
+                previousEnabled = !s.busy && !s.needsSync && !s.pickerBusy && s.pickerError == null,
+                nextEnabled = !s.busy && !s.needsSync && !s.pickerBusy && s.pickerError == null)
+        }
+    }
 }

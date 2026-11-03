@@ -32,13 +32,12 @@ import androidx.compose.ui.text.style.TextAlign
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.ServerConnectionFile
 import com.mukhtabir.android.core.ServerSettings
-import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppCard
 import com.mukhtabir.android.ui.components.AppCardBody
 import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
-import com.mukhtabir.android.ui.components.AppFilterChip
+import com.mukhtabir.android.ui.components.AppLanguageChoices
 import com.mukhtabir.android.ui.components.AppLaunchHeader
 import com.mukhtabir.android.ui.components.AppLaunchLayout
 import com.mukhtabir.android.ui.components.AppLayoutTokens
@@ -50,6 +49,7 @@ import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.DemoLaunchCard
+import com.mukhtabir.android.ui.components.appLanguageLabel
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -255,11 +255,7 @@ fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Bo
 @Composable
 private fun SetupLanguageButton(language: String, onLanguageChange: (String) -> Unit, enabled: Boolean = true) {
     var open by rememberSaveable { mutableStateOf(false) }
-    val selectedLanguage = when (language) {
-        "ar" -> "العربية"
-        "en" -> "English"
-        else -> stringResource(R.string.system_default)
-    }
+    val selectedLanguage = appLanguageLabel(language)
     AppOutlinedButton({ open = true }, Modifier.fillMaxWidth(), enabled = enabled) {
         Icon(Icons.Filled.Language, contentDescription = null)
         Text(stringResource(R.string.language_picker_selection,
@@ -271,20 +267,7 @@ private fun SetupLanguageButton(language: String, onLanguageChange: (String) -> 
         onDismissRequest = { open = false },
         title = { Text(stringResource(R.string.language)) },
         text = {
-            AppActionRow {
-                listOf("system", "en", "ar").forEach { code ->
-                    AppFilterChip(
-                        selected = language == code,
-                        onClick = { open = false; onLanguageChange(code) },
-                        enabled = enabled,
-                        label = { Text(when (code) {
-                            "ar" -> "العربية"
-                            "en" -> "English"
-                            else -> stringResource(R.string.system_default)
-                        }) },
-                    )
-                }
-            }
+            AppLanguageChoices(language, onSelect = { code -> open = false; onLanguageChange(code) }, enabled = enabled)
         },
         confirmButton = { AppTextButton({ open = false }) { Text(stringResource(R.string.close)) } },
     )

@@ -4,7 +4,6 @@ package com.mukhtabir.android.ui.analytics
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -55,12 +54,9 @@ fun AnalyticsRoute(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section),
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                AppPageHeading(stringResource(R.string.analytics))
-                AppButton(onClick = viewModel::load, enabled = !state.isLoading) {
-                    Text(stringResource(R.string.refresh))
-                }
-            }
+            AppPageHeading(stringResource(R.string.analytics), action = {
+                AppButton(onClick = viewModel::load, enabled = !state.isLoading) { Text(stringResource(R.string.refresh)) }
+            })
         }
         if (state.isLoading) item { AppLoadingIndicator() }
         item {

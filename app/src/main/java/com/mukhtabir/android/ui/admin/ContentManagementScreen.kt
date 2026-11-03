@@ -27,6 +27,8 @@ import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppSuccessText
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.ExactTagEditor
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -49,7 +51,7 @@ fun ContentManagementRoute(kind: ContentKind, service: ContentManagementService,
         else if (s.editing) vm.close() else onBack()
     } }
     BackHandler(onBack = back)
-    DisposableEffect(busy) { onBusy(busy); onDispose { onBusy(false) } }
+    ScreenBusyEffect(busy, onBusy)
     LaunchedEffect(s.saved) { if (s.saved) onChanged() }
     if (!mayManageContent(user, kind)) { Text(stringResource(R.string.error_forbidden)); return }
     val knowledge = kind == ContentKind.KNOWLEDGE
@@ -200,9 +202,8 @@ private fun KnowledgeFields(s: ContentManagementState, vm: ContentManagementView
         if(f.category != null && s.categories.none { it.id == f.category }) Text(stringResource(R.string.planner_category_unavailable, com.mukhtabir.android.util.formatNumber(f.category)))
     }
     AppSection(stringResource(R.string.content_tags)) {
-        f.tags.forEach { tag -> AppDangerOutlinedButton({ vm.tag(false, tag) }, enabled = enabled) { Text(tag + " · " + stringResource(R.string.ux_remove_tag_link)) } }
-        AppTextField(f.tagInput, { vm.field("tagInput", it) }, enabled = enabled, label = { Text(stringResource(R.string.content_tags)) }, modifier = Modifier.fillMaxWidth())
-        AppOutlinedButton({ vm.tag(true, f.tagInput) }, enabled = enabled) { Text(stringResource(R.string.content_add)) }
+        ExactTagEditor(f.tags, f.tagInput, { vm.field("tagInput", it) },
+            onAdd = { vm.tag(true, it) }, onRemove = { vm.tag(false, it) }, enabled = enabled)
     }
     AppSection(stringResource(R.string.content_source)) {
         AppTextField(f.document, { vm.field("document", it) }, enabled = enabled, label = { Text(stringResource(R.string.editor_source_document)) }, modifier = Modifier.fillMaxWidth())
@@ -210,9 +211,7 @@ private fun KnowledgeFields(s: ContentManagementState, vm: ContentManagementView
         AppTextField(f.revised, { vm.field("revised", it) }, enabled = enabled, label = { Text(stringResource(R.string.content_review_date)) }, modifier = Modifier.fillMaxWidth())
     }
     AppSection(stringResource(R.string.content_translations)) {
-        AppActionRow() { (listOf("ar", "en") + f.translations.keys).distinct().forEach { code ->
-            AppFilterChip(locale == code, { locale = code }, { Text(code) }, enabled = enabled)
-        } }
+        TranslationLocaleChoices(locale, f.translations.keys, { locale = it }, enabled)
         val fields = f.translations[locale] as? kotlinx.serialization.json.JsonObject
         listOf("title" to R.string.knowledge_create_name, "learning_objective" to R.string.explore_objective, "canonical_answer" to R.string.explore_reference_answer).forEach { (field, label) ->
             val text = (fields?.get(field) as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
@@ -238,11 +237,7 @@ private fun CaseTranslationFields(s: ContentManagementState, vm: ContentManageme
     var locale by rememberSaveable(s.selectedCase?.key) { mutableStateOf("ar") }
     AppSection(stringResource(R.string.content_translations)) {
         Text(stringResource(R.string.case_translation_hint))
-        AppActionRow {
-            (listOf("ar", "en") + s.form.translations.keys).distinct().forEach { code ->
-                AppFilterChip(locale == code, { locale = code }, { Text(code) }, enabled = enabled)
-            }
-        }
+        TranslationLocaleChoices(locale, s.form.translations.keys, { locale = it }, enabled)
         val fields = s.form.translations[locale] as? kotlinx.serialization.json.JsonObject
         listOf("title" to R.string.content_case_title, "stem" to R.string.case_translation_stem).forEach { (field, label) ->
             val text = (fields?.get(field) as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()

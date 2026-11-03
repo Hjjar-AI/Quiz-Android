@@ -23,6 +23,13 @@ fun reflectionLabel(value: String): String = stringResource(when (value) {
 })
 
 @Composable
+fun confidenceLabel(value: Int): String = stringResource(when (value) {
+    1 -> R.string.confidence_guessing
+    2 -> R.string.confidence_uncertain
+    else -> R.string.confidence_certain
+})
+
+@Composable
 fun resultReviewTitle(index: Int, answered: Boolean, correct: Boolean): String =
     stringResource(when {
         !answered -> R.string.quiz_review_unanswered

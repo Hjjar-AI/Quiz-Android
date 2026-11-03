@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,10 +12,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -31,7 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ImageRepository
@@ -42,10 +38,13 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AuthoringRecoveryPrompt
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.QuestionImage
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -76,18 +75,13 @@ fun QuestionImageRoute(questionId: Long, userId: Long, questions: QuestionServic
             } else { cameraResult = null; cameraFile = null }
         }
     }
-    if (recovery != null && s.question != null) AppConfirmationDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
-        text = { Text(stringResource(R.string.author_recover_body)) },
-        confirmButton = { AppTextButton(vm::restoreDraft, enabled = !s.busy && !s.denied) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
+    if (recovery != null && s.question != null) AuthoringRecoveryPrompt(vm::restoreDraft, vm::discardRecovery,
+        restoreEnabled = !s.busy && !s.denied, discardEnabled = !s.busy)
     var action by rememberSaveable { mutableStateOf<String?>(null) }
     var leave by rememberSaveable { mutableStateOf(false) }
     val back={ if(s.selected!=null) leave=true else onBack() }
     val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { vm.select(it) } }
-    DisposableEffect(s.busy) {
-        onBusyChanged(s.busy)
-        onDispose { onBusyChanged(false) }
-    }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     var discarding by androidx.compose.runtime.remember { mutableStateOf(false) }
     LaunchedEffect(discarding, s.busy, s.selected) { if (discarding && !s.busy && s.selected == null) { discarding = false; onBack() } }
     LaunchedEffect(s.changed) { if(s.changed) { vm.consumeChange();onChanged() } }

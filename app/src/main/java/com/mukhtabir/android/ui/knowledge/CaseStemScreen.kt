@@ -1,7 +1,5 @@
 package com.mukhtabir.android.ui.knowledge
 
-import com.mukhtabir.android.ui.components.editorRecoveryBlocked
-import com.mukhtabir.android.ui.components.EditorRecoveryControls
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,10 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.QuestionService
@@ -37,11 +32,14 @@ import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppStatusKind
 import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.EditorRecoveryControls
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownField
 import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.components.editorRecoveryBlocked
 import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
@@ -56,7 +54,7 @@ fun CaseStemRoute(key: String,userId: Long,service: QuestionService,canEditAny: 
     var confirming by rememberSaveable { mutableStateOf(false) }
     val back={if(s.dirty) leaving=true else onBack()}
     BackHandler { if(!s.busy) back() }
-    DisposableEffect(s.busy) { onBusyChanged(s.busy);onDispose { onBusyChanged(false) } }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     LaunchedEffect(s.changed) { if(s.changed) { onChanged();vm.consumeChange() } }
     RefreshOnResume(vm::refresh)
     val permitted=vm.mayEdit(s.data)

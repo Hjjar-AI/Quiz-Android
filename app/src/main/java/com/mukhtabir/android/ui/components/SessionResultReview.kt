@@ -5,15 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ImageRepository
 import com.mukhtabir.android.data.remote.SessionResultItemDto
@@ -89,12 +86,3 @@ fun SessionResultReview(
         }
     }
 }
-
-@Composable
-private fun confidenceLabel(value: Int): String = stringResource(
-    when (value) {
-        1 -> R.string.confidence_guessing
-        2 -> R.string.confidence_uncertain
-        else -> R.string.confidence_certain
-    },
-)

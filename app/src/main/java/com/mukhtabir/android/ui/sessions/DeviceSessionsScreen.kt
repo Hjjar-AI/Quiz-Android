@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.sessions
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.DeviceSessionsService
@@ -35,6 +32,7 @@ import com.mukhtabir.android.ui.components.BlockedBackHandler
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatLocalDateTime
@@ -46,7 +44,7 @@ fun DeviceSessionsRoute(service: DeviceSessionsService,userId: Long,onBack: () -
     val s by vm.state.collectAsLifecycleState()
     var confirming by remember { mutableStateOf<String?>(null) }
     BlockedBackHandler(enabled = s.busy)
-    DisposableEffect(s.busy) { onBusy(s.busy);onDispose {onBusy(false)} }
+    ScreenBusyEffect(s.busy, onBusy)
     LaunchedEffect(s.signedOut) { if(s.signedOut) onCurrentRevoked() }
     RefreshOnResume(vm::refresh)
     confirming?.let { id -> AppConfirmationDialog(onDismissRequest={if(!s.busy) {confirming=null;vm.clearPassword()}},

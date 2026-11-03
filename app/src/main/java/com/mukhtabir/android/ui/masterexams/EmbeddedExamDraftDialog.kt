@@ -25,12 +25,8 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppTextButton
-import com.mukhtabir.android.ui.components.ClinicalCaseContext
 import com.mukhtabir.android.ui.components.ErrorState
-import com.mukhtabir.android.ui.components.ExplanationCard
-import com.mukhtabir.android.ui.components.MarkdownText
-import com.mukhtabir.android.ui.components.QuestionChoiceCard
-import com.mukhtabir.android.ui.components.QuestionTextCard
+import com.mukhtabir.android.ui.components.QuestionDraftPreview
 import com.mukhtabir.android.ui.questions.QuestionChoiceDraft
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
@@ -152,18 +148,9 @@ internal fun EmbeddedExamDraftDialog(draft: EmbeddedExamDraftState, s: ExamEdito
                     Column {
                         Text(stringResource(R.string.exam_draft_created_id, formatNumber(id)))
                         s.questions[id]?.let { question ->
-                            ClinicalCaseContext(question.localizedForDisplay().case)
-                            QuestionTextCard(question.question)
-                            question.choices.forEachIndexed { index, text ->
-                                QuestionChoiceCard {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)))
-                                        MarkdownText(text)
-                                        if (question.correctAnswer == index + 1) Text(stringResource(R.string.correct_answer))
-                                    }
-                                }
-                            }
-                            question.explanation?.takeIf { it.isNotBlank() }?.let { ExplanationCard(it) }
+                            val display = question.localizedForDisplay()
+                            QuestionDraftPreview(display.question, display.choices, display.correctAnswer,
+                                display.explanation.orEmpty(), display.case)
                             Text(stringResource(R.string.question_source) + ": " + question.source.orEmpty())
                             Text(stringResource(R.string.nav_categories) + ": " + question.categoryName.orEmpty())
                         }

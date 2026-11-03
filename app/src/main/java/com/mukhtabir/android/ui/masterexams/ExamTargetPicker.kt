@@ -1,10 +1,7 @@
 package com.mukhtabir.android.ui.masterexams
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,20 +11,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.MasterExamAuthorDto
 import com.mukhtabir.android.ui.components.AppCheckboxRow
-import com.mukhtabir.android.ui.components.AppConfirmationDialog
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppSearchPicker
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.EmptyState
-import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.util.formatNumber
 
 internal enum class ExamTargetKind(val label: Int, val pickerLabel: Int) {
@@ -92,52 +84,43 @@ internal fun ExamTargetPicker(p: ExamTargetPickerState, s: ExamEditorState, vm: 
     var query by remember(p.kind) { mutableStateOf(p.query) }
     val enabled = vm.editable(s) && vm.canLookUp(p.kind) && !p.busy && p.error == null
     val names = targetNames(p.kind, s.exam, s.targetNames)
-    AppConfirmationDialog(onDismissRequest = vm::closeTargets,
-        title = { Text(stringResource(p.kind.pickerLabel)) },
-        text = {
-            LazyColumn(Modifier.heightIn(max = AppLayoutTokens.pickerMaxHeight), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                item {
-                    Text(stringResource(R.string.exam_target_staged))
-                    if (p.kind != ExamTargetKind.GROUPS) Text(stringResource(R.string.exam_target_member_filter))
-                    AppTextField(query, { query = it }, label = { Text(stringResource(R.string.search)) },
-                        enabled = !s.busy, modifier = Modifier.fillMaxWidth())
-                    AppOutlinedButton({ vm.searchTargets(query, 1) }, enabled = vm.editable(s) && !p.busy) {
-                        Text(stringResource(R.string.search))
-                    }
-                    if (p.busy) AppLoadingIndicator()
-                    p.error?.let { ErrorState(throwable = it, onRetry = if (p.busy || !vm.editable(s)) null else ({ vm.searchTargets(p.query, p.requestedPage) }),
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
-                    Text(stringResource(R.string.exam_author_selected, formatNumber(p.selected.size)))
-                    Text(stringResource(R.string.exam_target_keep_missing))
-                }
-                // Explicit removal is possible even for selections not returned by a lookup.
-                items(p.selected.sorted(), key = { "selected-$it" }) { id ->
-                    Column {
-                        Text(targetLabel(id, names))
-                        AppTextButton({ vm.removeTarget(id) }, enabled = enabled) {
-                            Text(stringResource(R.string.exam_target_remove, targetLabel(id, names)))
-                        }
-                    }
-                }
-                item {
-                    Text(stringResource(R.string.exam_target_matches))
-                    if (!p.busy && p.error == null && p.rows.isEmpty()) EmptyState(stringResource(R.string.exam_target_empty))
-                }
-                items(p.rows, key = { "match-${it.id}" }) { row ->
-                    AppCheckboxRow(targetLabel(row.id, names), row.id in p.selected,
-                        onCheckedChange = { vm.toggleTarget(row.id) }, enabled = enabled)
-                }
-                item {
-                    Text(stringResource(R.string.exam_target_page, formatNumber(p.page), formatNumber(p.totalPages)))
-                    // Separate rows remain usable with large text and RTL.
-                    AppOutlinedButton({ vm.searchTargets(p.query, p.page - 1) }, enabled = enabled && p.page > 1) {
-                        Text(stringResource(R.string.previous))
-                    }
-                    AppOutlinedButton({ vm.searchTargets(p.query, p.page + 1) }, enabled = enabled && p.page < p.totalPages) {
-                        Text(stringResource(R.string.next))
-                    }
+    AppSearchPicker(stringResource(p.kind.pickerLabel), vm::closeTargets,
+        query, { query = it }, onSearch = { vm.searchTargets(query, 1) },
+        queryEnabled = !s.busy, searchEnabled = vm.editable(s) && !p.busy,
+        loading = p.busy, error = p.error,
+        onRetry = if (p.busy || !vm.editable(s)) null else ({ vm.searchTargets(p.query, p.requestedPage) }),
+        beforeSearch = {
+            Text(stringResource(R.string.exam_target_staged))
+            if (p.kind != ExamTargetKind.GROUPS) Text(stringResource(R.string.exam_target_member_filter))
+        }, status = {
+            Text(stringResource(R.string.exam_author_selected, formatNumber(p.selected.size)))
+            Text(stringResource(R.string.exam_target_keep_missing))
+        },
+        confirmButton = { AppTextButton(vm::applyTargets, enabled = enabled) { Text(stringResource(R.string.exam_target_apply)) } },
+        dismissButton = { AppTextButton(vm::closeTargets) { Text(stringResource(R.string.cancel)) } }) {
+        // Selections absent from a lookup remain visible and explicitly removable.
+        items(p.selected.sorted(), key = { "selected-$it" }) { id ->
+            Column {
+                Text(targetLabel(id, names))
+                AppTextButton({ vm.removeTarget(id) }, enabled = enabled) {
+                    Text(stringResource(R.string.exam_target_remove, targetLabel(id, names)))
                 }
             }
-        }, confirmButton = { AppTextButton(vm::applyTargets, enabled = enabled) { Text(stringResource(R.string.exam_target_apply)) } },
-        dismissButton = { AppTextButton(vm::closeTargets) { Text(stringResource(R.string.cancel)) } })
+        }
+        item {
+            Text(stringResource(R.string.exam_target_matches))
+            if (!p.busy && p.error == null && p.rows.isEmpty()) EmptyState(stringResource(R.string.exam_target_empty))
+        }
+        items(p.rows, key = { "match-${it.id}" }) { row ->
+            AppCheckboxRow(targetLabel(row.id, names), row.id in p.selected,
+                onCheckedChange = { vm.toggleTarget(row.id) }, enabled = enabled)
+        }
+        item {
+            AppPagination(p.page, p.totalPages,
+                onPrevious = { vm.searchTargets(p.query, p.page - 1) },
+                onNext = { vm.searchTargets(p.query, p.page + 1) },
+                previousEnabled = enabled, nextEnabled = enabled,
+                statusLabel = stringResource(R.string.exam_target_page, formatNumber(p.page), formatNumber(p.totalPages)))
+        }
+    }
 }

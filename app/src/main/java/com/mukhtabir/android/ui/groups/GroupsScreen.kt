@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,6 +49,7 @@ import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppStatus
+import com.mukhtabir.android.ui.components.AppSwitchRow
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
@@ -247,12 +247,8 @@ fun GroupsRoute(service: GroupService, userId: Long) {
                     modifier = Modifier.semantics { heading() })
                 Text(stringResource(R.string.group_board_period,formatNumber(board.days)),style=MaterialTheme.typography.titleLarge)
                 val visibilityLabel=stringResource(R.string.show_on_leaderboard)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(visibilityLabel,Modifier.weight(1f))
-                    Switch(state.visible, vm::setVisible, enabled = !busy && !state.boardLoading &&
-                        !state.visibilityNeedsReview && state.error == null,
-                        modifier=Modifier.semantics { contentDescription=visibilityLabel })
-                }
+                AppSwitchRow(visibilityLabel, state.visible, vm::setVisible,
+                    enabled = !busy && !state.boardLoading && !state.visibilityNeedsReview && state.error == null)
                 Text(stringResource(R.string.group_visibility_hint))
             }
             if(board.rows.isEmpty() && !state.boardLoading && state.boardError==null && state.error==null) item { EmptyState(stringResource(R.string.group_board_empty)) }

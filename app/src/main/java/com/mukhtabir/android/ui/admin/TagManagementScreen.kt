@@ -31,6 +31,7 @@ import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppSuccessText
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlin.coroutines.coroutineContext
@@ -156,7 +157,7 @@ fun TagManagementRoute(service: ContentManagementService, questions: QuestionSer
     val s by vm.state.collectAsLifecycleState(); val recoveryBlocked=editorRecoveryBlocked(vm.recovery); var leave by remember { mutableStateOf(false) }
     val busy = s.loading || s.busy
     BackHandler { if (!busy) { if (s.uncertain || s.action != null) leave = true else onBack() } }
-    DisposableEffect(busy) { onBusy(busy); onDispose { onBusy(false) } }
+    ScreenBusyEffect(busy, onBusy)
     LaunchedEffect(s.saved) { if (s.saved) onChanged() }
     if (!permitted) { Text(stringResource(R.string.error_forbidden)); return }
     val enabled = !recoveryBlocked && !busy && !s.uncertain

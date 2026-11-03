@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
@@ -51,9 +50,9 @@ fun ExamResultsPicker(user: UserDto, service: MasterExamService, onOpen: (Long) 
         }
         items(rows, key = { it.id }) { exam -> AppCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(AppLayoutTokens.denseCardInsets)) {
-                Text(exam.name, style = MaterialTheme.typography.titleMedium)
-                Text(masterStatus(exam.status))
-                AppOutlinedButton({ onOpen(exam.id) }, enabled = !busy) { Text(stringResource(R.string.exam_results_title)) }
+                MasterExamSummary(exam, actions = {
+                    AppOutlinedButton({ onOpen(exam.id) }, enabled = !busy) { Text(stringResource(R.string.exam_results_title)) }
+                })
             }
         } }
     }

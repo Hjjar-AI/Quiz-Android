@@ -38,6 +38,7 @@ import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.BilingualQuestionComparison
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
+import com.mukhtabir.android.ui.components.ConfidenceSelector
 import com.mukhtabir.android.ui.components.QuestionImage
 import com.mukhtabir.android.ui.components.QuestionLanguageSelector
 import com.mukhtabir.android.ui.components.QuestionTextCard
@@ -154,19 +155,7 @@ internal fun QuizQuestionContent(
 
     if (state.mode.isLearningMode() && state.selectedAnswer != null) {
         androidx.compose.runtime.key(page.question.id) {
-            AppSection(stringResource(R.string.confidence_prompt),
-                initiallyExpanded = state.confidence == null, revealError = state.confidence == null,
-                subtitle = state.confidence?.let { confidence -> stringResource(when (confidence) {
-                    1 -> R.string.confidence_guessing
-                    2 -> R.string.confidence_uncertain
-                    else -> R.string.confidence_certain
-                }) } ?: stringResource(R.string.confidence_required_navigation)) {
-                QuizSelectionRow(Modifier.selectableGroup()) {
-                    ConfidenceButton(1, R.string.confidence_guessing, state.confidence, !state.isLoading, viewModel::selectConfidence)
-                    ConfidenceButton(2, R.string.confidence_uncertain, state.confidence, !state.isLoading, viewModel::selectConfidence)
-                    ConfidenceButton(3, R.string.confidence_certain, state.confidence, !state.isLoading, viewModel::selectConfidence)
-                }
-            }
+            ConfidenceSelector(state.confidence, viewModel::selectConfidence, enabled = !state.isLoading, required = true)
         }
     }
 
@@ -179,22 +168,6 @@ internal fun QuizQuestionContent(
         }
     }
 
-}
-
-@Composable
-private fun ConfidenceButton(
-    value: Int,
-    label: Int,
-    confidence: Int?,
-    enabled: Boolean,
-    onSelect: (Int) -> Unit,
-) {
-    SelectableButton(
-        selected = confidence == value,
-        enabled = enabled,
-        onClick = { onSelect(value) },
-        text = stringResource(label),
-    )
 }
 
 @Composable

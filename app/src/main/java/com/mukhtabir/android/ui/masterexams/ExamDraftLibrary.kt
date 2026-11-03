@@ -26,6 +26,7 @@ import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.EmptyState
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
@@ -257,10 +258,8 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
     val s by vm.state.collectAsLifecycleState()
     val recovery by vm.recovery.collectAsLifecycleState()
     val storageError by vm.recoveryError.collectAsLifecycleState()
-    if (recovery != null) AppConfirmationDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
-        text = { Text(stringResource(R.string.author_recover_body)) },
-        confirmButton = { AppTextButton(vm::restoreDraft, enabled = !s.busy) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
+    if (recovery != null) AuthoringRecoveryPrompt(vm::restoreDraft, vm::discardRecovery,
+        restoreEnabled = !s.busy, discardEnabled = !s.busy)
     var query by remember { mutableStateOf("") }
     var leave by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -268,7 +267,7 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
     LaunchedEffect(discarding, s.busy, s.selected) { if (discarding && !s.busy && s.selected == null) { discarding = false; if (initialId != null) onBack() } }
     val back: () -> Unit = { if (!s.busy) { if (s.uncertain != null || (s.form != null && s.form?.payload(maxChoices) != s.baseline)) leave = true else if (s.selected != null && initialId == null) vm.close() else onBack() } }
     BackHandler(onBack = back)
-    DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     if (leave) AppConfirmationDialog(onDismissRequest = { leave = false }, title = { Text(stringResource(R.string.unsaved_question_title)) },
         text = { Text(stringResource(if (s.uncertain != null) R.string.author_leave_unknown else R.string.unsaved_question_message)) }, confirmButton = { Column {
             AppTextButton({ leave = false; vm.keepDraft(onBack) }) { Text(stringResource(R.string.author_save_later)) }
@@ -327,9 +326,9 @@ fun ExamDraftLibraryRoute(user: UserDto, service: MasterExamService, categories:
                 } }
             }
             item {
-                Text("${s.page} / ${((s.rows.size - 1).coerceAtLeast(0) / size) + 1}")
-                AppOutlinedButton({ vm.page(s.page - 1, size) }, enabled = !s.busy && s.page > 1) { Text(stringResource(R.string.previous)) }
-                AppOutlinedButton({ vm.page(s.page + 1, size) }, enabled = !s.busy && s.page * size < s.rows.size) { Text(stringResource(R.string.next)) }
+                AppPagination(s.page, ((s.rows.size - 1).coerceAtLeast(0) / size) + 1,
+                    onPrevious = { vm.page(s.page - 1, size) }, onNext = { vm.page(s.page + 1, size) },
+                    previousEnabled = !s.busy, nextEnabled = !s.busy)
             }
         }
     }

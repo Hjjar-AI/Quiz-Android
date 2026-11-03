@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,8 +18,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.MasterExamDto
@@ -37,7 +34,6 @@ import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.util.formatLocalDateTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -78,13 +74,11 @@ fun MasterExamManagementRoute(user: UserDto, service: MasterExamService, onCreat
         items(exams, key = { it.id }) { exam ->
             AppCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                    Text(exam.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-                    Text(masterStatus(exam.status))
-                    Text(stringResource(R.string.master_window, formatLocalDateTime(exam.opensAt), formatLocalDateTime(exam.closesAt)))
-                    Text(stringResource(R.string.master_summary, com.mukhtabir.android.util.formatNumber(exam.questionCount), com.mukhtabir.android.util.formatNumber(exam.durationMinutes)))
-                    if (user.has("master_exams.manage_any") || user.has("master_exams.manage_own")) {
-                        AppOutlinedButton({ onEdit(exam.id) }, enabled = !loading) { Text(stringResource(R.string.exam_author_edit)) }
-                    }
+                    MasterExamSummary(exam, actions = {
+                        if (user.has("master_exams.manage_any") || user.has("master_exams.manage_own")) {
+                            AppOutlinedButton({ onEdit(exam.id) }, enabled = !loading) { Text(stringResource(R.string.exam_author_edit)) }
+                        }
+                    })
                 }
             }
         }

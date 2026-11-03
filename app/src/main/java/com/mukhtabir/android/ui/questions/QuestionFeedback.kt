@@ -4,9 +4,7 @@ package com.mukhtabir.android.ui.questions
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,7 +25,6 @@ import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.ui.components.*
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
-import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppSection
@@ -152,13 +149,8 @@ fun QuestionFeedback(questionId: Long, userId: Long, service: QuestionService, s
                     else stringResource(R.string.rating_average, it.average, com.mukhtabir.android.util.formatNumber(it.count)))
             }
             if (state.ratingLoading || state.ratingSaving) AppLoadingIndicator()
-            Text(stringResource(R.string.your_rating))
-            Row(horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                (1..5).forEach { rating ->
-                    AppFilterChip(selected = state.selectedRating == rating, onClick = { vm.selectRating(rating) },
-                        enabled = !blocked && state.pending==null && !state.reporting && !state.ratingLoading && !state.ratingSaving, label = { Text(rating.toString()) })
-                }
-            }
+            QuestionRatingSelector(state.selectedRating, vm::selectRating,
+                enabled = !blocked && state.pending == null && !state.reporting && !state.ratingLoading && !state.ratingSaving)
             AppButton(vm::saveRating, enabled = !blocked && state.pending==null && !state.reporting && !state.ratingLoading && !state.ratingSaving
                 && state.selectedRating in 1..5 && state.selectedRating != (state.lastSavedRating ?: state.rating?.userRating)) {
                 Text(stringResource(R.string.save_rating))

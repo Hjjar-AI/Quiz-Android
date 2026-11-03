@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.planner
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,6 +47,8 @@ import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.BlockedBackHandler
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.ExactTagEditor
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import java.time.format.DateTimeFormatter
@@ -64,7 +65,7 @@ fun PlannerRoute(service: PlannerService, categoryService: CategoryService, ques
     val pending by vm.hasRecovery.collectAsLifecycleState()
     val storageError by vm.recoveryError.collectAsLifecycleState()
     BlockedBackHandler(enabled = state.loading)
-    androidx.compose.runtime.DisposableEffect(state.loading) { onBusy(state.loading); onDispose { onBusy(false) } }
+    ScreenBusyEffect(state.loading, onBusy)
     var confirmDiscard by rememberSaveable(userId) { mutableStateOf(false) }
     var confirmDelete by rememberSaveable(userId) { mutableStateOf(false) }
     var showCategories by rememberSaveable(userId) { mutableStateOf(false) }
@@ -154,26 +155,10 @@ fun PlannerRoute(service: PlannerService, categoryService: CategoryService, ques
         }
         AppSection(stringResource(R.string.additional_tags)) {
         Text(stringResource(R.string.additional_tags), modifier = Modifier.semantics { heading() })
-        Text(stringResource(R.string.editor_tags_exact_hint))
-        state.tags.forEach { name ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                Text(name, Modifier.weight(1f))
-                AppTextButton({ vm.removeTag(name) }, enabled = enabled) { Text(stringResource(R.string.editor_tag_remove, name)) }
-            }
-        }
-        if (state.tags.isEmpty()) Text(stringResource(R.string.none))
-        AppTextField(state.tagInput, { vm.update("tagInput", it) }, enabled = enabled, singleLine = true,
-            label = { Text(stringResource(R.string.editor_tag_name)) }, modifier = Modifier.fillMaxWidth())
-        state.tagValidation?.let { AppStatus(stringResource(it),
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
-        AppOutlinedButton({ vm.addTag() }, enabled = enabled) { Text(stringResource(R.string.editor_tag_add)) }
-        val suggestions = state.tagOptions.filter { it !in state.tags && it.contains(state.tagInput.trim(), ignoreCase = true) }.take(10)
-        if (suggestions.isNotEmpty()) {
-            Text(stringResource(R.string.planner_tag_suggestions))
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                suggestions.forEach { tag -> AppOutlinedButton({ vm.addTag(tag) }, enabled = enabled) { Text(tag) } }
-            }
-        }
+        ExactTagEditor(state.tags, state.tagInput, { vm.update("tagInput", it) }, vm::addTag, vm::removeTag, enabled,
+            validation = state.tagValidation?.let { stringResource(it) },
+            suggestions = state.tagOptions.filter { it !in state.tags && it.contains(state.tagInput.trim(), ignoreCase = true) }.take(10),
+            suggestionsTitle = stringResource(R.string.planner_tag_suggestions))
         }
         PlannerDateField(R.string.start_date, state.startDate, state.serverToday, enabled, formatter, fieldError = state.validationError?.takeIf { it == PlannerValidationError.DATE || it == PlannerValidationError.DATE_ORDER }?.let { stringResource(if (it == PlannerValidationError.DATE_ORDER) R.string.planner_invalid_date_order else R.string.planner_invalid_date) }) { vm.update("start", it) }
         PlannerDateField(R.string.end_date, state.endDate, state.startDate.ifBlank { state.serverToday }, enabled, formatter, fieldError = state.validationError?.takeIf { it == PlannerValidationError.DATE || it == PlannerValidationError.DATE_ORDER }?.let { stringResource(if (it == PlannerValidationError.DATE_ORDER) R.string.planner_invalid_date_order else R.string.planner_invalid_date) }) { vm.update("end", it) }

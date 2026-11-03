@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +48,7 @@ import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.BlockedBackHandler
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatLocalDateTime
@@ -57,7 +57,7 @@ import com.mukhtabir.android.util.formatLocalDateTime
     val vm:AdminUsersViewModel=viewModel(key="admin-users-$actingUserId-$pageSize-$canManage",factory=AdminUsersViewModel.Factory(service,pageSize,canManage,actingUserId)); val s by vm.state.collectAsLifecycleState()
     RefreshOnResume { vm.load(s.page) }
     BlockedBackHandler(enabled = s.loading)
-    androidx.compose.runtime.DisposableEffect(s.loading) {onBusyChanged(s.loading);onDispose {onBusyChanged(false)}}
+    ScreenBusyEffect(s.loading, onBusyChanged)
     var batchAction by androidx.compose.runtime.remember { mutableStateOf<Boolean?>(null) }
     var batchPassword by androidx.compose.runtime.remember { mutableStateOf("") }
     var openTools by rememberSaveable { mutableStateOf<Long?>(null) }

@@ -19,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +50,7 @@ import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -125,7 +125,7 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
     var confidence by remember(row?.completionId,q?.id) {mutableStateOf(3)}
     val back: () -> Unit={if(!s.busy) {if(s.selected!=null) vm.back() else if(s.pendingStorage) leaving=true else onBack()}}
     BackHandler(onBack=back)
-    DisposableEffect(s.busy,s.pendingStorage) {onBusy(s.busy || s.pendingStorage);onDispose {onBusy(false)}}
+    ScreenBusyEffect(s.busy || s.pendingStorage, onBusy)
     if(leaving) AppConfirmationDialog(onDismissRequest={leaving=false},title={Text(stringResource(R.string.leave_screen_action))},
         text={Text(stringResource(R.string.offline_leave_uncommitted))},
         confirmButton={AppTextButton({leaving=false;onBack()}) {Text(stringResource(R.string.leave_screen_action))}},
@@ -320,18 +320,8 @@ fun OfflineStudyRoute(service: OfflineStudyService,store: SessionDraftStore,user
                 }
                 if(saved==null && row.frozenTime==null) item {
                     androidx.compose.runtime.key(q.id) {
-                        AppSection(stringResource(R.string.confidence_prompt),
-                            subtitle = stringResource(when (confidence) {
-                                1 -> R.string.confidence_guessing
-                                2 -> R.string.confidence_uncertain
-                                else -> R.string.confidence_certain
-                            })) {
-                            Text(stringResource(R.string.offline_answer_hint))
-                            AppActionRow(Modifier.selectableGroup()) {(1..3).forEach {level ->
-                                AppFilterChip(confidence==level,{confidence=level},enabled=!s.busy && !s.storageFailed,
-                                    label={Text(stringResource(when(level) {1 -> R.string.master_confidence_low;2 -> R.string.master_confidence_medium;else -> R.string.master_confidence_high}))})
-                            }}
-                        }
+                        ConfidenceSelector(confidence, { confidence = it }, enabled = !s.busy && !s.storageFailed,
+                            hint = stringResource(R.string.offline_answer_hint))
                     }
                 }
                 if (reviewing && saved == null) item { AppSaveStatus(stringResource(R.string.unanswered)) }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,8 +47,10 @@ import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.AuthoringRecoveryPrompt
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
@@ -62,10 +63,8 @@ fun MasterExamEditorRoute(id: Long?, user: UserDto, service: MasterExamService, 
     val s by vm.state.collectAsLifecycleState()
     val recovery by vm.recovery.collectAsLifecycleState()
     val storageError by vm.recoveryError.collectAsLifecycleState()
-    if (recovery != null && s.loaded) AppConfirmationDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
-        text = { Text(stringResource(R.string.author_recover_body)) },
-        confirmButton = { AppTextButton(vm::restoreDraft, enabled = !s.busy && !s.denied) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.busy) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
+    if (recovery != null && s.loaded) AuthoringRecoveryPrompt(vm::restoreDraft, vm::discardRecovery,
+        restoreEnabled = !s.busy && !s.denied, discardEnabled = !s.busy)
     RefreshOnResume(vm::refresh)
     var leave by rememberSaveable { mutableStateOf(false) }
     var removeId by remember { mutableStateOf<Long?>(null) }
@@ -74,7 +73,7 @@ fun MasterExamEditorRoute(id: Long?, user: UserDto, service: MasterExamService, 
     var deleteMode by remember { mutableStateOf("keep_drafts") }
     val back: () -> Unit = { if (!s.busy) { if (s.dirty || s.needsSync || s.plannedIds != null || s.embedded?.dirty == true || s.embedded?.uncertain == true) leave = true else onBack() } }
     BackHandler(onBack = back)
-    DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     LaunchedEffect(s.deleted) { if (s.deleted) onBack() }
     val enabled = vm.editable(s)
     if (leave) AppConfirmationDialog(onDismissRequest = { leave = false },

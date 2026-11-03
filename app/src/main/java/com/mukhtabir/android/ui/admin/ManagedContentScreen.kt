@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +45,7 @@ import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -64,7 +64,7 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
         else if(s.editing) vm.close() else onBack()
     } }
     BackHandler(onBack=back)
-    DisposableEffect(busy) { onBusy(busy);onDispose { onBusy(false) } }
+    ScreenBusyEffect(busy, onBusy)
     RefreshOnResume(vm::refresh)
     if(!permitted) { Text(stringResource(R.string.error_forbidden));return }
     val title=stringResource(if(kind==ManagedKind.GROUP) R.string.manage_groups else R.string.manage_blueprints)
@@ -182,10 +182,11 @@ fun ManagedContentRoute(kind: ManagedKind,service: ManagedContentService,categor
                             user.id in parseMemberIds(s.memberIds).orEmpty(),
                             onCheckedChange={vm.selectUser(user.id)}, enabled=!busy)
                     }
-                    item { AppActionRow() {
-                        AppOutlinedButton({vm.searchUsers(users.page-1)},enabled=!busy && users.page>1) { Text(stringResource(R.string.previous)) }
-                        AppOutlinedButton({vm.searchUsers(users.page+1)},enabled=!busy && users.page<users.totalPages) { Text(stringResource(R.string.next)) }
-                    } }
+                    item {
+                        AppPagination(users.page, users.totalPages,
+                            onPrevious = { vm.searchUsers(users.page - 1) }, onNext = { vm.searchUsers(users.page + 1) },
+                            previousEnabled = !busy, nextEnabled = !busy)
+                    }
                 }
                 item { AppButton(vm::addMembers,enabled=enabled && s.memberIds.isNotBlank()) { Text(stringResource(R.string.manage_add_members)) } }
                 items(s.baseline!!.members,key={"member-${it.userId}"}) { member ->

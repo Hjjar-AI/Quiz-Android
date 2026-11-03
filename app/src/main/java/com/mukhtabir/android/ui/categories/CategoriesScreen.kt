@@ -24,6 +24,7 @@ import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppSuccessText
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import java.util.UUID
 import kotlinx.coroutines.*
@@ -212,7 +213,7 @@ fun CategoriesRoute(service: CategoryService, canManage: Boolean, store: Session
     }
     BackHandler(onBack = back)
     BlockedBackHandler(s.busy)
-    DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     if (leaving) AppConfirmationDialog(onDismissRequest = { if (!s.busy) leaving = false },
         title = { Text(stringResource(R.string.category_leave_title)) },
         text = { Column {

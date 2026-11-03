@@ -5,7 +5,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatLocalDateTime
@@ -66,9 +65,9 @@ fun OperatorRows(rows: List<JsonObject>, keys: List<String>, pageSize: Int = 20,
                 keys - setOf("correct_count", "accuracy", "weighted_score") else keys, percentKeys) } }
         }
         if (pages > 1) {
-            Text(stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
-            AppOutlinedButton({ requested = page - 1 }, enabled = page > 1) { Text(stringResource(R.string.previous)) }
-            AppOutlinedButton({ requested = page + 1 }, enabled = page < pages) { Text(stringResource(R.string.next)) }
+            AppPagination(page, pages,
+                onPrevious = { requested = page - 1 }, onNext = { requested = page + 1 },
+                statusLabel = stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
         }
     }
 }

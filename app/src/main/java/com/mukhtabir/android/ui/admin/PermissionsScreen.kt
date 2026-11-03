@@ -15,7 +15,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +55,7 @@ import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.BlockedBackHandler
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlin.coroutines.coroutineContext
@@ -255,10 +255,7 @@ fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Lo
             }, enabled = !s.loading && (target.exit || s.uncertain == null)) { Text(stringResource(R.string.discard_changes_continue)) } },
             dismissButton = { AppTextButton({ destination = null }) { Text(stringResource(R.string.keep_editing)) } })
     }
-    DisposableEffect(s.loading) {
-        onBusyChanged(s.loading)
-        onDispose { onBusyChanged(false) }
-    }
+    ScreenBusyEffect(s.loading, onBusyChanged)
     val enabled = canManage && !s.loading && s.uncertain == null
     val catalog = s.data
     // Preserve the server's grouping; include any future ungrouped catalog entries.

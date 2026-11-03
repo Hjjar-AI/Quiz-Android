@@ -2,6 +2,14 @@
 
 Current evidence and pending verification only. Reusable implementation guidance stays in the [native UI](../guides/native-ui.md) and [offline/recovery](../guides/offline-and-recovery.md) guides.
 
+## 2026-11-03 component consolidation
+
+Implemented all reviewed opportunities: shared choice/tag editors, authoring previews, mandatory recovery prompt, confidence/rating/app-language/translation-locale selectors, searchable picker presentation, export Save/Share actions, exam summaries and date-only pickers. Adopted shared pagination/adaptive heading/search/switch controls and screen-busy effects. Existing controllers retain validation, stable IDs, focus/reveal wrappers, staged/missing selections, permissions, deadlines, drafts and uncertain-write recovery. Authoring previews now consistently show case context before the question; the public shared previews include the new fields/selectors. [Ownership and APIs](../guides/native-ui.md#shared-feature-presentation).
+
+Production-source checks passed: lexical delimiters/strings and whitespace for 57 changed/new Kotlin files; 1,068 referenced resource keys available in English/Arabic; local component imports/callers, documentation file links and `git diff --check`. No test-suite inspection/work/execution, Gradle, compilation, builds, packaging, migration, dependency/version or other-client application changes. Source completion does not establish rendered behavior.
+
+Remaining: scoped milestone approval to inspect/add focused Compose component coverage (choice IDs/disabled controls, exact tags, confidence/rating/locales, recovery/picker guards, export actions and busy-effect disposal) and run it with existing quiz/offline interaction cases, including app/test compilation. Device checks remain: Arabic/English/RTL, TalkBack/keyboard/200% text/themes/density, validation focus, retained drafts/selections after failed reads, picker height/scrolling, date selection across midnight and saved-document sharing. Existing deployment/recovery gates below remain.
+
 ## 2026-10-23 broader Android regression suites prepared
 
 User requested continuing comprehensive Android test-file work. Added **167 source cases across 17 classes**, plus a shared bounded HTTP/ViewModel harness. The complete JVM source selection now contains **298 cases across 31 classes**. Coverage includes server connections/profile authentication/imported slots; account-bound editor/session/master recovery; saved navigation; bounded validation/image handling; localization/reveal guards; authoring translation/tag inputs; auth restore/profile deferral; History filters/details/pagination; planner validation/revisions/uncertain saves; device revocation/reconciliation; and theme-derived contrast. See the [suite coverage map, fixture limits and commands](../../app/src/test/README.md).

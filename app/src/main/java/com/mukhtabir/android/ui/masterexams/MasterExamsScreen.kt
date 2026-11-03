@@ -2,8 +2,6 @@
 
 package com.mukhtabir.android.ui.masterexams
 
-import androidx.compose.foundation.selection.selectableGroup
-import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -52,12 +51,13 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
-import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppStatusKind
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
+import com.mukhtabir.android.ui.components.ConfidenceSelector
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.LearningQuestionChips
@@ -196,12 +196,11 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
             items(s.exams.filter { s.statusFilter=="all" || it.status==s.statusFilter },key={it.id}) { exam ->
                 AppCard(onClick={vm.open(exam.id)},enabled=!s.busy && !s.storageFailed,modifier=Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                        Text(exam.name,style=MaterialTheme.typography.titleMedium)
-                        Text(masterStatus(exam.status))
-                        if(exam.id in s.notices) Text(stringResource(R.string.master_ack_required),color=MaterialTheme.colorScheme.primary)
-                        Text(stringResource(R.string.master_summary, com.mukhtabir.android.util.formatNumber(exam.questionCount), com.mukhtabir.android.util.formatNumber(exam.durationMinutes)))
-                        Text(stringResource(R.string.master_window,formatLocalDateTime(exam.opensAt),formatLocalDateTime(exam.closesAt)))
-                        if(exam.myAttempt!=null) Text(stringResource(if(exam.myAttempt.isComplete) R.string.master_result else R.string.master_resume))
+                        MasterExamSummary(exam, notices = {
+                            if (exam.id in s.notices) Text(stringResource(R.string.master_ack_required), color = MaterialTheme.colorScheme.primary)
+                        }, actions = {
+                            if (exam.myAttempt != null) Text(stringResource(if (exam.myAttempt.isComplete) R.string.master_result else R.string.master_resume))
+                        })
                     }
                 }
             }
@@ -285,19 +284,8 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                     }
                     item {
                         androidx.compose.runtime.key(page.question.id) {
-                            AppSection(stringResource(R.string.confidence_prompt),
-                                subtitle = stringResource(when (displayDraft?.confidence ?: page.savedConfidence ?: 3) {
-                                    1 -> R.string.confidence_guessing
-                                    2 -> R.string.confidence_uncertain
-                                    else -> R.string.confidence_certain
-                                })) {
-                                AppActionRow(Modifier.selectableGroup()) {
-                                    listOf(R.string.master_confidence_low,R.string.master_confidence_medium,R.string.master_confidence_high).forEachIndexed { index,label ->
-                                        AppFilterChip(selected=(displayDraft?.confidence ?: page.savedConfidence ?: 3)==index+1,
-                                            onClick={vm.confidence(index+1)},label={Text(stringResource(label))},enabled=canEdit && selected!=null)
-                                    }
-                                }
-                            }
+                            ConfidenceSelector(displayDraft?.confidence ?: page.savedConfidence ?: 3,
+                                vm::confidence, enabled = canEdit && selected != null)
                         }
                     }
                     item {

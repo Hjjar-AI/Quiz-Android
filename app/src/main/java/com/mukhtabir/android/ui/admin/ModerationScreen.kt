@@ -12,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +49,7 @@ import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownText
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -65,10 +65,7 @@ fun ModerationRoute(mode: ModerationMode, service: ModerationService, pageSize: 
     val tags=mode==ModerationMode.TAGS
     val tagValidation=moderationTagError(moderationTagNames(s.addTags),moderationTagNames(s.removeTags))
     var action by rememberSaveable { mutableStateOf<String?>(null) }
-    DisposableEffect(s.busy) {
-        onBusyChanged(s.busy)
-        onDispose { onBusyChanged(false) }
-    }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     RefreshOnResume(vm::refresh)
     LaunchedEffect(s.invalidated) { if(s.invalidated) { vm.consumeInvalidation();onQuestionsChanged() } }
     BlockedBackHandler(enabled = s.busy)

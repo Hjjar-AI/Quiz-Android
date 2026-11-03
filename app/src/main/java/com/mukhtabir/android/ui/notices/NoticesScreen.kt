@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.notices
 
-import com.mukhtabir.android.ui.components.AppSectionHeading
 import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Intent
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,7 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.StudyReminders
@@ -37,14 +34,15 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.PullToRefresh
 import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.masterexams.MasterExamSummary
 import com.mukhtabir.android.ui.theme.AppTheme
-import com.mukhtabir.android.util.formatLocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -108,9 +106,9 @@ fun NoticesRoute(service: MasterExamService, reminders: StudyReminders, userId: 
         if (state.loaded && state.items.isEmpty()) item { EmptyState(stringResource(R.string.notices_empty)) }
         items(state.items, key = { it.id }) { exam ->
             AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.cardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                Text(exam.name, style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(R.string.master_window, formatLocalDateTime(exam.opensAt), formatLocalDateTime(exam.closesAt)))
-                AppOutlinedButton({ onOpenExam(exam.id) }, enabled = !state.busy) { Text(stringResource(R.string.notice_open_exam)) }
+                MasterExamSummary(exam, actions = {
+                    AppOutlinedButton({ onOpenExam(exam.id) }, enabled = !state.busy) { Text(stringResource(R.string.notice_open_exam)) }
+                })
             } }
         }
     }

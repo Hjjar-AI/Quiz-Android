@@ -2,8 +2,6 @@
 
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.editorRecoveryBlocked
-import com.mukhtabir.android.ui.components.EditorRecoveryControls
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +42,7 @@ import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.BilingualQuestionComparison
 import com.mukhtabir.android.ui.components.BlockedBackHandler
 import com.mukhtabir.android.ui.components.ClinicalCaseContext
+import com.mukhtabir.android.ui.components.EditorRecoveryControls
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.ExplanationCard
 import com.mukhtabir.android.ui.components.MarkdownText
@@ -53,7 +51,9 @@ import com.mukhtabir.android.ui.components.QuestionContext
 import com.mukhtabir.android.ui.components.QuestionImage
 import com.mukhtabir.android.ui.components.QuestionLanguageSelector
 import com.mukhtabir.android.ui.components.QuestionTextCard
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.components.editorRecoveryBlocked
 import com.mukhtabir.android.ui.theme.AppTheme
 
 @Composable
@@ -91,15 +91,9 @@ fun QuestionDetailRoute(
     viewModel.permissions(canDuplicate,canDeleteOwn,canDeleteAny)
     val state by viewModel.state.collectAsLifecycleState()
     val recoveryBlocked = editorRecoveryBlocked(viewModel.recovery)
-    DisposableEffect(state.mutationBusy) {
-        onMutationBusyChanged(state.mutationBusy)
-        onDispose { onMutationBusyChanged(false) }
-    }
+    ScreenBusyEffect(state.mutationBusy, onMutationBusyChanged)
     val paneLocked = state.mutationBusy || state.bookmarkBusy || recoveryBlocked
-    DisposableEffect(paneLocked) {
-        onPaneLockChanged(paneLocked)
-        onDispose { onPaneLockChanged(false) }
-    }
+    ScreenBusyEffect(paneLocked, onPaneLockChanged)
     val detailSessionLabel = stringResource(R.string.question_details)
     var readingLocale by rememberSaveable(questionId) { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable(questionId) { mutableStateOf(false) }

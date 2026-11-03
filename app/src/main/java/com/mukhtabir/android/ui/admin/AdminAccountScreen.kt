@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,7 +24,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.AdminService
@@ -43,6 +41,7 @@ import com.mukhtabir.android.ui.components.AppStatusKind
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -55,7 +54,7 @@ fun AdminAccountRoute(id: Long,actingUserId: Long,service: AdminService,canManag
     var action by rememberSaveable { mutableStateOf<String?>(null) }
     var leaving by rememberSaveable { mutableStateOf(false) }
     val back={ if(s.adminPassword.isNotEmpty() || s.newPassword.isNotEmpty() || s.repeatPassword.isNotEmpty() || s.generatedPassword!=null || s.generatedUncertain) leaving=true else onBack() }
-    DisposableEffect(s.busy) { onBusyChanged(s.busy);onDispose { onBusyChanged(false) } }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     RefreshOnResume(vm::refresh)
     BackHandler { if(!s.busy) back() }
     if(!canManage) { Text(stringResource(R.string.error_forbidden));return }

@@ -2,7 +2,6 @@
 
 package com.mukhtabir.android.ui.transfer
 
-import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,12 +40,15 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.AppPagination
 import com.mukhtabir.android.ui.components.AppPasswordField
 import com.mukhtabir.android.ui.components.AppSection
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.ExportArtifactActions
 import com.mukhtabir.android.ui.components.MarkdownText
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import com.mukhtabir.android.util.formatNumber
@@ -130,7 +132,7 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
         text = { Text(stringResource(R.string.transfer_leave_body)) },
         confirmButton = { AppDangerTextButton({ leaving = false; onBack() }, enabled = !s.busy) { Text(stringResource(R.string.ux_leave_transfer)) } },
         dismissButton = { AppTextButton({ leaving = false }) { Text(stringResource(R.string.cancel)) } })
-    DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     DisposableEffect(Unit) { onDispose { searchJob?.cancel() } }
     fun runImport(preview: Boolean) = vm.importFile(kind, mode, strategy, preview, JsonObject(mapping), JsonObject(resolutions), password)
     val unknown = s.analysis?.get("unknown_authors") as? JsonArray ?: JsonArray(emptyList())
@@ -338,8 +340,10 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                     AppFilterChip(row.id in selected, { selected = if (row.id in selected) selected - row.id else selected + row.id },
                         enabled = !s.busy && !finding && findError == null, label = { Text(formatNumber(row.id)) })
                 }
-                AppOutlinedButton({ find(questionPage - 1) }, enabled = !s.busy && !finding && findError == null && questionPage > 1) { Text(stringResource(R.string.previous)) }
-                AppOutlinedButton({ find(questionPage + 1) }, enabled = !s.busy && !finding && findError == null && questionPage < questionPages) { Text(stringResource(R.string.next)) }
+                AppPagination(questionPage, questionPages,
+                    onPrevious = { find(questionPage - 1) }, onNext = { find(questionPage + 1) },
+                    previousEnabled = !s.busy && !finding && findError == null,
+                    nextEnabled = !s.busy && !finding && findError == null)
             }
             if (format == "pdf") {
                 AppTextField(title, { title = it }, enabled = !s.busy, label = { Text(stringResource(R.string.transfer_pdf_title)) })
@@ -391,14 +395,8 @@ fun TransferRoute(service: TransferService, admin: com.mukhtabir.android.data.re
                 vm.export(format, verified, statePackage, images, filters, body)
             }, enabled = !s.busy) { Text(stringResource(R.string.transfer_export)) }
             s.download?.let { info ->
-                Text(info.filename)
-                AppOutlinedButton({ saver.launch(info.filename) }, enabled = !s.busy) { Text(stringResource(R.string.save)) }
-                s.savedUri?.let { uri -> AppOutlinedButton({
-                    try { context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType(info.mimeType)
-                        .putExtra(Intent.EXTRA_STREAM, uri).apply { clipData = android.content.ClipData.newRawUri("export", uri) }.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), null)) }
-                    catch (error: android.content.ActivityNotFoundException) { shareError = true }
-                    catch (error: SecurityException) { shareError = true }
-                }, enabled = !s.busy) { Text(stringResource(R.string.transfer_share)) } }
+                ExportArtifactActions(info.filename, info.mimeType, s.savedUri, enabled = !s.busy,
+                    onSave = { saver.launch(info.filename) }, onShareFailed = { shareError = true })
             }
         }
     }

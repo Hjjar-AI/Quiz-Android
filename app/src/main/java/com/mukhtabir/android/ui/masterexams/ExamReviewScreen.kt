@@ -10,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -22,7 +21,6 @@ import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.ui.components.*
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
-import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppPageHeading
@@ -30,6 +28,7 @@ import com.mukhtabir.android.ui.components.AppSuccessText
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ExplanationCard
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import java.io.File
@@ -205,7 +204,7 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
         }
     }
     DisposableEffect(vm) {onDispose {vm.cancelRead()}}
-    DisposableEffect(s.busy) {onBusyChanged(s.busy);onDispose {onBusyChanged(false)}}
+    ScreenBusyEffect(s.busy, onBusyChanged)
     var confirmation by remember {mutableStateOf<String?>(null)}
     androidx.activity.compose.BackHandler {if(!s.busy) {if(preview && s.rehearsal.isNotEmpty() || s.publishUnknown) confirmation="leave" else onBack()}}
     confirmation?.let {action->AppConfirmationDialog(onDismissRequest={confirmation=null},
@@ -262,20 +261,7 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
                         if (reveal && q.correctAnswer == choice + 1) Text(stringResource(R.string.correct_answer))
                     }
                     androidx.compose.runtime.key(q.id) {
-                        AppSection(stringResource(R.string.confidence_prompt),
-                            subtitle = stringResource(when (answer.confidence) {
-                                1 -> R.string.confidence_guessing
-                                2 -> R.string.confidence_uncertain
-                                else -> R.string.confidence_certain
-                            })) {
-                            AppActionRow {
-                                listOf(1 to R.string.confidence_guessing, 2 to R.string.confidence_uncertain,
-                                    3 to R.string.confidence_certain).forEach { (value, label) ->
-                                    AppFilterChip(answer.confidence == value, { vm.confidence(q.id, value) },
-                                        enabled = !s.busy, label = { Text(stringResource(label)) })
-                                }
-                            }
-                        }
+                        ConfidenceSelector(answer.confidence, { vm.confidence(q.id, it) }, enabled = !s.busy)
                     }
                     AppButton({vm.submitPreview(q.id)},enabled=!s.busy && answer.answer!=null){Text(stringResource(R.string.master_save_answer))}
                     if(answer.submitted) {
@@ -335,9 +321,9 @@ fun ExamReviewRoute(id: Long, user: UserDto, service: MasterExamService, transfe
                             }
                         } }
                         if (pages > 1) {
-                            Text(stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
-                            AppOutlinedButton({ participantPage = page - 1 }, enabled = page > 1) { Text(stringResource(R.string.previous)) }
-                            AppOutlinedButton({ participantPage = page + 1 }, enabled = page < pages) { Text(stringResource(R.string.next)) }
+                            AppPagination(page, pages,
+                                onPrevious = { participantPage = page - 1 }, onNext = { participantPage = page + 1 },
+                                statusLabel = stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
                         }
                     }
                 }

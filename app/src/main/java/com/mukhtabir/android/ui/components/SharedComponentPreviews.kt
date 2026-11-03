@@ -70,9 +70,14 @@ private fun SharedComponentPreviews(compact: Boolean = false) {
                 AppMetricTile(com.mukhtabir.android.util.formatNumber(20), stringResource(R.string.number_of_questions), onClick = {})
                 AnswerChoice(1, stringResource(R.string.demo_q1_c1), selected = true,
                     onClick = {}, answerCorrect = true, markdown = false)
-                AppSection(stringResource(R.string.confidence_prompt), initiallyExpanded = true) {
-                    Text(stringResource(R.string.confidence_certain))
-                }
+                ConfidenceSelector(null, {}, enabled = true, required = true)
+                QuestionRatingSelector(3, {}, enabled = false)
+                AppLanguageChoices("ar", {})
+                TranslationLocaleChoices("ar", listOf("ar", "en"), {}, enabled = true)
+                AuthoringChoiceEditor(1, stringResource(R.string.demo_q1_c1), true, enabled = true,
+                    onTextChange = {}, onSelectCorrect = {}, onMoveUp = {}, onMoveDown = {}, onRemove = {},
+                    canMoveUp = false, canMoveDown = true, canRemove = false)
+                ExactTagEditor(listOf(stringResource(R.string.demo_category_circulation)), "", {}, {}, {}, enabled = true)
             }
         }
     }

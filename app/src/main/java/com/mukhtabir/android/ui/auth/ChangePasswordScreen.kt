@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.auth
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,7 +16,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +36,7 @@ import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPasswordField
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.BlockedBackHandler
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
@@ -77,10 +76,7 @@ fun ChangePasswordScreen(
 
     val scope = rememberCoroutineScope()
     BlockedBackHandler(enabled = isLoading || uncertain)
-    DisposableEffect(isLoading, uncertain) {
-        onBusyChanged(isLoading || uncertain)
-        onDispose { onBusyChanged(false) }
-    }
+    ScreenBusyEffect(isLoading || uncertain, onBusyChanged)
 
     // Minimum length matches the server's MinimumLengthValidator (6).
     val minLength = 6

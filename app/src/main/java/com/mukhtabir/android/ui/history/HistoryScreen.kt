@@ -3,7 +3,6 @@ package com.mukhtabir.android.ui.history
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,6 +35,7 @@ import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppMetadataRow
 import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppPagination
+import com.mukhtabir.android.ui.components.AppSearchRow
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
@@ -76,32 +76,15 @@ fun HistoryRoute(
         AppPageHeading(stringResource(if (showAllUsers) R.string.all_history else R.string.history))
 
         if (showAllUsers) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
-            ) {
-                AppTextField(
-                    value = state.userFilter,
-                    onValueChange = viewModel::setUserFilter,
-                    modifier = Modifier.weight(1f),
-                    label = { Text(stringResource(R.string.filter_user_id)) },
-                    isError = state.invalidUserFilter,
-                    supportingText = {
-                        if (state.invalidUserFilter) {
-                            Text(stringResource(R.string.invalid_user_id))
-                        }
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = com.mukhtabir.android.util.ltrInputStyle(),
-            )
-                AppButton(
-                    onClick = viewModel::applyUserFilter,
-                    enabled = !state.isLoading,
-                ) {
-                    Text(stringResource(R.string.search))
-                }
-            }
+            AppSearchRow(field = { fieldModifier ->
+                AppTextField(state.userFilter, viewModel::setUserFilter, modifier = fieldModifier,
+                    label = { Text(stringResource(R.string.filter_user_id)) }, isError = state.invalidUserFilter,
+                    supportingText = { if (state.invalidUserFilter) Text(stringResource(R.string.invalid_user_id)) },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    textStyle = com.mukhtabir.android.util.ltrInputStyle())
+            }, action = {
+                AppButton(viewModel::applyUserFilter, enabled = !state.isLoading) { Text(stringResource(R.string.search)) }
+            })
             ActiveFilterSummary(
                 if (state.appliedUserFilter.isBlank()) emptyList() else listOf(ActiveFilter(
                     "user", stringResource(R.string.history_filter_user, state.appliedUserFilter), viewModel::clearUserFilter)),

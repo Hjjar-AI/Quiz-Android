@@ -1,13 +1,11 @@
 package com.mukhtabir.android.ui.admin
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -23,6 +21,7 @@ import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppPasswordField
 import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
@@ -105,7 +104,7 @@ fun OperatorToolsRoute(user: UserDto, service: OperatorService, onQuestion: (Lon
     var password by remember { mutableStateOf("") }
     var qualityPage by remember { mutableStateOf(1) }
     BlockedBackHandler(enabled = s.busy)
-    DisposableEffect(s.busy) { onBusyChanged(s.busy); onDispose { onBusyChanged(false) } }
+    ScreenBusyEffect(s.busy, onBusyChanged)
     fun dismiss() { action = null; password = ""; backup = null }
     action?.let { selected -> AppConfirmationDialog(onDismissRequest = ::dismiss,
         title = { Text(stringResource(operatorLabel(selected))) },
@@ -172,9 +171,9 @@ fun OperatorToolsRoute(user: UserDto, service: OperatorService, onQuestion: (Lon
                     }
                     if (rows.isEmpty()) Text(stringResource(R.string.tools_quality_clean))
                     if (pages > 1) {
-                        Text(stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
-                        AppOutlinedButton({ qualityPage = page - 1 }, enabled = page > 1) { Text(stringResource(R.string.previous)) }
-                        AppOutlinedButton({ qualityPage = page + 1 }, enabled = page < pages) { Text(stringResource(R.string.next)) }
+                        AppPagination(page, pages,
+                            onPrevious = { qualityPage = page - 1 }, onNext = { qualityPage = page + 1 },
+                            statusLabel = stringResource(R.string.report_page, com.mukhtabir.android.util.formatNumber(page), com.mukhtabir.android.util.formatNumber(pages)))
                     }
                 }
             } }

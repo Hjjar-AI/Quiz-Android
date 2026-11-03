@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -13,14 +12,13 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.ApiException
 import com.mukhtabir.android.data.remote.QuestionRatingRowDto
 import com.mukhtabir.android.data.remote.QuestionService
-import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
-import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppSuccessText
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.QuestionRatingSelector
 import com.mukhtabir.android.util.formatNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -143,12 +141,7 @@ fun LibraryRatingDialog(id: Long, state: LibraryRatingsState, vm: LibraryRatings
                     else stringResource(R.string.rating_average, it.average, com.mukhtabir.android.util.formatNumber(it.count))) }
                 if (busy) AppLoadingIndicator()
                 if (!busy && row == null) Text(stringResource(R.string.library_rating_unavailable))
-                Text(stringResource(R.string.your_rating))
-                AppActionRow() {
-                    (1..5).forEach { value -> AppFilterChip(selected == value, { vm.select(id, value) },
-                        enabled = !busy && !uncertain && row != null,
-                        label = { Text(stringResource(R.string.library_rating_value, formatNumber(value))) }) }
-                }
+                QuestionRatingSelector(selected, { vm.select(id, it) }, enabled = !busy && !uncertain && row != null)
                 if (id in state.saved) AppSuccessText(stringResource(R.string.saved))
                 if (uncertain) Text(stringResource(R.string.library_rating_unknown))
                 state.writeErrors[id]?.let { ErrorState(throwable = it) }

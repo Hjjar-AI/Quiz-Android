@@ -1,6 +1,5 @@
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.AppSectionHeading
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,19 +39,24 @@ import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
 import com.mukhtabir.android.ui.components.AppDangerTextButton
+import com.mukhtabir.android.ui.components.AppDateField
 import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
 import com.mukhtabir.android.ui.components.AppSection
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppStatusKind
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
+import com.mukhtabir.android.ui.components.AuthoringChoiceEditor
+import com.mukhtabir.android.ui.components.AuthoringRecoveryPrompt
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownField
 import com.mukhtabir.android.ui.components.MarkdownText
+import com.mukhtabir.android.ui.components.QuestionDraftPreview
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
 
@@ -71,10 +75,8 @@ fun QuestionEditorRoute(
     val s by vm.state.collectAsLifecycleState()
     val recovery by vm.recovery.collectAsLifecycleState()
     val storageError by vm.recoveryError.collectAsLifecycleState()
-    if (recovery != null && s.loaded) AppConfirmationDialog(onDismissRequest = {}, title = { Text(stringResource(R.string.author_recover_title)) },
-        text = { Text(stringResource(R.string.author_recover_body)) },
-        confirmButton = { AppTextButton(vm::restoreDraft, enabled = !s.loading && !s.accessDenied) { Text(stringResource(R.string.author_restore)) } },
-        dismissButton = { AppDangerTextButton(vm::discardRecovery, enabled = !s.loading) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
+    if (recovery != null && s.loaded) AuthoringRecoveryPrompt(vm::restoreDraft, vm::discardRecovery,
+        restoreEnabled = !s.loading && !s.accessDenied, discardEnabled = !s.loading)
     LaunchedEffect(maxChoices) { vm.applyMaxChoices(maxChoices) }
     LaunchedEffect(s.loaded) { if(s.loaded) vm.refreshTags() }
     LaunchedEffect(s.savedId) { s.savedId?.let(onSaved) }
@@ -142,13 +144,14 @@ fun QuestionEditorRoute(
             AppStatus(stringResource(R.string.question_conflict_message), kind = AppStatusKind.WARNING)
             s.latest?.let { latest ->
                 Text(stringResource(R.string.server_question_version, latest.version), style = MaterialTheme.typography.titleMedium)
-                QuestionDraftPreview(latest.question, latest.choices, latest.correctAnswer, latest.explanation.orEmpty())
+                QuestionDraftPreview(latest.question, latest.choices, latest.correctAnswer, latest.explanation.orEmpty(), latest.case)
                 Text(stringResource(R.string.question_metadata_comparison,
                     latest.tags.joinToString(" · "), latest.difficulty,
                     s.categories.firstOrNull { it.id == latest.category }?.name ?: latest.category?.toString().orEmpty()))
                 QuestionExtendedPreview(latest)
                 AppSectionHeading(stringResource(R.string.your_question_draft))
-                QuestionDraftPreview(s.text, s.choices.map { it.text }, s.choices.indexOfFirst { it.id == s.correctChoiceId } + 1, s.explanation)
+                QuestionDraftPreview(s.text, s.choices.map { it.text }, s.choices.indexOfFirst { it.id == s.correctChoiceId } + 1, s.explanation,
+                    ClinicalCaseContextDto(key = s.caseKey, stem = s.caseStem))
                 Text(stringResource(R.string.question_metadata_comparison, s.tags.joinToString(" · "), s.difficulty,
                     s.categories.firstOrNull { it.id == s.category }?.name ?: s.category?.toString().orEmpty()))
                 QuestionExtendedPreview(QuestionDto(id=0,question=s.text,choices=s.choices.map { it.text },
@@ -168,7 +171,7 @@ fun QuestionEditorRoute(
             AppOutlinedButton(vm::reviewWrite, enabled = !s.loading) { Text(stringResource(R.string.refresh)) }
             if (s.receiptMissing) AppOutlinedButton(vm::retryCreateReceipt, enabled = !s.loading) { Text(stringResource(R.string.retry_same_request)) }
             s.reviewRows.forEach { row ->
-                QuestionDraftPreview(row.question, row.choices, row.correctAnswer ?: 0, row.explanation.orEmpty())
+                QuestionDraftPreview(row.question, row.choices, row.correctAnswer ?: 0, row.explanation.orEmpty(), row.case)
                 AppOutlinedButton({ vm.useExisting(row.id) }, enabled = !s.loading) { Text(stringResource(R.string.author_use_existing)) }
             }
             if (s.reviewReady && questionId == null) AppOutlinedButton(vm::acknowledgeWrite, enabled = !s.loading) { Text(stringResource(R.string.tools_reviewed)) }
@@ -177,7 +180,8 @@ fun QuestionEditorRoute(
         AppFilterChip(selected = preview, onClick = { preview = !preview }, enabled = s.loaded && !s.loading,
             label = { Text(stringResource(R.string.question_markdown_preview)) })
         if (preview) QuestionDraftPreview(s.text, s.choices.map { it.text },
-            s.choices.indexOfFirst { it.id == s.correctChoiceId } + 1, s.explanation)
+            s.choices.indexOfFirst { it.id == s.correctChoiceId } + 1, s.explanation,
+            ClinicalCaseContextDto(key = s.caseKey, stem = s.caseStem))
         validationMessage?.let { message ->
             AppStatus(message,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
@@ -191,17 +195,13 @@ fun QuestionEditorRoute(
             Text(stringResource(R.string.maximum_choices, com.mukhtabir.android.util.formatNumber(s.maxChoices)))
             s.choices.forEachIndexed { index, choice ->
                 key(choice.id) {
-                    Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                        MarkdownField(choice.text, { vm.choice(choice.id, it) }, enabled = enabled,
-                            label = stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)), error = fieldError(choice.text.isBlank() || choice.text.length > 300 || s.choices.count { it.text.trim().equals(choice.text.trim(), ignoreCase = true) } > 1), modifier = Modifier.fillMaxWidth())
-                        AppFilterChip(selected = s.correctChoiceId == choice.id, onClick = { vm.selectCorrect(choice.id) },
-                            enabled = enabled, modifier = Modifier.semantics { if (validationMessage != null && s.correctChoiceId == null) error(validationMessage) }, label = { Text(stringResource(R.string.correct_answer)) })
-                        AppActionRow() {
-                            AppTextButton({ vm.moveChoice(choice.id, -1) }, enabled = enabled && index > 0) { Text(stringResource(R.string.move_choice_up)) }
-                            AppTextButton({ vm.moveChoice(choice.id, 1) }, enabled = enabled && index < s.choices.lastIndex) { Text(stringResource(R.string.move_choice_down)) }
-                            AppDangerTextButton({ vm.removeChoice(choice.id) }, enabled = enabled && s.choices.size > 2) { Text(stringResource(R.string.remove_choice)) }
-                        }
-                    }
+                    AuthoringChoiceEditor(index + 1, choice.text, s.correctChoiceId == choice.id, enabled,
+                        onTextChange = { vm.choice(choice.id, it) }, onSelectCorrect = { vm.selectCorrect(choice.id) },
+                        onMoveUp = { vm.moveChoice(choice.id, -1) }, onMoveDown = { vm.moveChoice(choice.id, 1) },
+                        onRemove = { vm.removeChoice(choice.id) }, canMoveUp = index > 0,
+                        canMoveDown = index < s.choices.lastIndex, canRemove = s.choices.size > 2,
+                        error = fieldError(choice.text.isBlank() || choice.text.length > 300 || s.choices.count { it.text.trim().equals(choice.text.trim(), ignoreCase = true) } > 1),
+                        correctModifier = Modifier.semantics { if (validationMessage != null && s.correctChoiceId == null) error(validationMessage) })
                 }
             }
             AppOutlinedButton(vm::addChoice, enabled = enabled && s.choices.size < s.maxChoices) { Text(stringResource(R.string.add_choice)) }
@@ -244,7 +244,8 @@ fun QuestionEditorRoute(
                     MarkdownField(translation.explanation,{vm.translationField(locale,"explanation",it)},enabled=enabled,
                         label=stringResource(R.string.explanation),error=fieldError(translation.explanation.length>3000),minLines=2,modifier=Modifier.fillMaxWidth())
                     if(preview) QuestionDraftPreview(translation.question,translatedChoices(translation,s.choices),
-                        s.choices.indexOfFirst { it.id==s.correctChoiceId }+1,translation.explanation)
+                        s.choices.indexOfFirst { it.id==s.correctChoiceId }+1,translation.explanation,
+                        ClinicalCaseContextDto(key = s.caseKey, stem = s.caseStem))
                     AppDangerOutlinedButton({removeTranslation=locale},enabled=enabled) { Text(stringResource(R.string.editor_translation_remove)) }
                 }
             }
@@ -277,10 +278,7 @@ fun QuestionEditorRoute(
 
 @Composable
 private fun RevisedDateControl(value: String, enabled: Boolean, onChange: (String) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    AppOutlinedButton({
-        val date = runCatching { java.time.LocalDate.parse(value) }.getOrElse { java.time.LocalDate.now() }
-        android.app.DatePickerDialog(context, { _, year, month, day -> onChange(java.time.LocalDate.of(year, month + 1, day).toString()) },
-            date.year, date.monthValue - 1, date.dayOfMonth).show()
-    }, enabled = enabled) { Text(stringResource(R.string.author_revised_date) + ": " + value.ifBlank { stringResource(R.string.author_default_date) }) }
+    AppDateField(stringResource(R.string.author_revised_date) + ": " + value.ifBlank { stringResource(R.string.author_default_date) },
+        initial = { runCatching { java.time.LocalDate.parse(value) }.getOrElse { java.time.LocalDate.now() } },
+        enabled = enabled, onPicked = { onChange(it.toString()) })
 }

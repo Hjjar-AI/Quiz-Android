@@ -2,8 +2,6 @@
 
 package com.mukhtabir.android.ui.settings
 
-import com.mukhtabir.android.ui.components.editorRecoveryBlocked
-import com.mukhtabir.android.ui.components.EditorRecoveryControls
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,10 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,8 +29,11 @@ import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppSuccessText
 import com.mukhtabir.android.ui.components.AppTextField
 import com.mukhtabir.android.ui.components.BlockedBackHandler
+import com.mukhtabir.android.ui.components.EditorRecoveryControls
 import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
+import com.mukhtabir.android.ui.components.editorRecoveryBlocked
 
 @Composable
 fun AdminSettingsRoute(adminService: AdminService, serverUrl: String, canManageSystem: Boolean,
@@ -46,7 +45,7 @@ fun AdminSettingsRoute(adminService: AdminService, serverUrl: String, canManageS
     var fileBusy by remember {mutableStateOf(false)}
     val busy=s.busy || fileBusy
     BlockedBackHandler(enabled = busy)
-    DisposableEffect(busy) {onBusyChanged(busy);onDispose {onBusyChanged(false)}}
+    ScreenBusyEffect(busy, onBusyChanged)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(AppLayoutTokens.pageInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
         AppPageHeading(stringResource(R.string.nav_admin_settings))
         if(canManageSystem) {

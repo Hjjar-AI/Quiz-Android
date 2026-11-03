@@ -50,18 +50,9 @@ internal fun ExamDraftQuestionFields(form: EmbeddedExamDraftForm, enabled: Boole
     var preview by rememberSaveable { mutableStateOf(false) }
     AppFilterChip(preview, { preview = !preview }, label = { Text(stringResource(R.string.question_markdown_preview)) })
     if (preview) {
-        if (form.caseStem.isNotBlank()) MarkdownText(form.caseStem)
-        QuestionTextCard(form.question)
-        form.choices.forEachIndexed { index, choice ->
-            QuestionChoiceCard {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)))
-                    MarkdownText(choice.text)
-                    if (choice.id == form.correctId) Text(stringResource(R.string.correct_answer))
-                }
-            }
-        }
-        ExplanationCard(form.explanation)
+        QuestionDraftPreview(form.question, form.choices.map { it.text },
+            form.choices.indexOfFirst { it.id == form.correctId } + 1, form.explanation,
+            com.mukhtabir.android.data.remote.ClinicalCaseContextDto(key = form.caseKey, stem = form.caseStem))
     }
     DraftValidatedField("question", validation, showMessage = false) { error, focus ->
         MarkdownField(form.question, { value -> change { it.copy(question = value) } },
@@ -73,29 +64,25 @@ internal fun ExamDraftQuestionFields(form: EmbeddedExamDraftForm, enabled: Boole
 @Composable
 internal fun ExamDraftChoiceFields(form: EmbeddedExamDraftForm, choice: QuestionChoiceDraft, index: Int,
     enabled: Boolean, change: ((EmbeddedExamDraftForm) -> EmbeddedExamDraftForm) -> Unit, validation: DraftValidationUi = DraftValidationUi()) {
-    Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-        DraftValidatedField("choice:${choice.id}", validation, showMessage = false) { error, focus ->
-            MarkdownField(choice.text, { value -> change { f -> f.copy(choices = f.choices.map {
-                if (it.id == choice.id) it.copy(text = value) else it }) } },
-                stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index + 1)), enabled, error = error, fieldFocusRequester = focus)
-        }
-        DraftValidatedField(if (index == 0) "correct" else "correct:${choice.id}", validation) { _, focus ->
-            AppFilterChip(choice.id == form.correctId, { change { it.copy(correctId = choice.id) } },
-                modifier = Modifier.focusRequester(focus), enabled = enabled,
-                label = { Text(stringResource(R.string.correct_answer)) })
-        }
-        AppActionRow {
-            AppTextButton({ change { it.moveChoice(choice.id, -1) } }, enabled = enabled && index > 0) {
-                Text(stringResource(R.string.move_choice_up))
+    val editText: (String) -> Unit = { value -> change { f -> f.copy(choices = f.choices.map {
+        if (it.id == choice.id) it.copy(text = value) else it }) } }
+    val selectCorrect = { change { it.copy(correctId = choice.id) } }
+    AuthoringChoiceEditor(index + 1, choice.text, choice.id == form.correctId, enabled,
+        onTextChange = editText, onSelectCorrect = selectCorrect,
+        onMoveUp = { change { it.moveChoice(choice.id, -1) } },
+        onMoveDown = { change { it.moveChoice(choice.id, 1) } },
+        onRemove = { change { it.copy(choices = it.choices.filterNot { row -> row.id == choice.id },
+            correctId = it.correctId.takeUnless { selected -> selected == choice.id }) } },
+        canMoveUp = index > 0, canMoveDown = index < form.choices.lastIndex, canRemove = form.choices.size > 2,
+        textField = {
+            DraftValidatedField("choice:${choice.id}", validation, showMessage = false) { error, focus ->
+                AuthoringChoiceTextField(index + 1, choice.text, editText, enabled, error, focus)
             }
-            AppTextButton({ change { it.moveChoice(choice.id, 1) } }, enabled = enabled && index < form.choices.lastIndex) {
-                Text(stringResource(R.string.move_choice_down))
+        }, correctControl = {
+            DraftValidatedField(if (index == 0) "correct" else "correct:${choice.id}", validation) { _, focus ->
+                CorrectChoiceControl(choice.id == form.correctId, selectCorrect, enabled, Modifier.focusRequester(focus))
             }
-            AppDangerTextButton({ change { it.copy(choices = it.choices.filterNot { row -> row.id == choice.id },
-                correctId = it.correctId.takeUnless { selected -> selected == choice.id }) } },
-                enabled = enabled && form.choices.size > 2) { Text(stringResource(R.string.remove_choice)) }
-        }
-    }
+        })
 }
 
 @OptIn(ExperimentalLayoutApi::class)

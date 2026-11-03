@@ -1,12 +1,7 @@
 package com.mukhtabir.android.ui.questions
 
-import com.mukhtabir.android.ui.components.AppSectionHeading
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,15 +10,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
-import com.mukhtabir.android.ui.components.AppLayoutTokens
-import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
+import com.mukhtabir.android.ui.components.AppSearchPicker
+import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
-import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.MarkdownField
 import com.mukhtabir.android.ui.components.MarkdownText
 
@@ -67,26 +60,25 @@ internal fun QuestionAssociationFields(s: QuestionEditorState, vm: QuestionEdito
 internal fun QuestionAssociationPicker(s: QuestionEditorState, vm: QuestionEditorViewModel) {
     val kind=s.lookupKind ?: return
     var query by rememberSaveable(kind) { mutableStateOf("") }
-    AppConfirmationDialog(
-        onDismissRequest=vm::closeLookup,
-        title={Text(stringResource(if(kind=="case") R.string.editor_choose_case else R.string.editor_choose_knowledge))},
-        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-            AppTextField(query,{query=it},singleLine=true,label={Text(stringResource(R.string.search))},modifier=Modifier.fillMaxWidth())
-            AppOutlinedButton({vm.searchLookup(query)},enabled=!s.lookupBusy){Text(stringResource(R.string.search))}
-            if(s.lookupBusy) AppLoadingIndicator()
-            s.lookupError?.let { ErrorState(throwable=it,onRetry={vm.searchLookup(s.lookupQuery)}) }
-            if(!s.lookupBusy && s.lookupError==null) {
-                val shown=if(kind=="case") s.caseResults.size else s.knowledgeResults.size
-                Text(stringResource(R.string.editor_lookup_count, com.mukhtabir.android.util.formatNumber(shown), com.mukhtabir.android.util.formatNumber(s.lookupTotal)))
-                if(kind=="case") s.caseResults.forEach { item ->
-                    AppOutlinedButton({vm.selectCase(item)},enabled=!item.key.isNullOrBlank(),modifier=Modifier.fillMaxWidth()) {
-                        Text(listOfNotNull(item.title?.takeIf(String::isNotBlank),item.key).joinToString(" · "))
-                    }
-                } else s.knowledgeResults.forEach { item ->
-                    AppOutlinedButton({vm.selectKnowledge(item)},modifier=Modifier.fillMaxWidth()) { Text(item.title) }
-                }
+    AppSearchPicker(stringResource(if (kind == "case") R.string.editor_choose_case else R.string.editor_choose_knowledge),
+        vm::closeLookup, query, { query = it }, onSearch = { vm.searchLookup(query) },
+        queryEnabled = true, searchEnabled = !s.lookupBusy, loading = s.lookupBusy,
+        error = s.lookupError, onRetry = { vm.searchLookup(s.lookupQuery) },
+        status = {
+            if (!s.lookupBusy && s.lookupError == null) {
+                val shown = if (kind == "case") s.caseResults.size else s.knowledgeResults.size
+                Text(stringResource(R.string.editor_lookup_count, com.mukhtabir.android.util.formatNumber(shown),
+                    com.mukhtabir.android.util.formatNumber(s.lookupTotal)))
             }
-        }},
-        confirmButton={AppTextButton(vm::closeLookup){Text(stringResource(R.string.cancel))}},
-    )
+        }, confirmButton = { AppTextButton(vm::closeLookup) { Text(stringResource(R.string.cancel)) } }) {
+        if (!s.lookupBusy && s.lookupError == null) {
+            if (kind == "case") items(s.caseResults) { row ->
+                AppOutlinedButton({ vm.selectCase(row) }, enabled = !row.key.isNullOrBlank(), modifier = Modifier.fillMaxWidth()) {
+                    Text(listOfNotNull(row.title?.takeIf(String::isNotBlank), row.key).joinToString(" · "))
+                }
+            } else items(s.knowledgeResults, key = { it.id }) { row ->
+                AppOutlinedButton({ vm.selectKnowledge(row) }, modifier = Modifier.fillMaxWidth()) { Text(row.title) }
+            }
+        }
+    }
 }

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.EditorRecovery
 import com.mukhtabir.android.ui.components.AppActionRow
@@ -20,6 +19,17 @@ internal fun <T> editorRecoveryBlocked(recovery: EditorRecovery<T>): Boolean {
     val error by recovery.error.collectAsLifecycleState()
     val ready by recovery.ready.collectAsLifecycleState()
     return !ready || pending != null || error != null
+}
+
+/** Mandatory startup decision; visibility, storage and separate action permissions are caller-owned. */
+@Composable
+internal fun AuthoringRecoveryPrompt(onRestore: () -> Unit, onDiscard: () -> Unit,
+    restoreEnabled: Boolean, discardEnabled: Boolean) {
+    AppConfirmationDialog(onDismissRequest = {},
+        title = { Text(stringResource(R.string.author_recover_title)) },
+        text = { Text(stringResource(R.string.author_recover_body)) },
+        confirmButton = { AppTextButton(onRestore, enabled = restoreEnabled) { Text(stringResource(R.string.author_restore)) } },
+        dismissButton = { AppDangerTextButton(onDiscard, enabled = discardEnabled) { Text(stringResource(R.string.ux_discard_local_recovery)) } })
 }
 
 @Composable

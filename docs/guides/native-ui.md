@@ -36,6 +36,14 @@ Trace route → controller → service/DTO → Django/Vue before contract change
 - `AppScreenBar` shares title/insets/navigation/actions; tabs/rail share the icon pill. `AppSheetSize`: Half/Standard/Full = 50/85/100%, bounded by available height; default Standard, question map Full; constrained sheets scroll actions.
 - `AppShapes`/`AppSurfaces` own semantic geometry/fills; keep component-only dimensions local. Titles 22/19/17sp, labels 15/14/13sp, headlines 34/30/26sp; preserve Arabic line-height floors. `SharedComponentPreviews.kt` covers modes/narrow Arabic/large text/Compact; source is not rendered evidence.
 
+### Shared feature presentation
+
+- `AuthoringFields.kt` shares choice text/correct/reorder/remove controls and exact-name tag entry. Editors retain stable choice IDs, validation/focus wrappers, suggestion limits and mutation guards. `AuthoringQuestionPreview.kt` renders authoring/reconciliation case context before the question; active/frozen learner readers retain their own reveal rules.
+- `LearningSelectors.kt` shares nullable/required confidence and rating controls; `LocaleChoices.kt` shares app-language choices and exact authoring locale keys. Callers retain selection state, defaults, saves, recovery, app recreation and permissions.
+- `AuthoringRecoveryPrompt` is the mandatory Restore/Discard startup decision; `EditorRecoveryControls` remains the inline encrypted-recovery UI. `ScreenBusyEffect` reports a caller-defined lock and clears it on disposal; Back handling and resource cleanup remain local.
+- `AppSearchPicker` supplies bounded lazy lookup presentation with search/status/content/action slots. Callers own request drafts, freshness, staging, missing selected targets and action gates. Reuse `AppPagination`, `AppSearchRow`, `AppPageHeading.action` and `AppSwitchRow` rather than rebuilding their geometry/semantics.
+- `ExportArtifactActions` presents Save and shares only an already-saved document URI with read grants; file pickers, artifacts and writes remain controller-owned. `AppDateField` opens date-only pickers with caller parsing/formatting and a click-time initial date; exam timezone/DST handling stays in its date/time field. `masterexams/MasterExamSummary.kt` shares list summaries with caller-owned notices/actions and containers.
+
 ### Optional UI priorities
 
 - Pin results New session/Done and long-editor Save/Discard; simplify exam-row actions.
