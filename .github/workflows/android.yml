@@ -30,8 +30,8 @@ jobs:
         uses: ./.github/actions/setup-android
       - name: Run selected operation
         env:
-          CI_debug-apk: debug-apk
-        run: python3 .github/scripts/hosted-android.py "$CI_debug-apk"
+          CI_OPERATION: debug-apk
+        run: python3 .github/scripts/hosted-android.py "$CI_OPERATION"
 
       - name: Retain reports and diagnostics for one day
         if: ${{ !cancelled() }}

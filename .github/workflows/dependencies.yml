@@ -30,8 +30,8 @@ jobs:
         uses: ./.github/actions/setup-android
       - name: Run selected operation
         env:
-          CI_dependencies: dependencies
-        run: python3 .github/scripts/hosted-android.py "$CI_dependencies"
+          CI_OPERATION: dependencies
+        run: python3 .github/scripts/hosted-android.py "$CI_OPERATION"
       - name: Query resolved public coordinates against OSV
         run: python3 .github/scripts/check-dependencies.py
 
