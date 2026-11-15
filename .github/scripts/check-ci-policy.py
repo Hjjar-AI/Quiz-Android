@@ -21,6 +21,8 @@ def main():
     def steps(items, context, stack=()):
         need(isinstance(items, list) and bool(items), f'{context}: steps required')
         for step in items:
+            need(all(re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name) for name in step.get('env', {})),
+                 f'{context}: literal valid shell environment names required')
             if 'run' in step:
                 need('${{' not in step['run'], f'{context}: pass expressions through env')
                 continue
