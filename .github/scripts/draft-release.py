@@ -37,6 +37,17 @@ def main(kind):
         raise ValueError('Unexpected signed asset set')
     tag = (f'android-v{version}-code-{receipt["versionCode"]}' if kind == 'release'
            else f'debug-{os.environ["GITHUB_RUN_ID"]}-{os.environ["GITHUB_RUN_ATTEMPT"]}')
+    repository = os.environ['GITHUB_REPOSITORY']
+    # List successfully before writing; a network/auth failure is never treated
+    # as evidence that the intended draft/tag is absent.
+    def pages(endpoint):
+        response = subprocess.run(['gh', 'api', '--paginate', '--slurp', endpoint],
+                                  capture_output=True, text=True, check=True)
+        return [item for page in json.loads(response.stdout) for item in page]
+    if any(item['tag_name'] == tag for item in pages(f'repos/{repository}/releases?per_page=100')):
+        raise ValueError('Release/draft already exists; preserve it')
+    if any(item['ref'] == 'refs/tags/' + tag for item in pages(f'repos/{repository}/git/matching-refs/tags/{tag}')):
+        raise ValueError('Tag already exists; preserve it')
     notes = root / 'draft-notes.md'
     notes.write_text(f'Mukhtabir {kind}: {version} (code {receipt["versionCode"]}).\n\n'
                      f'Source: {receipt["sourceCommit"]}\nCertificate SHA-256: {receipt["certificateSha256"]}\n\n'
