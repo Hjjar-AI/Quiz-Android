@@ -27,6 +27,14 @@ jobs:
           persist-credentials: false
       - name: Install verified actionlint
         run: bash .github/scripts/install-actionlint.sh
+      - name: Prepare checksum-pinned YAML parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -m venv "$RUNNER_TEMP/ci-policy"
+          "$RUNNER_TEMP/ci-policy/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: --require-hashes -r .github/requirements-ci.txt
+      - name: Enforce workflow safeguards
+        run: '"$RUNNER_TEMP/ci-policy/bin/python" .github/scripts/check-ci-policy.py'
       - name: Validate workflows
         shell: bash
         run: |
