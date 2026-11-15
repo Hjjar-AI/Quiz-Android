@@ -100,6 +100,9 @@ def run(operation):
         if len(packages) != 1:
             raise ValueError('Expected exactly one fresh universal APK')
         package = packages[0]
+        if variant == 'release':
+            subprocess.run([sys.executable, str(ROOT / '.github/scripts/inspect-release.py'), str(package)],
+                           cwd=ROOT, check=True)
         shutil.copy2(package, directory / package.name)
         checksum = hashlib.sha256(package.read_bytes()).hexdigest()
         (directory / 'SHA256SUMS.txt').write_text(f'{checksum}  {package.name}\n')

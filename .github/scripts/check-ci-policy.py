@@ -11,7 +11,7 @@ PIN = re.compile(r'[\w.-]+/[\w.-]+(?:/[\w./-]+)?@[0-9a-f]{40}')
 PUBLIC = '${{ github.event.repository.private == false }}'
 CONFIRMED = "${{ inputs.confirm && github.event.repository.private == false && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}"
 SIGNING_FILES = {'sign-debug.yml', 'sign-release.yml'}
-DRAFT_CONFIRMED = CONFIRMED[:-3] + " && inputs.publication == 'draft' }}"
+PUBLICATION_CONFIRMED = CONFIRMED[:-3] + " && inputs.publication != 'artifact' }}"
 
 
 def main():
@@ -71,8 +71,8 @@ def main():
                  f'{name}: explicit opt-in default false required')
         for job_id, job in data['jobs'].items():
             guard = PUBLIC if name == 'repository.yml' else CONFIRMED
-            if name in SIGNING_FILES and job_id == 'draft':
-                guard = DRAFT_CONFIRMED
+            if name in SIGNING_FILES and job_id == 'publish':
+                guard = PUBLICATION_CONFIRMED
             need(job['if'] == guard,
                  f'{name}: public/default-branch/confirmation guard required')
             need(job['runs-on'] == 'ubuntu-24.04', f'{name}: standard Ubuntu runner required')
@@ -82,9 +82,11 @@ def main():
                 allowed = name == 'security.yml' and job['permissions'] == {'contents': 'read', 'security-events': 'write'}
                 if name in SIGNING_FILES:
                     allowed = ((job_id == 'sign' and job['permissions'] == {'contents': 'read', 'actions': 'read'})
-                               or (job_id == 'draft' and job['permissions'] == {'contents': 'write', 'actions': 'read'}))
+                               or (job_id == 'publish' and job['permissions'] == {'contents': 'write', 'actions': 'read'}))
                 if name == 'cleanup-evidence.yml':
                     allowed = job_id == 'cleanup' and job['permissions'] == {'contents': 'read', 'actions': 'write'}
+                if name == 'cleanup-debug.yml':
+                    allowed = job_id == 'cleanup' and job['permissions'] == {'contents': 'write'}
                 need(allowed,
                      f'{name}: unexpected job permissions')
             if name in SIGNING_FILES and job_id == 'sign':
@@ -93,8 +95,12 @@ def main():
                 need(job.get('needs') == 'build' and not any(
                     step.get('uses') == './.github/actions/setup-android' for step in job['steps']),
                      f'{name}: signing isolated from build and Gradle caches')
-            if name in SIGNING_FILES and job_id == 'draft':
-                need(job.get('needs') == 'sign', f'{name}: draft requires verified signing')
+            if name in SIGNING_FILES and job_id == 'publish':
+                need(job.get('needs') == 'sign', f'{name}: publication requires verified signing')
+                publication = data['on']['workflow_dispatch']['inputs']['publication']
+                need(publication['default'] == 'artifact'
+                     and publication['options'] == ['artifact', 'draft', 'prerelease', 'release'],
+                     f'{name}: explicit publication choices with artifact default required')
             if name == 'emulator.yml':
                 strategy = job.get('strategy', {})
                 need(strategy.get('max-parallel') == 1 and strategy.get('fail-fast') is False
@@ -113,6 +119,14 @@ def main():
                 need(job['steps'][0].get('with', {}).get('ref') == '${{ github.event.repository.default_branch }}'
                      and data['concurrency']['group'] == 'cleanup-ci-evidence',
                      f'{name}: trusted default-branch tooling and cleanup serialization required')
+            if name == 'cleanup-debug.yml':
+                inputs = data['on']['workflow_dispatch']['inputs']
+                need(inputs['preview']['default'] is True and inputs['keep']['default'] >= 5
+                     and inputs['older_than_days']['default'] == 30,
+                     f'{name}: conservative preview/retention defaults required')
+                need(data['concurrency']['group'] == 'mukhtabir-hosted-android'
+                     and job['steps'][0]['with'].get('ref') == '${{ github.event.repository.default_branch }}',
+                     f'{name}: serialize delivery/cleanup and use trusted default-branch tooling')
             if any(step.get('uses') == './.github/actions/setup-android' for step in job['steps']):
                 need(data['concurrency']['group'] == 'mukhtabir-hosted-android',
                      f'{name}: serialize hosted Android work across workflows')

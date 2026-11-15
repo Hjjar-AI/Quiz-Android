@@ -27,10 +27,13 @@ jobs:
         include:
           - language: java-kotlin
             build-mode: manual
+            queries: security-extended
           - language: python
             build-mode: none
+            queries: security-extended
           - language: actions
             build-mode: none
+            queries: ''
     permissions:
       contents: read
       security-events: write
@@ -48,6 +51,7 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/config.yml
+          queries: ${{ matrix.queries }}
       - name: Compile production sources for extraction
         if: ${{ matrix.language == 'java-kotlin' }}
         run: python3 .github/scripts/hosted-android.py codeql

@@ -1,4 +1,4 @@
-"""Create a new draft release from this run's signed bundle; never overwrite."""
+"""Create the explicitly selected Release from this run's signed bundle; never overwrite."""
 
 import hashlib
 import json
@@ -10,6 +10,9 @@ import sys
 
 
 def main(kind):
+    mode = os.environ['CI_PUBLICATION_MODE']
+    if mode not in ('draft', 'prerelease', 'release'):
+        raise ValueError('Explicit publication mode required')
     if kind not in ('debug', 'release') or os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('Hosted draft operation required')
     if os.environ['GITHUB_REF'] != 'refs/heads/' + os.environ['CI_DEFAULT_BRANCH']:
@@ -53,10 +56,17 @@ def main(kind):
                      f'Source: {receipt["sourceCommit"]}\nCertificate SHA-256: {receipt["certificateSha256"]}\n\n'
                      'Review checksums, signer/update continuity and matching backend/client rollout before publishing.\n'
                      'No device, accessibility or live API acceptance is implied.\n')
+    if kind == 'debug':
+        with notes.open('a') as stream:
+            stream.write(f'\n<!-- mukhtabir-debug-distribution:v1 run={os.environ["GITHUB_RUN_ID"]} '
+                         f'attempt={os.environ["GITHUB_RUN_ATTEMPT"]} source={os.environ["GITHUB_SHA"]} -->\n')
     command = ['gh', 'release', 'create', tag, *map(str, files), str(root / 'SHA256SUMS.txt'),
                '--target', os.environ['GITHUB_SHA'], '--title', f'Mukhtabir {version} ({kind}, code {receipt["versionCode"]})',
-               '--draft', '--latest=false', '--notes-file', str(notes)]
-    if kind == 'debug':
+               '--notes-file', str(notes)]
+    command.append('--latest' if kind == 'release' and mode == 'release' else '--latest=false')
+    if mode == 'draft':
+        command.append('--draft')
+    if mode == 'prerelease' or (mode == 'draft' and kind == 'debug'):
         command.append('--prerelease')
     # Creation fails if already present; no edit/upload/clobber/delete path.
     subprocess.run(command, check=True)
@@ -66,4 +76,4 @@ if __name__ == '__main__':
     try:
         main(sys.argv[1])
     except Exception:
-        sys.exit('Draft creation incomplete; inspect GitHub before any retry. No automatic replay or overwrite.')
+        sys.exit('Release creation incomplete; inspect GitHub before any retry. No automatic replay or overwrite.')

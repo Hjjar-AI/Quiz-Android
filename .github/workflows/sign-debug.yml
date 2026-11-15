@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'false = skip; true = authorize fresh debug APK build and configured signing, preserving stored version. Default false. Keys must be configured first.'
+        description: 'false = skip; true = authorize fresh debug APK build, configured signing and selected publication, preserving stored version. Default false. Keys must be configured first.'
         type: boolean
         default: false
       publication:
-        description: 'Options artifact = retain signed bundle for one day; draft = also create a new draft GitHub Release for review. Default artifact. Never publishes a final release.'
+        description: 'Options: artifact = retain signed bundle for one day; draft = create an unpublished GitHub Release; prerelease = publish a prerelease; release = publish a regular release. Default: artifact.'
         type: choice
-        options: [artifact, draft]
+        options: [artifact, draft, prerelease, release]
         default: artifact
 
 permissions:
@@ -97,9 +97,9 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  draft:
+  publish:
     needs: sign
-    if: ${{ inputs.confirm && github.event.repository.private == false && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && inputs.publication == 'draft' }}
+    if: ${{ inputs.confirm && github.event.repository.private == false && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && inputs.publication != 'artifact' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -115,9 +115,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: gh run download "$GITHUB_RUN_ID" --name "signed-debug-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir ci-output/signed-debug
-      - name: Create a new draft without overwriting existing releases
+      - name: Create the selected Release without overwriting existing releases
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          CI_PUBLICATION_MODE: ${{ inputs.publication }}
         run: python3 .github/scripts/draft-release.py debug
