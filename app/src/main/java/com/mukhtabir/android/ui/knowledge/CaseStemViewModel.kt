@@ -1,5 +1,7 @@
 package com.mukhtabir.android.ui.knowledge
 
+import com.mukhtabir.android.util.QuestionContentLimits
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -88,7 +90,7 @@ internal class CaseStemViewModel(private val key: String,private val userId: Lon
         val s=_state.value
         if(recovery.blocked || !s.loaded || s.busy || s.loading || s.needsReview || s.conflict || !s.dirty || !mayEdit(s.data)) return
         val stem=s.draft.trim()
-        if(stem.codePointCount(0,stem.length)>3000) {
+        if(stem.codePointCount(0,stem.length)>QuestionContentLimits.CASE_STEM) {
             _state.update { it.copy(validation=R.string.case_stem_length) };return
         }
         _state.update { it.copy(busy=true,actionError=null,validation=null,savedCount=null) }

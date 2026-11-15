@@ -5,13 +5,13 @@
 Follow [agent authorization](../../Agents.md#efficient-verification): explicit confirmation before builds/compilation/packaging/extensive tests or new test files; no version changes. Documentation edits need link/consistency checks only.
 
 1. Inspect wrapper pin/checksum, Python 3.9+, installed JDK 17 or 21 and SDK 34. Check `JAVA_HOME`/PATH, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, ignored `local.properties` (`sdk.dir`). `python3 build.py --check` checks toolchain without Gradle/downloads and reports the selected JDK. Java/Kotlin compilation targets remain 17.
-2. Confirm the pinned distribution is cached **before invoking the wrapper**; `--offline` does not prevent wrapper downloads. POSIX accepts `MUKHTABIR_GRADLE_HOME` or ignored `gradle.home=/absolute/path/to/gradle-8.7` (environment wins). It checks executable/pinned launcher JAR, not authenticity; invalid configuration fails. Otherwise normal wrapper lookup applies.
+2. Confirm the pinned distribution is cached **before invoking the wrapper**; `--offline` does not prevent wrapper downloads. Use the checksum-pinned wrapper. On this workstation it selects `/opt/android-shared/gradle/user-homes/mhmmd`; the former `gradle.home` direct-install shortcut is no longer used. Other machines retain normal wrapper lookup.
 3. Check system-wide active builds and available RAM/pressure (`ps`, `free -h`; Windows Task Manager). Idle daemons/reclaimable cache are not active builds/pressure. If busy or headroom unknown, wait/recheck or report skipped build plus manual command; never kill unrelated jobs/delete locks/caches.
 4. After confirmation, run the smallest relevant cached-only check with preserved versions; capture one log and exit status. Broaden/repeat only for changed source/new failures. Missing tools/artifacts require a named, approved persistent installation/cache fill; continue independent work, never loop disposable downloads.
 
 ```bash
 python3 build.py --check
-# Inspect ~/.gradle/wrapper/dists/gradle-8.7-bin/*/gradle-8.7/bin/gradle
+# Inspect $GRADLE_USER_HOME/wrapper/dists/gradle-8.7-bin/*/gradle-8.7/bin/gradle
 # Only after approval and successful cache/toolchain/RAM preflight:
 ./gradlew --offline --console=plain -Pmukhtabir.autoVersion=false assembleDebug > /tmp/mukhtabir-build.log 2>&1
 ```
@@ -35,7 +35,7 @@ JDK 17 and 21 are supported build runtimes for this project's pinned Gradle 8.7.
 | Add `--format aab`, `--offline`, `--dry-run` | Bundle / cached dependencies / command preview. |
 | `python3 build.py --install` | Debug APK + connected-device install; requires device authorization. |
 
-Signing/keys stay external; helper runs no suites. No native libraries/ABI splits. Account caches stay in `~/.gradle`; checkout-specific task caches/outputs in `~/.gradle/mukhtabir/<checkout-hash>/`, originals under `build/app/outputs/{apk,bundle}/<variant>/`. Shared `.gradle/` and `app/build/` remain untouched. Copies: account/XDG `Desktop/Mukhtabir/<variant>/`, AABs `Mukhtabir/bundles/<variant>/`; APK name `Mukhtabir-<version>-app-<variant>.apk`. Override with `-Pmukhtabir.desktopDir=/absolute/path` or `MUKHTABIR_DESKTOP_DIR`; older copies retained.
+Signing/keys stay external; helper runs no suites. No native libraries/ABI splits. On this workstation, the active user home is `/opt/android-shared/gradle/user-homes/mhmmd`; future project/task caches and build outputs use `/opt/android-shared/gradle/projects/mukhtabir/cf21ef8e871a281c/`, with APK/AAB outputs under `build/app/outputs/{apk,bundle}/<variant>/`. On other machines, the existing per-checkout layout follows the effective Gradle user home. All pre-existing `.gradle/`, `app/build/`, and personal-home generated data remain untouched. Copies: account/XDG `Desktop/Mukhtabir/<variant>/`, AABs `Mukhtabir/bundles/<variant>/`; APK name `Mukhtabir-<version>-app-<variant>.apk`. Override with `-Pmukhtabir.desktopDir=/absolute/path` or `MUKHTABIR_DESKTOP_DIR`; older copies retained.
 
 ### Shared debug signing
 
@@ -60,10 +60,10 @@ Use the workstation notes' [shared-cache procedure](/home/mhmmd/Desktop/%D8%AA%D
 **Mukhtabir's selection:** standard `GRADLE_RO_DEP_CACHE` at the directory above `modules-2`, otherwise ignored `gradle.readOnlyCache`; a nonempty environment selection wins. Gradle 8.7 uses `metadata-2.106`. Current local-property selection:
 
 ```properties
-gradle.readOnlyCache=/opt/android-shared/dependency-seeds/mukhtabir-v1
+gradle.readOnlyCache=/opt/android-shared/gradle/dependency-seeds/mukhtabir-v1
 ```
 
-The source record identifies `/opt/android-shared/.gradle/caches/modules-2` as the seed source and `android-dev` (`mhmmd`/`work`) as trusted readers. Writable caches remain in each account's `~/.gradle`; signing is independent under `.signing/`. Publication/access evidence is in the [verification checklist](../verification/checklist.md), not proof of complete offline resolution.
+The source record identifies `/opt/android-shared/.gradle/caches/modules-2` as the seed source and `android-dev` as the historical trusted-reader group; `mhmmd` is now the sole active account. On this workstation, writable caches now use `/opt/android-shared/gradle/user-homes/mhmmd`; the old personal cache is retained intact at `/opt/android-shared/gradle/retained-user-homes/mhmmd-personal`. Other machines keep normal per-account selection; signing is independent under `.signing/`. Publication/access evidence is in the [verification checklist](../verification/checklist.md), not proof of complete offline resolution.
 
 If an old `GRADLE_RO_DEP_CACHE` export points into the other account's private home, select the published seed or `unset GRADLE_RO_DEP_CACHE` to use the property. Update persistent shell/IDE selection and restart the relevant process. Inspect every parent, active groups, effective ACLs and representative artifact/metadata files from both login sessions before any build.
 
@@ -92,3 +92,9 @@ Address changes clear sign-in/reminders, restart navigation and require reauthen
 - Locks/permissions/sandbox errors: identify owner/active writer/access cause; retain account-local writes, never root/broad chmod/live-lock deletion.
 - Compile/resources: inspect first diagnostic and source; fix evidenced issue, rerun affected check once.
 - Connection: distinguish phone localhost, bind/port, permissions, origin and TLS trust; preserve validation.
+
+## Shared workstation paths — 2026-11-14
+
+[The shared Android guide](/opt/android-shared/AGENTS.md) and [current layout](/opt/android-shared/README.md) own workstation paths. All five projects select their pinned wrappers, common Gradle home, JDK 21 and registered future work directories; helpers retain portable CI defaults. Project-local `.gradle`/`.kotlin` caches and two stale old-account JDK configuration files were removed after retention/verification; `.idea`, current project build outputs, exports, credentials, signing and version counters remain unchanged. Aqaqeer's pinned 9.8.2 distribution was downloaded with authorization, verified against the official/project SHA-256 and prepared without invoking Gradle.
+
+The separately authorized retained-data consolidation verified 4,977 dependency files and four extracted distribution trees as byte-identical to their canonical active-cache copies, then removed redundant copies and regeneratable caches (97,856 readable files, 11,478,857,070 bytes). No artifacts were missing and no identity conflicts were found; binary resolver/cache metadata was never merged. Keystores, configuration and original verification/APK outputs are preserved privately under `maintenance/organization-20261114/retained-consolidation/preserved`. The current result/administrator receipt there records the remaining old-account daemon cleanup status. Public dependency hashes, wrapper/cache paths, distribution availability, document references and whitespace are checked separately from runtime. No Gradle/build/test/lint/device command accompanied this maintenance; compilation, IDE sync, cache reuse and runtime behavior remain unverified. Earlier stage inventories are historical; removed regeneratable caches are no longer available for byte-for-byte rollback.

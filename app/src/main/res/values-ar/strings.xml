@@ -297,8 +297,8 @@
     <string name="remove_choice">حذف</string>
     <string name="move_choice_up">نقل للأعلى</string>
     <string name="move_choice_down">نقل للأسفل</string>
-    <string name="question_text_too_long">يجب ألا يتجاوز نص السؤال أو الشرح 3000 حرف.</string>
-    <string name="choice_text_too_long">يجب ألا يتجاوز كل خيار 300 حرف.</string>
+    <string name="question_text_too_long">يجب ألا يتجاوز نص السؤال أو الشرح 4000 حرف.</string>
+    <string name="choice_text_too_long">يجب ألا يتجاوز كل خيار 500 حرف.</string>
     <string name="duplicate_choices">يجب أن تكون الخيارات مختلفة.</string>
     <string name="planner_invalid_target">أدخل هدفاً يومياً بين 1 و1000.</string>
     <string name="planner_invalid_categories">اختر تصنيفات صالحة.</string>
@@ -485,7 +485,7 @@
     <string name="editor_translation_align_confirm">هل تريد إزالة الخيارات المترجمة الزائدة المعروضة أسفل حقول الخيارات الأصلية فقط؟ راجع الترجمات المتبقية قبل الحفظ.</string>
     <string name="master_draft_conflict">تغيرت الإجابة أو المحاولة على الخادم. تم الاحتفاظ بتعديلك. قارن الإجابة المحفوظة، ثم احتفظ بمسودتك أو تجاهلها.</string>
     <string name="master_attempt_changed">تغيّرت المحاولة أو انتهت بالفعل. تم تحديث التقدم من الخادم؛ راجعه قبل المتابعة.</string>
-    <string name="editor_association_invalid">استخدم مفتاح حالة حتى 64 حرفاً ونصاً حتى 3000 حرف، وترتيباً موجباً اختيارياً للسؤال. يتطلب النص أو الترتيب مفتاح حالة.</string>
+    <string name="editor_association_invalid">استخدم مفتاح حالة حتى 64 حرفاً ونصاً حتى 4000 حرف، وترتيباً موجباً اختيارياً للسؤال. يتطلب النص أو الترتيب مفتاح حالة.</string>
     <string name="editor_case">الحالة السريرية</string>
     <string name="editor_choose_case">البحث عن حالة موجودة</string>
     <string name="editor_case_key">مفتاح الحالة (فارغ دون حالة)</string>
@@ -629,7 +629,7 @@
     <string name="case_stem_save_confirm">هل تريد استبدال النص المشترك للحالة %1$s وجميع أسئلتها المرتبطة؟</string>
     <string name="case_stem_clear_confirm">هل تريد مسح النص المشترك للحالة %1$s وجميع أسئلتها المرتبطة؟ لا يؤدي ذلك إلى فصل الأسئلة أو حذفها.</string>
     <string name="case_stem_clear_hint">اترك الحقل فارغاً لمسح النص المشترك. تبقى الأسئلة مرتبطة بالحالة.</string>
-    <string name="case_stem_length">الحد الأقصى للنص المشترك 3000 حرف.</string>
+    <string name="case_stem_length">الحد الأقصى للنص المشترك 4000 حرف.</string>
     <string name="case_stem_leave">هل تريد التخلّي عن تعديلات النص المشترك غير المحفوظة؟</string>
     <string name="case_stem_conflict">تغيّر النص المشترك على الخادم.</string>
     <string name="case_stem_server">النص الحالي على الخادم</string>
@@ -755,7 +755,7 @@
     <string name="exam_target_apply">تطبيق الاختيارات</string>
     <string name="exam_draft_create">إنشاء سؤال مسودة</string>
     <string name="exam_draft_scope">ينشئ مسودة خاصة ويضيفها مباشرةً إلى هذا الامتحان. احفظ بيانات الامتحان أولاً.</string>
-    <string name="exam_draft_invalid">أدخل سؤالاً بطول 3000 محرف كحد أقصى، وخيارين مختلفين غير فارغين على الأقل بطول 300 محرف لكل خيار، وحدّد الإجابة الصحيحة. المصدر: 200 محرف؛ مفتاح الحالة: 64؛ نص الحالة: 3000. ترتيب الحالة عدد صحيح موجب، وتحتاج حقول الحالة إلى مفتاح.</string>
+    <string name="exam_draft_invalid">أدخل سؤالاً بطول 4000 محرف كحد أقصى، وخيارين مختلفين غير فارغين على الأقل بطول 500 محرف لكل خيار، وحدّد الإجابة الصحيحة. المصدر: 200 محرف؛ مفتاح الحالة: 64؛ نص الحالة: 4000. ترتيب الحالة عدد صحيح موجب، وتحتاج حقول الحالة إلى مفتاح.</string>
     <string name="exam_draft_uncertain">قد يكون الطلب قد أنشأ سؤالاً. حدّث وراجع أسئلة الامتحان الجديدة قبل تجاهل هذه المسودة المحلية. يبقى الإنشاء محظوراً ولن يُعاد إرسال الطلب.</string>
     <string name="exam_draft_saved">أُنشئ سؤال المسودة. يؤكد التحديث ارتباطه بالامتحان.</string>
     <string name="exam_draft_created_id">معرّف سؤال المسودة: %1$s</string>

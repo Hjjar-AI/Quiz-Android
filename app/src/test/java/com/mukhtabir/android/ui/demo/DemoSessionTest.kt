@@ -110,11 +110,58 @@ class DemoSessionTest {
     @Test
     fun `finish retains question identity notes flags and unanswered slots for review`() {
         val saved = start(DemoMode.RECALL).copy(revealed = setOf(0), flagged = setOf(2),
-            recalled = listOf("Remembered answer", "", "")).answer(3)
+            recalled = listOf("Remembered answer", "", "")).answer(3).withConfidence(2)
         val finished = saved.finish()
         assertTrue(finished.finished)
         assertFalse(finished.expired)
         assertEquals(saved.copy(page = DemoPage.RESULTS), finished)
         assertEquals(listOf(4, 2, 8), finished.questionIds)
+        assertEquals(mapOf(0 to 2), finished.confidence)
+    }
+
+    @Test
+    fun `learning requires an explicit valid confidence after answering each question`() {
+        for (mode in listOf(DemoMode.STUDY, DemoMode.RECALL)) {
+            val session = start(mode).copy(revealed = setOf(0, 1))
+            assertFalse(session.canAdvance())
+            assertSame(session, session.withConfidence(3))
+            val answered = session.answer(3)
+            assertFalse(answered.canAdvance())
+            assertTrue(answered.confidence.isEmpty())
+            for (invalid in listOf(-1, 0, 4)) assertSame(answered, answered.withConfidence(invalid))
+            val confident = answered.withConfidence(2)
+            assertTrue(confident.canAdvance())
+            assertEquals(mapOf(0 to 2), confident.confidence)
+            val second = confident.copy(index = 1).answer(1)
+            assertFalse(second.canAdvance())
+            assertEquals(mapOf(0 to 2, 1 to 3), second.withConfidence(3).confidence)
+            assertEquals(mapOf(0 to 2), confident.confidence)
+        }
+    }
+
+    @Test
+    fun `exam navigation stays available without confidence and rejects confidence writes`() {
+        val exam = start(DemoMode.EXAM)
+        assertTrue(exam.canAdvance())
+        assertSame(exam, exam.withConfidence(1))
+        val answered = exam.answer(2)
+        assertTrue(answered.canAdvance())
+        assertSame(answered, answered.withConfidence(3))
+        assertTrue(answered.confidence.isEmpty())
+    }
+
+    @Test
+    fun `confidence cannot mutate finished snapshots or an invalid question index`() {
+        val answered = start().answer(3).withConfidence(1)
+        for (page in listOf(DemoPage.HOME, DemoPage.RESULTS, DemoPage.REVIEW)) {
+            val frozen = answered.copy(page = page)
+            assertSame(frozen, frozen.withConfidence(3))
+            assertEquals(mapOf(0 to 1), frozen.confidence)
+        }
+        for (index in listOf(-1, answered.total)) {
+            val invalid = answered.copy(index = index)
+            assertFalse(invalid.canAdvance())
+            assertSame(invalid, invalid.withConfidence(3))
+        }
     }
 }

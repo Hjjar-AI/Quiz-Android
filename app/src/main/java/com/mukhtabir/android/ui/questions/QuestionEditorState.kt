@@ -1,5 +1,7 @@
 package com.mukhtabir.android.ui.questions
 
+import com.mukhtabir.android.util.QuestionContentLimits
+
 import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.CategoryDto
 import com.mukhtabir.android.data.remote.QuestionWriteRequest
@@ -57,7 +59,7 @@ data class QuestionEditorState(
     val category: Long? = null,
     @kotlinx.serialization.Transient val categories: List<CategoryDto> = emptyList(),
     val version: Int? = null,
-    val maxChoices: Int = 8,
+    val maxChoices: Int = QuestionContentLimits.MAX_CHOICES,
     val accessDenied: Boolean = false,
     val loaded: Boolean = false,
     val loading: Boolean = false,

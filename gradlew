@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# Shared workstation setup; other machines keep ordinary wrapper behavior.
+if [ "${GITHUB_ACTIONS:-}" != true ] && [ "${ANDROID_SHARED_DISABLE:-}" != 1 ] &&
+    [ -r /opt/android-shared/environment.sh ]; then
+    . /opt/android-shared/environment.sh
+fi
+
 #
 # Copyright © 2015-2021 the original authors.
 #
@@ -85,17 +91,20 @@ done
 APP_BASE_NAME=${0##*/}
 # Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
 APP_HOME=$( cd "${APP_HOME:-./}" > /dev/null && pwd -P ) || exit
-
-# Mukhtabir: keep wrapper/dependency/daemon, project, and build caches account-local.
-# A different checkout gets a different cache namespace under the same account.
-if command -v sha256sum >/dev/null 2>&1; then
-    mukhtabir_checkout_id=$(printf '%s' "$APP_HOME" | sha256sum | cut -c1-16)
-else
-    mukhtabir_checkout_id=$(printf '%s' "$APP_HOME" | shasum -a 256 | cut -c1-16) || exit 1
+# Select the registered project cache before Gradle starts; explicit CLI selection wins.
+if [ "${GITHUB_ACTIONS:-}" != true ] && [ "${ANDROID_SHARED_DISABLE:-}" != 1 ] &&
+    [ -r /opt/android-shared/tools/paths.py ]; then
+    shared_cache_explicit=false
+    for shared_arg in "$@"; do
+        case "$shared_arg" in --project-cache-dir|--project-cache-dir=*) shared_cache_explicit=true ;; esac
+    done
+    if [ "$shared_cache_explicit" = false ]; then
+        shared_project_cache=$(python3 /opt/android-shared/tools/paths.py "$APP_HOME" project-cache "$@") || exit 1
+        if [ -n "$shared_project_cache" ]; then set -- --project-cache-dir "$shared_project_cache" "$@"; fi
+    fi
+    unset shared_cache_explicit shared_arg shared_project_cache
 fi
-mukhtabir_account_root="$HOME/.gradle/mukhtabir/$mukhtabir_checkout_id"
-# Ignore inherited shared GRADLE_USER_HOME; an explicit CLI -g can still override.
-set -- --gradle-user-home "$HOME/.gradle" --project-cache-dir "$mukhtabir_account_root/project-cache" "$@"
+
 
 # Optional persistent dependency snapshot; Gradle reads it without cache locks.
 # Point at the directory containing modules-2, not a live writable Gradle cache.
@@ -114,21 +123,6 @@ if [ -n "$mukhtabir_dependency_seed" ]; then
     echo "Mukhtabir: using existing read-only dependency cache" >&2
 fi
 unset mukhtabir_dependency_seed
-
-# Reuse an explicitly configured local distribution without sharing writable caches.
-# Keep machine paths in ignored local.properties, never in the tracked wrapper.
-mukhtabir_gradle_home=${MUKHTABIR_GRADLE_HOME:-}
-if [ -z "$mukhtabir_gradle_home" ] && [ -f "$APP_HOME/local.properties" ]; then
-    mukhtabir_gradle_home=$(sed -n 's/^gradle[.]home[[:space:]]*=[[:space:]]*//p' "$APP_HOME/local.properties" | sed 's/[[:space:]]*$//' | tail -n 1)
-fi
-if [ -n "$mukhtabir_gradle_home" ]; then
-    mukhtabir_gradle_version=$(sed -n 's/^distributionUrl=.*gradle-\([0-9][0-9.]*\)-[[:alpha:]]*[.]zip.*/\1/p' "$APP_HOME/gradle/wrapper/gradle-wrapper.properties")
-    if [ -z "$mukhtabir_gradle_version" ] || [ ! -x "$mukhtabir_gradle_home/bin/gradle" ] ||
-        [ ! -f "$mukhtabir_gradle_home/lib/gradle-launcher-$mukhtabir_gradle_version.jar" ]; then
-        echo "Configured Gradle installation must match the version pinned in gradle-wrapper.properties: $mukhtabir_gradle_home" >&2
-        exit 1
-    fi
-fi
 
 mukhtabir_packaging=false
 mukhtabir_skip_version=false
@@ -160,14 +154,8 @@ if [ "$mukhtabir_packaging" = true ] && [ "$mukhtabir_skip_version" = false ] &&
     set -- "-Pmukhtabir.versionCode=$mukhtabir_version_code" "-Pmukhtabir.versionName=$mukhtabir_version_name" "$@"
     echo "Mukhtabir build: $mukhtabir_version_name (code $mukhtabir_version_code)" >&2
 fi
-unset mukhtabir_checkout_id mukhtabir_account_root mukhtabir_packaging mukhtabir_skip_version
+unset mukhtabir_packaging mukhtabir_skip_version
 unset mukhtabir_code_override mukhtabir_name_override mukhtabir_arg mukhtabir_reserved mukhtabir_version_code mukhtabir_version_name
-
-if [ -n "$mukhtabir_gradle_home" ]; then
-    echo "Mukhtabir: using installed Gradle $mukhtabir_gradle_version" >&2
-    GRADLE_USER_HOME="$HOME/.gradle" exec "$mukhtabir_gradle_home/bin/gradle" "$@"
-fi
-unset mukhtabir_gradle_home mukhtabir_gradle_version
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum

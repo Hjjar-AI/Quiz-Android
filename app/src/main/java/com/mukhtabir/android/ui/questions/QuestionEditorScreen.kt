@@ -1,5 +1,8 @@
 package com.mukhtabir.android.ui.questions
 
+import com.mukhtabir.android.util.QuestionContentLimits
+import com.mukhtabir.android.util.contentLength
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -191,7 +194,7 @@ fun QuestionEditorRoute(
         }
         AppSection(stringResource(R.string.section_question_content), initiallyExpanded = true, revealRequest = s.validationAttempt, revealError = s.validationError in setOf(QuestionEditorValidationError.INVALID_FORM, QuestionEditorValidationError.TOO_MANY_CHOICES, QuestionEditorValidationError.TEXT_TOO_LONG, QuestionEditorValidationError.CHOICE_TOO_LONG, QuestionEditorValidationError.DUPLICATE_CHOICES)) {
             MarkdownField(s.text, { vm.field("text", it) }, enabled = enabled,
-                label = stringResource(R.string.question_text), error = fieldError(s.text.isBlank() || s.text.length > 3000), minLines = 3, modifier = Modifier.fillMaxWidth())
+                label = stringResource(R.string.question_text), error = fieldError(s.text.isBlank() || s.text.contentLength() > QuestionContentLimits.QUESTION), minLines = 3, modifier = Modifier.fillMaxWidth())
             Text(stringResource(R.string.maximum_choices, com.mukhtabir.android.util.formatNumber(s.maxChoices)))
             s.choices.forEachIndexed { index, choice ->
                 key(choice.id) {
@@ -200,15 +203,15 @@ fun QuestionEditorRoute(
                         onMoveUp = { vm.moveChoice(choice.id, -1) }, onMoveDown = { vm.moveChoice(choice.id, 1) },
                         onRemove = { vm.removeChoice(choice.id) }, canMoveUp = index > 0,
                         canMoveDown = index < s.choices.lastIndex, canRemove = s.choices.size > 2,
-                        error = fieldError(choice.text.isBlank() || choice.text.length > 300 || s.choices.count { it.text.trim().equals(choice.text.trim(), ignoreCase = true) } > 1),
+                        error = fieldError(choice.text.isBlank() || choice.text.contentLength() > QuestionContentLimits.CHOICE || s.choices.count { it.text.trim().equals(choice.text.trim(), ignoreCase = true) } > 1),
                         correctModifier = Modifier.semantics { if (validationMessage != null && s.correctChoiceId == null) error(validationMessage) })
                 }
             }
             AppOutlinedButton(vm::addChoice, enabled = enabled && s.choices.size < s.maxChoices) { Text(stringResource(R.string.add_choice)) }
         }
-        AppSection(stringResource(R.string.explanation), initiallyExpanded = true, revealRequest = s.validationAttempt, revealError = validationMessage != null && s.explanation.length > 3000) {
+        AppSection(stringResource(R.string.explanation), initiallyExpanded = true, revealRequest = s.validationAttempt, revealError = validationMessage != null && s.explanation.contentLength() > QuestionContentLimits.EXPLANATION) {
             MarkdownField(s.explanation, { vm.field("explanation", it) }, enabled = enabled,
-                label = stringResource(R.string.explanation), error = fieldError(s.explanation.length > 3000), minLines = 2, modifier = Modifier.fillMaxWidth())
+                label = stringResource(R.string.explanation), error = fieldError(s.explanation.contentLength() > QuestionContentLimits.EXPLANATION), minLines = 2, modifier = Modifier.fillMaxWidth())
         }
         AppSection(stringResource(R.string.section_reference), revealRequest = s.validationAttempt, revealError = s.validationError in setOf(QuestionEditorValidationError.INVALID_SOURCE_PAGE, QuestionEditorValidationError.SOURCE_TOO_LONG)) {
             AppTextField(s.source,{vm.field("source",it)},enabled=enabled,
@@ -222,7 +225,7 @@ fun QuestionEditorRoute(
             Text(stringResource(R.string.editor_image_after_save))
             QuestionAssociationFields(s,vm,enabled)
         }
-        AppSection(stringResource(R.string.editor_translations), revealRequest = s.validationAttempt, revealError = s.validationError in setOf(QuestionEditorValidationError.INVALID_LOCALE, QuestionEditorValidationError.TRANSLATION_REQUIRED, QuestionEditorValidationError.TRANSLATION_CHOICES) || (validationMessage != null && s.translations.values.any { it.question.length > 3000 || it.explanation.length > 3000 || it.choices.values.any { text -> text.length > 300 } })) {
+        AppSection(stringResource(R.string.editor_translations), revealRequest = s.validationAttempt, revealError = s.validationError in setOf(QuestionEditorValidationError.INVALID_LOCALE, QuestionEditorValidationError.TRANSLATION_REQUIRED, QuestionEditorValidationError.TRANSLATION_CHOICES) || (validationMessage != null && s.translations.values.any { it.question.contentLength() > QuestionContentLimits.QUESTION || it.explanation.contentLength() > QuestionContentLimits.EXPLANATION || it.choices.values.any { text -> text.contentLength() > QuestionContentLimits.CHOICE } })) {
             Text(stringResource(R.string.editor_translation_hint))
             AppTextField(localeInput,{localeInput=it},enabled=enabled,
                 label={Text(stringResource(R.string.editor_translation_locale))},isError=s.validationError==QuestionEditorValidationError.INVALID_LOCALE, supportingText=fieldError(s.validationError==QuestionEditorValidationError.INVALID_LOCALE)?.let { message -> { Text(message) } },modifier=Modifier.fillMaxWidth(),singleLine=true)
@@ -231,10 +234,10 @@ fun QuestionEditorRoute(
                 key(locale) {
                     Text(locale,style=MaterialTheme.typography.titleMedium)
                     MarkdownField(translation.question,{vm.translationField(locale,"question",it)},enabled=enabled,
-                        label=stringResource(R.string.question_text),error=fieldError((s.validationError==QuestionEditorValidationError.TRANSLATION_REQUIRED && translation.question.isBlank()) || translation.question.length>3000),minLines=2,modifier=Modifier.fillMaxWidth())
+                        label=stringResource(R.string.question_text),error=fieldError((s.validationError==QuestionEditorValidationError.TRANSLATION_REQUIRED && translation.question.isBlank()) || translation.question.contentLength() > QuestionContentLimits.QUESTION),minLines=2,modifier=Modifier.fillMaxWidth())
                     s.choices.forEachIndexed { index,choice ->
                         MarkdownField(translation.choices[choice.id].orEmpty(),{vm.translationChoice(locale,choice.id,it)},enabled=enabled,
-                            label=stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index+1)),error=fieldError((s.validationError==QuestionEditorValidationError.TRANSLATION_CHOICES && translation.choices[choice.id].isNullOrBlank()) || translation.choices[choice.id].orEmpty().length>300),modifier=Modifier.fillMaxWidth())
+                            label=stringResource(R.string.choice_number, com.mukhtabir.android.util.formatNumber(index+1)),error=fieldError((s.validationError==QuestionEditorValidationError.TRANSLATION_CHOICES && translation.choices[choice.id].isNullOrBlank()) || translation.choices[choice.id].orEmpty().contentLength() > QuestionContentLimits.CHOICE),modifier=Modifier.fillMaxWidth())
                     }
                     if(translation.extraChoices.isNotEmpty()) {
                         AppStatus(stringResource(R.string.editor_translation_extra))
@@ -242,7 +245,7 @@ fun QuestionEditorRoute(
                         AppOutlinedButton({alignTranslation=locale},enabled=enabled) { Text(stringResource(R.string.editor_translation_align)) }
                     }
                     MarkdownField(translation.explanation,{vm.translationField(locale,"explanation",it)},enabled=enabled,
-                        label=stringResource(R.string.explanation),error=fieldError(translation.explanation.length>3000),minLines=2,modifier=Modifier.fillMaxWidth())
+                        label=stringResource(R.string.explanation),error=fieldError(translation.explanation.contentLength() > QuestionContentLimits.EXPLANATION),minLines=2,modifier=Modifier.fillMaxWidth())
                     if(preview) QuestionDraftPreview(translation.question,translatedChoices(translation,s.choices),
                         s.choices.indexOfFirst { it.id==s.correctChoiceId }+1,translation.explanation,
                         ClinicalCaseContextDto(key = s.caseKey, stem = s.caseStem))

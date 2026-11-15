@@ -12,6 +12,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent
+from build_paths import project_work
 
 
 def toolchain_check(install):
@@ -147,7 +148,9 @@ def main():
     if result.returncode:
         return result.returncode
     checkout_id = hashlib.sha256(str(ROOT).encode("utf-8")).hexdigest()[:16]
-    build_root = Path.home() / ".gradle/mukhtabir" / checkout_id / "build/app"
+    shared_work = project_work(ROOT)
+    gradle_home = Path(os.environ.get("GRADLE_USER_HOME", str(Path.home() / ".gradle")))
+    build_root = (shared_work if shared_work else gradle_home / "mukhtabir" / checkout_id) / "build/app"
     folder = build_root / "outputs" / ("apk" if args.format == "apk" else "bundle") / args.variant
     artifacts = sorted(folder.glob("*." + args.format))
     if artifacts:

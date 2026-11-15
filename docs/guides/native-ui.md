@@ -8,7 +8,7 @@ Paths below are relative to `app/src/main/java/com/mukhtabir/android/`. Follow [
 | --- | --- |
 | `core`, `data`, `ui`, `util` | Storage/preferences/navigation; auth/HTTP/domain DTOs; Compose; formatting. |
 | `MukhtabirApp.kt`, `ui/navigation/AuthenticatedAppShell.kt` | Startup/auth; shell/routes/capability gates. `AppDrawerContent.kt` owns the drawer; More is legacy. |
-| `ui/demo/DemoScreen.kt`, `DemoRepository.kt`, `DemoPracticeScreen.kt` | Local learner shell/fixtures, shared sample state and practice. No API/account-storage dependency. |
+| `ui/demo/DemoScreen.kt`, `DemoRepository.kt`, `DemoPracticeScreen.kt`, `DemoLearnerScreens.kt` | Local learner shell/fixtures, sample practice/setup/planner/downloads/connection and the real profile presentation. No API/account-storage dependency. |
 | Question editor State/ViewModel/Screen/Preview | Serializable state, writes, form, previews. Other features similarly separate controllers/state/screens. |
 | `QuizSetupController.kt`, `QuizSetupStateStore.kt` | Filters/count jobs; account-checked lightweight restoration. |
 | `QuizViewModel.kt`, session chrome | Writes/deadlines/download/sync/recovery; separate lifecycle-collected clock flow. |
@@ -29,6 +29,12 @@ Trace route → controller → service/DTO → Django/Vue before contract change
 - Font scale/width choose tabs versus rail (600dp base) and library/results panes (900dp base). Preserve selected detail through resize, account/server ownership and busy/recovery locks; reuse the full detail route.
 - Setup validates typed/preset 10/20/40/Max counts against availability/runtime cap. Start summary pins only when height permits; short/large-text layouts scroll chrome/actions together.
 - Results keep saved summary/GET refresh even when review is withheld. Wide review uses list + frozen reader; narrow review expands rows. Settings stays reachable above drawer destinations; short drawers scroll header/menu.
+
+## Learner demo
+
+The four learner tabs and categorized drawer use one saved-state fake repository. Main flows include category/tag/search/pagination and question ratings; study/exam/recall setup with pool/count filters; confidence before learning navigation; frozen results, mode-filtered History, latest-answer mistakes/uncertainty lists and derived activity. Planner targets/categories/dates feed Home and matching daily progress. Navigation retains per-screen filters, scroll and planner drafts; confirmed exit clears demo changes.
+
+The sample connection switch simulates availability without constructing an HTTP/auth client. Failed refresh keeps loaded content and filters; reconnect plus explicit retry clears the error. Online-session connection changes are locked until finish/discard. A seeded collection supports local study while disconnected; completion remains pending until an explicit simulated upload, then contributes once to History/planner/analytics. Pending completions are retained (at ten, further downloaded starts require upload); confirmed History retains twenty records. Profile reuses `ProfileScreen` with a public fixture and demo-only callbacks. No real credentials, account stores, providers, downloads or server connections are used. Authoring/admin and full master-exam workflows remain outside the demo.
 
 ## Shared design APIs
 

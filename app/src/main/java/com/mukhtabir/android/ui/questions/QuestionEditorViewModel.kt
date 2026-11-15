@@ -1,5 +1,8 @@
 package com.mukhtabir.android.ui.questions
 
+import com.mukhtabir.android.util.QuestionContentLimits
+import com.mukhtabir.android.util.contentLength
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -503,21 +506,21 @@ class QuestionEditorViewModel(
             choices.size > s.maxChoices -> QuestionEditorValidationError.TOO_MANY_CHOICES
             s.text.isBlank() || choices.size < 2 || choices.any(String::isBlank) || correct == 0 ->
                 QuestionEditorValidationError.INVALID_FORM
-            s.text.length > 3000 || s.explanation.length > 3000 -> QuestionEditorValidationError.TEXT_TOO_LONG
-            choices.any { it.length > 300 } -> QuestionEditorValidationError.CHOICE_TOO_LONG
+            s.text.contentLength() > QuestionContentLimits.QUESTION || s.explanation.contentLength() > QuestionContentLimits.EXPLANATION -> QuestionEditorValidationError.TEXT_TOO_LONG
+            choices.any { it.contentLength() > QuestionContentLimits.CHOICE } -> QuestionEditorValidationError.CHOICE_TOO_LONG
             choices.map { it.lowercase(Locale.ROOT) }.distinct().size != choices.size ->
                 QuestionEditorValidationError.DUPLICATE_CHOICES
             s.revisedDate.isNotBlank() && runCatching { java.time.LocalDate.parse(s.revisedDate) }.isFailure -> QuestionEditorValidationError.INVALID_FORM
             s.difficulty !in listOf("easy", "medium", "hard") -> QuestionEditorValidationError.INVALID_FORM
             s.sourcePage.isNotBlank() && (s.sourcePage.trim().toIntOrNull()?.let { it>0 } != true) -> QuestionEditorValidationError.INVALID_SOURCE_PAGE
-            s.caseKey.trim().length>64 || s.caseStem.length>3000 ||
+            s.caseKey.trim().length>64 || s.caseStem.contentLength() > QuestionContentLimits.CASE_STEM ||
                 (s.caseKey.isBlank() && (s.caseStem.isNotBlank() || s.caseOrder.isNotBlank())) ||
                 (s.caseOrder.isNotBlank() && s.caseOrder.trim().toIntOrNull()?.let { it>0 }!=true) -> QuestionEditorValidationError.INVALID_ASSOCIATION
             s.source.length>200 || s.sourceDocument.length>500 -> QuestionEditorValidationError.SOURCE_TOO_LONG
             activeTranslations.any { it.question.isBlank() } -> QuestionEditorValidationError.TRANSLATION_REQUIRED
             activeTranslations.any { t -> t.extraChoices.isNotEmpty() || translatedChoices(t,s.choices).let { texts -> texts.any(String::isNotBlank) && texts.any(String::isBlank) } } -> QuestionEditorValidationError.TRANSLATION_CHOICES
-            activeTranslations.any { it.question.length>3000 || it.explanation.length>3000 } -> QuestionEditorValidationError.TEXT_TOO_LONG
-            activeTranslations.any { translatedChoices(it,s.choices).any { choice -> choice.length>300 } } -> QuestionEditorValidationError.CHOICE_TOO_LONG
+            activeTranslations.any { it.question.contentLength() > QuestionContentLimits.QUESTION || it.explanation.contentLength() > QuestionContentLimits.EXPLANATION } -> QuestionEditorValidationError.TEXT_TOO_LONG
+            activeTranslations.any { translatedChoices(it,s.choices).any { choice -> choice.contentLength() > QuestionContentLimits.CHOICE } } -> QuestionEditorValidationError.CHOICE_TOO_LONG
             else -> null
         }
         if (error != null) {

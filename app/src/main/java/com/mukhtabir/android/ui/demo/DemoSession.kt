@@ -20,10 +20,16 @@ internal data class DemoSession(
     val flagged: Set<Int> = emptySet(),
     val deadline: Long = 0L,
     val expired: Boolean = false,
+    val confidence: Map<Int, Int> = emptyMap(),
+    val downloaded: Boolean = false,
 ) : Serializable {
     val total get() = answers.size
     val answered get() = answers.count { it >= 0 }
     val finished get() = page == DemoPage.RESULTS || page == DemoPage.REVIEW
+    fun canAdvance(at: Int = index) = mode == DemoMode.EXAM ||
+        (answers.getOrNull(at)?.let { it >= 0 } == true && confidence[at]?.let { it in 1..3 } == true)
+    fun withConfidence(value: Int): DemoSession = if (page == DemoPage.SESSION && mode != DemoMode.EXAM &&
+        answers.getOrNull(index)?.let { it >= 0 } == true && value in 1..3) copy(confidence = confidence + (index to value)) else this
     fun remainingMillis(): Long = deadline - SystemClock.elapsedRealtime()
     fun deadlineReached(): Boolean = mode == DemoMode.EXAM && (remainingMillis() <= 0 || remainingMillis() > EXAM_MILLIS)
     fun finish(timedOut: Boolean = false) = copy(page = DemoPage.RESULTS, expired = timedOut)

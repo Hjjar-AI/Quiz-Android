@@ -146,10 +146,10 @@ class DemoRepositoryTest {
     @Test
     fun `planner validates bounds and reaches its goal only on completed answers`() {
         val repo = DemoRepository(DemoData(records = emptyList()))
-        repo.setTarget(100)
+        repo.setTarget(1000)
         repo.setTarget(0)
-        repo.setTarget(101)
-        assertEquals(100, repo.state.target)
+        repo.setTarget(1001)
+        assertEquals(1000, repo.state.target)
         repo.setTarget(1)
         repo.start(DemoMode.STUDY, listOf(4))
         repo.updateSession(repo.state.session.answer(3))
@@ -203,6 +203,219 @@ class DemoRepositoryTest {
         assertEquals(10, fresh.state.target)
         assertEquals(2, fresh.state.records.size)
         assertEquals(DemoPage.HOME, fresh.state.session.page)
+    }
+
+    @Test
+    fun `disconnected reads keep sample data and require an explicit retry after reconnect`() {
+        val repo = DemoRepository()
+        repo.rate(2, 4)
+        val original = repo.state
+        repo.setConnected(false)
+        repo.refresh()
+        assertTrue(repo.state.readFailed)
+        repo.start(DemoMode.STUDY, listOf(1))
+        repo.download(listOf(8))
+        repo.rate(2, 1)
+        assertEquals(DemoPage.HOME, repo.state.session.page)
+        assertEquals(original.nextId, repo.state.nextId)
+        assertEquals(original.downloadedIds, repo.state.downloadedIds)
+        assertEquals(original.ratings, repo.state.ratings)
+        assertEquals(original.records, repo.state.records)
+        assertEquals(original.bookmarks, repo.state.bookmarks)
+        repo.setConnected(true)
+        assertTrue(repo.state.readFailed)
+        repo.refresh()
+        assertFalse(repo.state.readFailed)
+        repo.start(DemoMode.STUDY, listOf(1))
+        assertEquals(DemoPage.SESSION, repo.state.session.page)
+    }
+
+    @Test
+    fun `active online work locks connection and collection replacement until discarded`() {
+        val repo = DemoRepository()
+        repo.start(DemoMode.STUDY, listOf(1))
+        repo.updateSession(repo.state.session.answer(0).withConfidence(2))
+        val active = repo.state
+        repo.setConnected(false)
+        repo.download(listOf(8))
+        repo.start(DemoMode.STUDY, listOf(2), downloaded = true)
+        assertSame(active, repo.state)
+        repo.discard()
+        repo.setConnected(false)
+        assertFalse(repo.state.connected)
+        assertEquals(active.downloadedIds, repo.state.downloadedIds)
+    }
+
+    @Test
+    fun `download selection retains exact valid order and an invalid replacement preserves the collection`() {
+        val repo = DemoRepository()
+        repo.download(listOf(8, 4, 8, 0, 999))
+        assertEquals(listOf(8, 4), repo.state.downloadedIds)
+        val downloaded = repo.state
+        repo.download(listOf(0, 999))
+        assertSame(downloaded, repo.state)
+        repo.setConnected(false)
+        repo.start(DemoMode.EXAM, listOf(8), downloaded = true)
+        repo.start(DemoMode.RECALL, listOf(8), downloaded = true)
+        assertEquals(DemoPage.HOME, repo.state.session.page)
+        repo.start(DemoMode.STUDY, listOf(8, 1, 4, 8), downloaded = true)
+        assertEquals(listOf(8, 4), repo.state.session.questionIds)
+        assertTrue(repo.state.session.downloaded)
+        repo.setConnected(true)
+        assertTrue(repo.state.connected)
+        assertEquals(listOf(8, 4), repo.state.session.questionIds)
+    }
+
+    @Test
+    fun `offline completion remains frozen without progress credit until explicit idempotent upload`() {
+        val repo = DemoRepository(DemoData(records = emptyList()))
+        repo.setConnected(false)
+        repo.start(DemoMode.STUDY, listOf(1), downloaded = true)
+        val finished = repo.state.session.answer(0).withConfidence(1).finish()
+        repo.updateSession(finished)
+        val frozen = repo.pendingRecords.single()
+        assertEquals(0, repo.answered)
+        assertEquals(0, repo.todayAnswered)
+        assertEquals(0, repo.planTodayAnswered)
+        assertTrue(repo.poolIds(DemoPool.FRAGILE).isEmpty())
+        repo.updateSession(finished.copy(page = DemoPage.REVIEW))
+        repo.sync()
+        assertEquals(listOf(frozen), repo.pendingRecords)
+        repo.setConnected(true)
+        assertEquals(listOf(frozen), repo.pendingRecords)
+        repo.sync()
+        assertTrue(repo.pendingRecords.isEmpty())
+        assertEquals(frozen.copy(synced = true), repo.state.records.single())
+        assertEquals(1, repo.answered)
+        assertEquals(1, repo.todayAnswered)
+        assertEquals(1, repo.planTodayAnswered)
+        assertEquals(listOf(1), repo.poolIds(DemoPool.FRAGILE))
+        val confirmed = repo.state.records
+        repo.sync()
+        repo.updateSession(finished)
+        assertEquals(confirmed, repo.state.records)
+        assertEquals(1, repo.answered)
+    }
+
+    @Test
+    fun `pending capacity blocks another downloaded start without dropping any saved completion`() {
+        val repo = DemoRepository(DemoData(records = emptyList()))
+        repo.setConnected(false)
+        repeat(10) {
+            repo.start(DemoMode.STUDY, listOf(1), downloaded = true)
+            repo.updateSession(repo.state.session.answer(0).withConfidence(3).finish())
+        }
+        val full = repo.state
+        repo.start(DemoMode.STUDY, listOf(2), downloaded = true)
+        assertSame(full, repo.state)
+        assertEquals(10, repo.pendingRecords.size)
+        assertEquals(10, repo.pendingRecords.map { it.session.id }.distinct().size)
+        repo.setConnected(true)
+        repo.sync()
+        repo.start(DemoMode.STUDY, listOf(2), downloaded = true)
+        assertEquals(DemoPage.SESSION, repo.state.session.page)
+        assertEquals(full.nextId, repo.state.session.id)
+    }
+
+    @Test
+    fun `confirmed history retention preserves older pending completions and newest answer ordering`() {
+        val repo = DemoRepository(DemoData(records = emptyList()))
+        repo.start(DemoMode.STUDY, listOf(1), downloaded = true)
+        repo.updateSession(repo.state.session.answer(0).withConfidence(1).finish())
+        val pending = repo.pendingRecords.single()
+        repeat(23) {
+            repo.start(DemoMode.STUDY, listOf(1))
+            repo.updateSession(repo.state.session.answer(1).withConfidence(3).finish())
+        }
+        assertEquals(21, repo.state.records.size)
+        assertEquals(listOf(pending), repo.pendingRecords)
+        assertTrue(repo.state.records.zipWithNext().all { (a, b) -> a.session.id > b.session.id })
+        assertEquals(listOf(1), repo.poolIds(DemoPool.MISTAKES))
+        assertTrue(repo.poolIds(DemoPool.FRAGILE).isEmpty())
+    }
+
+    @Test
+    fun `review notebooks follow the latest answered result and ignore unanswered newer attempts`() {
+        val repo = DemoRepository()
+        assertEquals(listOf(3, 7), repo.poolIds(DemoPool.MISTAKES))
+        assertEquals(listOf(6), repo.poolIds(DemoPool.FRAGILE))
+        repo.start(DemoMode.STUDY, listOf(6, 3))
+        repo.updateSession(repo.state.session.answer(0).withConfidence(3).copy(index = 1).answer(2).withConfidence(3).finish())
+        assertEquals(listOf(6, 7), repo.poolIds(DemoPool.MISTAKES))
+        assertTrue(repo.poolIds(DemoPool.FRAGILE).isEmpty())
+        repo.start(DemoMode.STUDY, listOf(6))
+        repo.updateSession(repo.state.session.finish())
+        assertEquals(listOf(6, 7), repo.poolIds(DemoPool.MISTAKES))
+        repo.start(DemoMode.STUDY, listOf(6))
+        repo.updateSession(repo.state.session.answer(1).withConfidence(2).finish())
+        assertEquals(listOf(7), repo.poolIds(DemoPool.MISTAKES))
+        assertEquals(listOf(6), repo.poolIds(DemoPool.FRAGILE))
+    }
+
+    @Test
+    fun `planner rejects invalid dates categories and offline saves without changing its saved goal`() {
+        val repo = DemoRepository()
+        val today = LocalDate.now().toString()
+        assertTrue(repo.savePlan(1000, setOf(1), today, today))
+        val saved = repo.state
+        for (target in listOf(0, 1001)) assertFalse(repo.savePlan(target, setOf(1), today, ""))
+        assertFalse(repo.savePlan(10, setOf(99), today, ""))
+        assertFalse(repo.savePlan(10, emptySet(), "2026-02-30", ""))
+        assertFalse(repo.savePlan(10, emptySet(), "2026-1-01", ""))
+        assertFalse(repo.savePlan(10, emptySet(), today, LocalDate.now().minusDays(1).toString()))
+        assertSame(saved, repo.state)
+        repo.setConnected(false)
+        val offline = repo.state
+        assertFalse(repo.savePlan(5, emptySet(), today, ""))
+        assertSame(offline, repo.state)
+    }
+
+    @Test
+    fun `planner progress uses confirmed matching answers only within its active dates`() {
+        val repo = DemoRepository(DemoData(records = emptyList()))
+        val today = LocalDate.now()
+        assertTrue(repo.savePlan(2, setOf(1), today.toString(), today.toString()))
+        assertEquals(listOf(2, 3, 4), repo.planIds)
+        repo.start(DemoMode.STUDY, listOf(1, 2, 3))
+        repo.updateSession(repo.state.session.answer(0).withConfidence(3).copy(index = 1).answer(1).withConfidence(2))
+        assertEquals(0, repo.planTodayAnswered)
+        repo.updateSession(repo.state.session.finish())
+        assertEquals(2, repo.todayAnswered)
+        assertEquals(1, repo.planTodayAnswered)
+        assertTrue(repo.planActive)
+        assertEquals(1, repo.currentStreak)
+        assertTrue(repo.savePlan(2, emptySet(), today.plusDays(1).toString(), ""))
+        assertFalse(repo.planActive)
+        assertEquals(0, repo.planTodayAnswered)
+        assertTrue(repo.savePlan(2, emptySet(), today.minusDays(3).toString(), today.minusDays(1).toString()))
+        assertFalse(repo.planActive)
+        assertEquals(0, repo.planTodayAnswered)
+        assertTrue(repo.savePlan(2, emptySet(), today.toString(), ""))
+        assertEquals(2, repo.planTodayAnswered)
+    }
+
+    @Test
+    fun `saved-state round trip retains offline completion confidence connection failure ratings and planner`() {
+        val repo = DemoRepository()
+        assertTrue(repo.savePlan(12, setOf(1), LocalDate.now().toString(), ""))
+        repo.rate(2, 5)
+        repo.download(listOf(2, 4))
+        repo.setConnected(false)
+        repo.refresh()
+        repo.start(DemoMode.STUDY, listOf(2), downloaded = true)
+        repo.updateSession(repo.state.session.answer(1).withConfidence(2).finish())
+        val saver = DemoRepository.StateSaver
+        val scope = object : SaverScope { override fun canBeSaved(value: Any) = value is Serializable }
+        val saved = requireNotNull(with(saver) { scope.save(repo) })
+        val restored = requireNotNull(saver.restore(parcelRoundTrip(saved)))
+        assertEquals(repo.state, restored.state)
+        assertFalse(restored.state.connected)
+        assertEquals(2, restored.pendingRecords.single().session.confidence[0])
+        restored.setConnected(true)
+        restored.sync()
+        assertEquals(1, restored.planTodayAnswered)
+        assertEquals(1, repo.pendingRecords.size)
+        assertEquals(0, repo.planTodayAnswered)
     }
 
     @Suppress("DEPRECATION")

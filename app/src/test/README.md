@@ -1,6 +1,6 @@
 # Android regression suites
 
-The JVM suite contains **298 source cases across 31 test classes**. Of these, **167 cases across 17 classes are newly prepared and have not been compiled or run**. Earlier evidence covers the preceding 131 cases in separate selections; see the [verification checklist](../../../docs/verification/checklist.md). Source case counts are not execution results or coverage percentages.
+The JVM suite contains **334 source cases across 32 test classes**. The main learner demo expansion adds **21 source cases** and updates existing demo cases; these three modified classes have **not been compiled or run after the expansion**, at the user's request. Separately, **167 cases across 17 classes remain unexecuted**, although they compiled in the earlier 2026-11-03 component milestone. See the [verification checklist](../../../docs/verification/checklist.md) for passing selections that predate the current demo changes. Source case counts are not execution results or coverage percentages.
 
 ## Coverage map
 
@@ -17,8 +17,10 @@ The JVM suite contains **298 source cases across 31 test classes**. Of these, **
 | Planner | PlannerValidationTest, PlannerViewModelTest | 16 | Strict Gregorian dates, local validation, tags/categories, revision preconditions, dirty drafts, uncertain writes, accepted save followed by failed read, explicit conflict resolution, stored recovery without replay and duplicate-write guard |
 | Device sessions | DeviceSessionsViewModelTest | 13 | Read failure versus empty state, preflight absence/failure, confirmed/current revocation, password guards/clearing, lost response, explicit read and acknowledgement before replay, failed reconciliation and refresh, negative acknowledgement and duplicate reads |
 | Native theme contrast | NativeContrastTest | 5 | Opaque ink, light/dark and multiple surfaces, derived error ink for all theme preferences, system versus fixed theme selection |
+| Shared Compose components | SharedComponentInteractionTest | 15 | Stable choice IDs/removal, disabled edits, exact tags/clear confirmation, confidence/rating/locales, recovery permissions, failed-read picker selections/paging/scrolling, export action locks/URI grants, busy-effect disposal, click-time dates and case-before-question previews |
+| Main learner demo expansion | DemoRepositoryTest (24), DemoSessionTest (13), DemoScreenInteractionTest (19) | 21 added; 56 total | Confidence/recall/navigation locks, category/tag/pool/count filters, library paging/restoration, retained planner drafts and validated date/category progress, connection failure/retry, offline completion/upload deduplication, bounded pending preservation, sample profile exit confirmation, rating persistence/locks and saved-state round trips. Updated classes are uncompiled/unrun. |
 | Existing transport and DTO suites | ApiClientTest, ApiErrorContractTest, PersistentCookieJarTest, DtoContractTest | — | CSRF, error reasons, cookies, cancellation, uncertain transport, export cleanup, decoding and outgoing service contracts |
-| Existing learner and rendered UI suites | NavigationContractTest, SessionPresentationTest, DownloadedSessionSyncTest, OfflineStudyFlowTest, AppNavigationInteractionTest, DemoScreenInteractionTest, QuizQuestionInteractionTest, OfflineStudyScreenInteractionTest, DemoRepositoryTest, DemoSessionTest | — | Navigation/capability gates, demo, study/exam/recall, downloaded answer sync, local completion, restoration, case order, feedback locks, RTL/large text and answer targets |
+| Existing learner and rendered UI suites | NavigationContractTest, SessionPresentationTest, DownloadedSessionSyncTest, OfflineStudyFlowTest, AppNavigationInteractionTest, QuizQuestionInteractionTest, OfflineStudyScreenInteractionTest | — | Navigation/capability gates, study/exam/recall, downloaded answer sync, local completion, restoration, case order, feedback locks, RTL/large text and answer targets |
 
 ## Test architecture and fixtures
 
@@ -48,7 +50,19 @@ Package suites use the same command with the appropriate `--tests` filters, for 
 - Existing learner/UI regression: `--tests '*.ui.demo.*' --tests '*.ui.quiz.*' --tests '*.ui.offline.*' --tests '*.ui.navigation.*'`
 - Theme contrast: `--tests 'com.mukhtabir.android.ui.theme.*'`
 
+Approved component milestone selection (15 shared-component cases plus six existing quiz/offline interaction cases):
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests '*.SharedComponentInteractionTest' --tests '*.QuizQuestionInteractionTest' --tests '*.OfflineStudyScreenInteractionTest' -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-android-components-tests.log 2>&1
+```
+
 Gradle's existing task discovers all test classes. Package filters provide focused suites without aggregate JUnit classes that could run cases twice during full discovery. Test counts above count methods; table-driven boundary cases add multiple assertions within individual methods.
+
+Prepared main-demo selection (56 cases). The user requested test-file updates only and deferred **all execution and compilation**; this command requires a later explicit run request:
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests '*.DemoRepositoryTest' --tests '*.DemoSessionTest' --tests '*.DemoScreenInteractionTest' -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-demo-expansion-tests.log 2>&1
+```
 
 ## Remaining coverage limits
 

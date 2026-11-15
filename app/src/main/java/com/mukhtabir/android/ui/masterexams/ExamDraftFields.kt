@@ -98,8 +98,10 @@ internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolea
             it.copy(choices = it.choices + QuestionChoiceDraft()) else it } },
             enabled = enabled && form.choices.size < maxChoices.coerceAtLeast(2)) { Text(stringResource(R.string.add_choice)) }
     }
-    MarkdownField(form.explanation, { value -> change { it.copy(explanation = value) } },
-        stringResource(R.string.explanation), enabled, minLines = 2)
+    DraftValidatedField("explanation", validation, showMessage = false) { error, focus ->
+        MarkdownField(form.explanation, { value -> change { it.copy(explanation = value) } },
+            stringResource(R.string.explanation), enabled, minLines = 2, error = error, fieldFocusRequester = focus)
+    }
     AppSection(stringResource(R.string.section_organization), revealError = revealError || validation.hasAny("source", "difficulty", "category"), revealRequest = validation.attempt) {
         DraftValidatedField("source", validation) { error, focus ->
             AppTextField(form.source, { value -> change { it.copy(source = value) } }, enabled = enabled,

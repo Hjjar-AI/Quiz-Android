@@ -1,5 +1,7 @@
 package com.mukhtabir.android.ui.masterexams
 
+import com.mukhtabir.android.util.QuestionContentLimits
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
@@ -50,11 +52,12 @@ internal data class EmbeddedExamDraftForm(
             if (required && value.trim().isEmpty()) add(DraftFieldError(key, R.string.draft_field_required))
             else if (length(value.trim()) > limit) add(DraftFieldError(key, R.string.draft_field_too_long, limit))
         }
-        text("question", question, 3000, true)
+        text("question", question, QuestionContentLimits.QUESTION, true)
+        text("explanation", explanation, QuestionContentLimits.EXPLANATION)
         if (choices.size !in 2..maxChoices.coerceAtLeast(2)) add(DraftFieldError("choices", R.string.draft_choice_count, maxChoices.coerceAtLeast(2)))
         val counts = choices.groupingBy { it.text.trim().lowercase(Locale.ROOT) }.eachCount()
         choices.forEach { choice ->
-            text("choice:${choice.id}", choice.text, 300, true)
+            text("choice:${choice.id}", choice.text, QuestionContentLimits.CHOICE, true)
             if (choice.text.isNotBlank() && counts[choice.text.trim().lowercase(Locale.ROOT)] != 1)
                 add(DraftFieldError("choice:${choice.id}", R.string.draft_choice_duplicate))
         }
@@ -65,7 +68,7 @@ internal data class EmbeddedExamDraftForm(
         text("caseKey", caseKey, 64)
         if (caseKey.isBlank() && (caseStem.isNotBlank() || caseOrder.isNotBlank()))
             add(DraftFieldError("caseKey", R.string.draft_case_key_required))
-        text("caseStem", caseStem, 3000)
+        text("caseStem", caseStem, QuestionContentLimits.CASE_STEM)
         if (caseOrder.isNotBlank() && parsedCaseOrder() == null) add(DraftFieldError("caseOrder", R.string.draft_case_order_invalid))
     }
 

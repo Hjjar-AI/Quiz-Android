@@ -15,7 +15,7 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 
 ## Current capabilities
 
-- Offline learner demo with local library/bookmarks, study/exam/recall, history, analytics and planner; ordinary study/exam/recall; downloaded practice and explicit synchronization; master exams and frozen result review.
+- Offline learner demo with filtered library/bookmarks, study/exam/recall setup, confidence, history/review notebooks, analytics, planner, profile and simulated connection/download/upload flows; ordinary study/exam/recall; downloaded practice and explicit synchronization; master exams and frozen result review.
 - Home/planner/activity, bookmarks, personal History, mistakes/fragile notebooks, analytics, groups, question/case/knowledge browsing.
 - Capability-gated authoring, draft editors, imports/exports, moderation and administration; Django remains authoritative.
 - Shared accessible controls, Arabic/English resources, themes/density/reading preferences, adaptive rail/panes, bounded images and recovery-aware forms.

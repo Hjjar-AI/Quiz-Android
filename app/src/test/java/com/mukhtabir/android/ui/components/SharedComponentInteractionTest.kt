@@ -289,6 +289,8 @@ class SharedComponentInteractionTest {
             assertEquals(4, dialog.datePicker.dayOfMonth)
             dialog.datePicker.updateDate(2026, 10, 9)
             dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick()
+        }
+        compose.runOnIdle {
             assertEquals(LocalDate.of(2026, 11, 9), selected)
         }
     }

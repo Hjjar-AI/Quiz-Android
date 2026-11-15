@@ -32,13 +32,15 @@ rootProject.name = "Mukhtabir Android"
 include(":app")
 
 
-// OS-account home, never the shared checkout or another account's GRADLE_USER_HOME.
-val accountHome = File(System.getProperty("user.home"))
+// Follow the effective Gradle home and registered local namespace; preserve portable defaults.
+val accountHome = gradle.gradleUserHomeDir
 val checkout = settingsDir.canonicalPath
 val checkoutId = MessageDigest.getInstance("SHA-256").digest(checkout.toByteArray(Charsets.UTF_8))
     .joinToString("") { "%02x".format(it.toInt() and 0xff) }.take(16)
-val accountRoot = File(accountHome, ".gradle/mukhtabir/$checkoutId")
-gradle.startParameter.projectCacheDir = File(accountRoot, "project-cache")
+val accountRoot = if (gradle.extensions.extraProperties.has("androidSharedWorkDirectory"))
+    gradle.extensions.extraProperties.get("androidSharedWorkDirectory") as File
+else File(accountHome, "mukhtabir/$checkoutId")
+if (gradle.startParameter.projectCacheDir == null) gradle.startParameter.projectCacheDir = File(accountRoot, "project-cache")
 buildCache {
     local {
         directory = File(accountRoot, "task-cache")

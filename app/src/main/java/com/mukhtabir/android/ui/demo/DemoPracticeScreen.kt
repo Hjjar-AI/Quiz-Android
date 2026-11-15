@@ -52,8 +52,9 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
     val visible = session.answers.indices.filter { filter.includes(session.answers[it] >= 0, session.answers[it] == demoQuestions[it].correct) }
     val displayIndex = if (reviewing) session.index.takeIf { it in visible } ?: visible.firstOrNull() else session.index
     val index = displayIndex ?: 0
+    val canFinish = session.mode == DemoMode.EXAM || session.answers.getOrNull(index) == -1 || session.canAdvance(index)
     fun start(mode: DemoMode, count: Int = demoQuestions.size) {
-        repository.start(mode, session.questionIds.take(count)); filter = ReviewFilter.ALL; dialog = null
+        repository.start(mode, session.questionIds.take(count), downloaded = session.downloaded); filter = ReviewFilter.ALL; dialog = null
     }
     fun back() {
         when (session.page) {
@@ -76,7 +77,7 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
     if (showMap && (active || reviewing)) AppConfirmationDialog(onDismissRequest = { showMap = false },
         title = { Text(stringResource(R.string.session_question_navigation)) },
         text = { LearningQuestionMap(index, session.total, session.answers.indices.filter { session.answers[it] >= 0 }.toSet(),
-            session.flagged, reviewing || session.mode == DemoMode.EXAM || session.answers[index] >= 0) { target ->
+            session.flagged, reviewing || session.canAdvance(index)) { target ->
                 filter = ReviewFilter.ALL; change(session.copy(index = target)); showMap = false
             } }, confirmButton = { AppTextButton({ showMap = false }) { Text(stringResource(R.string.done)) } })
     dialog?.let { current -> AppConfirmationDialog(
@@ -92,7 +93,7 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
         confirmButton = {
             if (current == DemoDialog.DISCARD) AppDangerTextButton({ repository.discard(); dialog = null; onClose() }) {
                 Text(stringResource(R.string.demo_discard))
-            } else AppTextButton({ change(session.finish(session.deadlineReached())); dialog = null }) { Text(stringResource(R.string.finish_session_action)) }
+            } else AppTextButton({ change(session.finish(session.deadlineReached())); dialog = null }, enabled = canFinish) { Text(stringResource(R.string.finish_session_action)) }
         },
         dismissButton = { Column {
             if (current == DemoDialog.DISCARD) AppTextButton({ dialog = null; onClose() }) { Text(stringResource(R.string.demo_pause)) }
@@ -111,7 +112,7 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
                     AppIconButton({ change(session.copy(flagged = if (index in session.flagged) session.flagged - index else session.flagged + index)) }) {
                         Icon(Icons.Filled.Flag, stringResource(if (index in session.flagged) R.string.flow_unflag else R.string.flow_flag))
                     }
-                    AppTextButton({ dialog = DemoDialog.FINISH }) { Text(stringResource(R.string.finish)) }
+                    AppTextButton({ dialog = DemoDialog.FINISH }, enabled = canFinish) { Text(stringResource(R.string.finish)) }
                 } })
         } },
         bottomBar = {
@@ -120,8 +121,8 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
                 val last = if (reviewing) position == visible.lastIndex else index == session.total - 1
                 LearningSessionNavigation(onQuestions = { showMap = true },
                     onPrevious = { change(session.copy(index = if (reviewing) visible[position - 1] else index - 1)) },
-                    previousEnabled = if (reviewing) position > 0 else index > 0,
-                    nextEnabled = reviewing || session.mode == DemoMode.EXAM || session.answers[index] >= 0,
+                    previousEnabled = if (reviewing) position > 0 else index > 0 && (session.answers[index] < 0 || session.canAdvance(index)),
+                    nextEnabled = reviewing || session.canAdvance(index),
                     nextLabel = stringResource(if (!last) R.string.next else if (reviewing) R.string.results else R.string.finish),
                     onNext = {
                         if (last) { if (reviewing) change(session.copy(page = DemoPage.RESULTS)) else dialog = DemoDialog.FINISH }
@@ -140,7 +141,13 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
                     LearningResultsSummary(session.answers.indices.count { session.answers[it] == demoQuestions[it].correct }, session.total, session.answered)
                     if (session.expired) Text(stringResource(R.string.demo_expired), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                     AppButton({ filter = ReviewFilter.ALL; change(session.copy(index = 0, page = DemoPage.REVIEW)) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_review)) }
-                    AppOutlinedButton({ start(session.mode, session.total) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_retry)) }
+                    AppOutlinedButton({ start(session.mode, session.total) }, Modifier.fillMaxWidth(),
+                        enabled = if (session.downloaded) repository.pendingRecords.size < 10 else repository.state.connected) { Text(stringResource(R.string.demo_retry)) }
+                    if (session.downloaded) {
+                        val pending = repository.pendingRecords.any { it.session.id == session.id }
+                        AppStatus(stringResource(if (pending) R.string.demo_pending_sync else R.string.demo_synced), kind = if (pending) AppStatusKind.INFO else AppStatusKind.SUCCESS)
+                        if (pending) AppButton(repository::sync, enabled = repository.state.connected) { Text(stringResource(R.string.offline_sync)) }
+                    }
                     AppOutlinedButton({ onClose() }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_return)) }
                     Text(stringResource(R.string.demo_local_notice), style = MaterialTheme.typography.bodySmall)
                 }
@@ -161,7 +168,8 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
                                 AppTextField(session.recalled[index], { value -> change(session.copy(recalled = session.recalled.mapIndexed { i, old -> if (i == index) value.take(500) else old })) },
                                     Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.demo_recalled)) },
                                     supportingText = { Text(stringResource(R.string.demo_recalled_limit)) })
-                                AppButton({ change(session.copy(revealed = session.revealed + index)); focus.clearFocus() }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.demo_reveal)) }
+                                AppButton({ change(session.copy(revealed = session.revealed + index)); focus.clearFocus() }, Modifier.fillMaxWidth(),
+                                    enabled = session.recalled[index].isNotBlank()) { Text(stringResource(R.string.demo_reveal)) }
                             } else if (session.recalled[index].isNotBlank()) {
                                 Text(stringResource(R.string.demo_recalled), style = MaterialTheme.typography.labelLarge)
                                 Text(session.recalled[index])
@@ -177,6 +185,10 @@ internal fun DemoPracticeScreen(repository: DemoRepository, onClose: () -> Unit)
                             }
                         }
                         if (feedback) ExplanationCard(stringResource(question.explanation), title = stringResource(R.string.explanation))
+                        if (active && session.mode != DemoMode.EXAM && answer >= 0) {
+                            key(index) { ConfidenceSelector(session.confidence[index], { change(session.withConfidence(it)) }, enabled = true, required = true) }
+                        }
+                        if (reviewing) session.confidence[index]?.let { Text(confidenceLabel(it)) }
                         if (reviewing && answer < 0) Text(stringResource(R.string.unanswered))
                         if (active && session.mode != DemoMode.EXAM && answer < 0) Text(stringResource(R.string.demo_answer_hint), style = MaterialTheme.typography.bodySmall)
                     }

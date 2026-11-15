@@ -298,8 +298,8 @@
     <string name="remove_choice">Remove</string>
     <string name="move_choice_up">Move up</string>
     <string name="move_choice_down">Move down</string>
-    <string name="question_text_too_long">Question and explanation must each be at most 3000 characters.</string>
-    <string name="choice_text_too_long">Each choice must be at most 300 characters.</string>
+    <string name="question_text_too_long">Question and explanation must each be at most 4000 characters.</string>
+    <string name="choice_text_too_long">Each choice must be at most 500 characters.</string>
     <string name="duplicate_choices">Each choice must be different.</string>
     <string name="planner_invalid_target">Enter a daily target between 1 and 1000.</string>
     <string name="planner_invalid_categories">Choose valid categories.</string>
@@ -486,7 +486,7 @@
     <string name="editor_translation_align_confirm">Remove only the surplus translated choices shown below the base choice fields? Review the remaining translations before saving.</string>
     <string name="master_draft_conflict">The saved answer or attempt changed on the server. Your edit is kept. Compare the saved answer, then keep your draft or discard it.</string>
     <string name="master_attempt_changed">The attempt changed or already finished. Server progress has been refreshed; review it before continuing.</string>
-    <string name="editor_association_invalid">Use a case key up to 64 characters, a stem up to 3000 characters, and an optional positive question order. A stem or order requires a case key.</string>
+    <string name="editor_association_invalid">Use a case key up to 64 characters, a stem up to 4000 characters, and an optional positive question order. A stem or order requires a case key.</string>
     <string name="editor_case">Clinical case</string>
     <string name="editor_choose_case">Find an existing case</string>
     <string name="editor_case_key">Case key (empty for no case)</string>
@@ -630,7 +630,7 @@
     <string name="case_stem_save_confirm">Replace the shared stem for case %1$s and all its linked questions?</string>
     <string name="case_stem_clear_confirm">Clear the shared stem for case %1$s and all its linked questions? This does not detach or delete questions.</string>
     <string name="case_stem_clear_hint">Leave the field blank to clear the shared stem. Questions stay linked to the case.</string>
-    <string name="case_stem_length">The shared stem allows up to 3000 characters.</string>
+    <string name="case_stem_length">The shared stem allows up to 4000 characters.</string>
     <string name="case_stem_leave">Discard your unsaved shared-stem changes?</string>
     <string name="case_stem_conflict">The shared stem changed on the server.</string>
     <string name="case_stem_server">Current server stem</string>
@@ -756,7 +756,7 @@
     <string name="exam_target_apply">Apply selections</string>
     <string name="exam_draft_create">Create draft question</string>
     <string name="exam_draft_scope">Creates a private draft and immediately appends it to this exam. Save exam metadata first.</string>
-    <string name="exam_draft_invalid">Enter a question up to 3000 characters, 2 or more distinct nonempty choices up to 300 characters each, and select the correct answer. Source: 200 characters; case key: 64; case stem: 3000. Case order must be a positive whole number and case fields need a case key.</string>
+    <string name="exam_draft_invalid">Enter a question up to 4000 characters, 2 or more distinct nonempty choices up to 500 characters each, and select the correct answer. Source: 200 characters; case key: 64; case stem: 4000. Case order must be a positive whole number and case fields need a case key.</string>
     <string name="exam_draft_uncertain">The request may have created a question. Refresh and review new exam questions before discarding this local draft. Creation stays blocked; the request will not be replayed.</string>
     <string name="exam_draft_saved">Draft question created. Refresh confirms its exam membership.</string>
     <string name="exam_draft_created_id">Draft question ID: %1$s</string>
