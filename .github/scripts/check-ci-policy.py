@@ -93,6 +93,15 @@ def main():
                      f'{name}: signing isolated from build and Gradle caches')
             if name in SIGNING_FILES and job_id == 'draft':
                 need(job.get('needs') == 'sign', f'{name}: draft requires verified signing')
+            if name == 'emulator.yml':
+                strategy = job.get('strategy', {})
+                need(strategy.get('max-parallel') == 1 and strategy.get('fail-fast') is False
+                     and strategy.get('matrix') == {'api': [29, 35]},
+                     f'{name}: explicit serial API matrix required')
+                runners = [step for step in job['steps'] if step.get('uses', '').startswith('reactivecircus/android-emulator-runner@')]
+                need(len(runners) == 1 and runners[0].get('with', {}).get('emulator-port') == 5554
+                     and runners[0].get('with', {}).get('script') == 'python3 .github/scripts/capture-emulator.py',
+                     f'{name}: owned fixed-port capture helper required')
             if any(step.get('uses') == './.github/actions/setup-android' for step in job['steps']):
                 need(data['concurrency']['group'] == 'mukhtabir-hosted-android',
                      f'{name}: serialize hosted Android work across workflows')
