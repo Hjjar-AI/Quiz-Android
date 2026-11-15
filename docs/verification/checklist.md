@@ -2,6 +2,12 @@
 
 Current evidence and pending verification only. Reusable implementation guidance stays in the [native UI](../guides/native-ui.md) and [offline/recovery](../guides/offline-and-recovery.md) guides.
 
+## 2026-11-15 Git/GitHub adaptation
+
+Reviewed Aqaqeer's current Git hooks, attributes/ignores, repository checker, review templates, dependency controls, workflow definitions and release/security guidance against Android's actual wrapper/version/signing layout. Added repository/editor attributes, missing private/package ignores, an optional pre-push hook, a source-only integrity checker, a manually dispatched read-only/public-only workflow, grouped GitHub Actions Dependabot proposals, CODEOWNERS, bilingual issue forms, a PR checklist and private-reporting guidance. [The repository guide](../guides/git-and-github.md) records applied/deferred items and backend/Vue suggestions. No other repository was changed.
+
+Initial `python3 .github/scripts/check-repository.py` passed: 345 text files, 42 local links, zero problems; 20 external/workstation links and two excluded links were not verified. This precedes the final documentation updates. Final source checks are recorded below after completion. No Gradle/build/compilation/package/version changes, suite inspection/execution, history scan, tool download, hook activation, commit/push, hosted workflow run or GitHub settings change accompanied implementation. Source completion does not establish hosted or runtime behavior.
+
 ## 2026-11-04 question content limits
 
 Updated ordinary/translated question editors, case editor, embedded master drafts and public-config defaults to the matching backend limits: question/explanation/case 4,000 characters, choice 500, 2–15 choices. Shared `QuestionContentLimits.kt` constants count Unicode code points for field validation. Embedded master drafts now validate and focus explanation overflow through the existing error controls. [Shared contract](../../../backend/docs/contracts/questionContentLimits.md).

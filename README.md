@@ -7,6 +7,7 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 | Task | Read |
 | --- | --- |
 | Tools, builds, caches, shared debug signing and server connection | [Build and setup guide](docs/guides/build-and-setup.md) |
+| Git/GitHub checks, optional hook, review templates and deferred cross-repository ideas | [Repository guide](docs/guides/git-and-github.md) · [remaining repository work](docs/workPlan.md) |
 | Features, source ownership, controls, fonts, accessibility and adaptive layouts | [Native UI/source guide](docs/guides/native-ui.md) |
 | Download permissions, account/server isolation, drafts and uncertain writes | [Offline and recovery guide](docs/guides/offline-and-recovery.md) |
 | Review disposition, current evidence and remaining device/API checks | [Verification status](docs/verification/checklist.md) |
