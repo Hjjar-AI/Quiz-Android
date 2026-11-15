@@ -22,6 +22,7 @@ def api(path, method='GET'):
 def identity(release):
     return (release['id'], release['tag_name'], release['updated_at'], release['body'],
             release['author']['id'], release['draft'], release['prerelease'], release['target_commitish'], release['published_at'],
+            release.get('immutable', False),
             sorted((a['id'], a['name'], a['size'], a['updated_at']) for a in release['assets']))
 
 

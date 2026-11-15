@@ -14,6 +14,7 @@ OPERATIONS = {
     'compile-debug': [':app:compileDebugSources'],
     'compile-release': [':app:compileReleaseSources'],
     'jvm': [':app:testDebugUnitTest'],
+    'all': [':app:compileDebugSources', ':app:compileReleaseSources', ':app:testDebugUnitTest'],
     'lint': ['-I', '.github/production-lint.init.gradle', ':app:lintDebug'],
     'debug-apk': [':app:assembleDebug'],
     'release-apk': [':app:assembleRelease'],
@@ -92,7 +93,7 @@ def run(operation):
     # Collect reports from the actual redirected module output, never app/build.
     if (build / 'reports').is_dir():
         shutil.copytree(build / 'reports', directory / 'reports', dirs_exist_ok=True)
-    if operation == 'jvm' and (build / 'test-results').is_dir():
+    if operation in ('jvm', 'all') and (build / 'test-results').is_dir():
         shutil.copytree(build / 'test-results', directory / 'test-results', dirs_exist_ok=True)
     if operation in ('debug-apk', 'release-apk') and result.returncode == 0:
         variant = 'debug' if operation == 'debug-apk' else 'release'
