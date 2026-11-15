@@ -58,3 +58,19 @@ __pycache__/
 # Temporary atomic-version files and the Windows coordination lock.
 gradle/.app-version-*
 gradle/.app-version.lock
+
+# Private evidence, CI output and generated distribution files.
+/local/
+/ci-output/
+/signing/
+/release-files/
+*.apk
+*.aab
+*.idsig
+*.p12
+*.pfx
+*.pem
+*.key
+*.p8
+*.py[cod]
+desktop.ini

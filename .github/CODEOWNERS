@@ -1,0 +1,11 @@
+# Review routing only; required review needs a separately configured GitHub rule.
+/.github/ @Hjjar-AI
+/.githooks/ @Hjjar-AI
+/.gitignore @Hjjar-AI
+/.gitattributes @Hjjar-AI
+/gradle/ @Hjjar-AI
+/gradlew* @Hjjar-AI
+/*gradle* @Hjjar-AI
+/build.py @Hjjar-AI
+/app/build.gradle.kts @Hjjar-AI
+/app/src/main/AndroidManifest.xml @Hjjar-AI
