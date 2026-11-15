@@ -54,7 +54,12 @@ def main(apk):
         raise ValueError('Unexpected merged permission set; review actual shipping graph')
     if receiver in permissions:
         declaration = next((node for node in manifest.findall('permission') if node.get(ANDROID + 'name') == receiver), None)
-        if declaration is None or declaration.get(ANDROID + 'protectionLevel') not in ('signature', '0x00000002', '2'):
+        protection = declaration.get(ANDROID + 'protectionLevel', '') if declaration is not None else ''
+        try:
+            signature_only = protection == 'signature' or int(protection, 0) == 2
+        except ValueError:
+            signature_only = False
+        if not signature_only:
             raise ValueError('Generated receiver permission must be signature-protected')
     with zipfile.ZipFile(apk) as package:
         if package.testzip() is not None:

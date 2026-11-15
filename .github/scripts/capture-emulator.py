@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import time
 import xml.etree.ElementTree as ET
 
@@ -83,25 +84,53 @@ def wait_for(label_values, contains=False):
 
 def main():
     owned_device()
+    kind = os.environ.get('CI_CAPTURE_KIND', 'debug')
+    if kind not in ('debug', 'release'):
+        raise RuntimeError('Unknown capture build type')
     OUTPUT.mkdir(parents=True, exist_ok=True)
     report = dict(api=os.environ['CI_EXPECTED_API'], avd=os.environ['CI_AVD_NAME'], serial=SERIAL,
                   package=PACKAGE, sourceCommit=os.environ['GITHUB_SHA'], run=os.environ['GITHUB_RUN_ID'],
-                  attempt=os.environ['GITHUB_RUN_ATTEMPT'], phase='prepare', captures=[], cleanupErrors=[])
+                  attempt=os.environ['GITHUB_RUN_ATTEMPT'], kind=kind, phase='prepare', captures=[], cleanupErrors=[])
     installed = None
     installation_started = False
     recorder = None
     recorder_log = None
+    signing_workspace = None
     remote = f'/sdcard/mukhtabir-ci-{os.environ["GITHUB_RUN_ID"]}-{os.environ["GITHUB_RUN_ATTEMPT"]}.mp4'
     try:
         probe = adb('shell', 'pm', 'path', PACKAGE, check=False)
         if probe.returncode not in (0, 1) or probe.stdout.strip() or probe.stderr.strip():
             raise RuntimeError('Existing package found; refusing replacement or data clearing')
-        paths = list((ROOT / 'ci-output/debug-apk').glob('*.apk'))
+        paths = list((ROOT / f'ci-output/{kind}-apk').glob('*.apk'))
         if len(paths) != 1:
             raise RuntimeError('Expected one fresh application APK')
         apk = paths[0]
-        report['apkSha256'] = hashlib.sha256(apk.read_bytes()).hexdigest()
         tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/34.0.0'
+        if kind == 'release':
+            source_hash = hashlib.sha256(apk.read_bytes()).hexdigest()
+            inspection = json.loads((ROOT / 'ci-output/release-apk/inspection.json').read_text())
+            if inspection['apkSha256'] != source_hash or inspection['sourceCommit'] != os.environ['GITHUB_SHA']:
+                raise RuntimeError('Inspected release provenance mismatch')
+            report['unsignedSourceSha256'] = source_hash
+            # This throwaway signer is used only on this fresh hosted AVD. It is
+            # never exported as a production distribution or a permanent identity.
+            signing_workspace = tempfile.TemporaryDirectory(prefix='mukhtabir-release-smoke-', dir=os.environ['RUNNER_TEMP'])
+            work = Path(signing_workspace.name)
+            work.chmod(0o700)
+            key = work / 'throwaway.keystore'
+            signed = work / 'release-smoke.apk'
+            environment = dict(os.environ, CI_SMOKE_PASSWORD='throwaway-hosted-smoke-only')
+            subprocess.run(['keytool', '-genkeypair', '-keystore', str(key), '-alias', 'smoke',
+                            '-storepass:env', 'CI_SMOKE_PASSWORD', '-keypass:env', 'CI_SMOKE_PASSWORD',
+                            '-keyalg', 'RSA', '-keysize', '2048', '-validity', '2', '-dname', 'CN=Mukhtabir CI smoke'],
+                           env=environment, capture_output=True, check=True, timeout=60)
+            key.chmod(0o600)
+            subprocess.run([str(tools / 'apksigner'), 'sign', '--ks', str(key), '--ks-key-alias', 'smoke',
+                            '--ks-pass', 'env:CI_SMOKE_PASSWORD', '--key-pass', 'env:CI_SMOKE_PASSWORD',
+                            '--v4-signing-enabled', 'false', '--out', str(signed), str(apk)],
+                           env=environment, capture_output=True, check=True, timeout=60)
+            apk = signed
+        report['apkSha256'] = hashlib.sha256(apk.read_bytes()).hexdigest()
         for executable, arguments in (
                 ('aapt', ['dump', 'badging', str(apk)]),
                 ('apksigner', ['verify', '--print-certs', str(apk)])):
@@ -110,6 +139,8 @@ def main():
             (OUTPUT / f'apk-{executable}.txt').write_text(result)
             if executable == 'aapt' and not result.startswith(f"package: name='{PACKAGE}' "):
                 raise RuntimeError('Unexpected application package')
+            if executable == 'aapt' and ('application-debuggable' in result) != (kind == 'debug'):
+                raise RuntimeError('Unexpected packaged build type')
         installation_started = True
         adb('install', '-t', str(apk), timeout=90)
         installed = identity()
@@ -160,6 +191,15 @@ def main():
         wait_for(labels('demo_badge'), contains=True)
         screenshot('demo-large-text')
         report['captures'].append('demo-large-text')
+        if kind == 'release':
+            pid = adb('shell', 'pidof', PACKAGE).stdout.strip()
+            if not re.fullmatch(rb'\d+', pid):
+                raise RuntimeError('Expected one release application process')
+            for _ in range(3):
+                time.sleep(10)
+                if adb('shell', 'pidof', PACKAGE).stdout.strip() != pid:
+                    raise RuntimeError('Minified release process exited/restarted during observation')
+            report['releaseProcessSurvivalSeconds'] = 30
         report['phase'] = 'capture completed'
     except Exception as error:
         report['failure'] = type(error).__name__ + ': ' + str(error)
@@ -210,8 +250,10 @@ def main():
                 report['cleanupErrors'].append('Owned package cleanup unconfirmed')
         elif installation_started:
             report['cleanupErrors'].append('Installation outcome/identity unconfirmed; no uninstall attempted')
+        if signing_workspace is not None:
+            signing_workspace.cleanup()
         (OUTPUT / 'provenance.json').write_text(json.dumps(report, indent=2) + '\n')
-        text = ('## Emulator visual capture\n\n' + f'API {report["api"]}; last phase: {report["phase"]}.\n'
+        text = ('## Emulator visual capture\n\n' + f'{kind} build; API {report["api"]}; last phase: {report["phase"]}.\n'
                 + f'Captured: {", ".join(report["captures"]) or "none"}. Cleanup/capture limitations: {len(report["cleanupErrors"])}.\n\n'
                 'Startup/demo evidence only. No instrumentation suite, functional-regression, accessibility or human visual acceptance claim.\n'
                 'Network radios were requested off; this is not packet-level network isolation proof.\n')

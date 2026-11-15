@@ -87,6 +87,8 @@ def main():
                     allowed = job_id == 'cleanup' and job['permissions'] == {'contents': 'read', 'actions': 'write'}
                 if name == 'cleanup-debug.yml':
                     allowed = job_id == 'cleanup' and job['permissions'] == {'contents': 'write'}
+                if name == 'release.yml':
+                    allowed = job_id == 'startup' and job['permissions'] == {'contents': 'read', 'actions': 'read'}
                 need(allowed,
                      f'{name}: unexpected job permissions')
             if name in SIGNING_FILES and job_id == 'sign':
