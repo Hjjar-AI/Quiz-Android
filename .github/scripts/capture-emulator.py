@@ -251,7 +251,10 @@ def main():
         elif installation_started:
             report['cleanupErrors'].append('Installation outcome/identity unconfirmed; no uninstall attempted')
         if signing_workspace is not None:
-            signing_workspace.cleanup()
+            try:
+                signing_workspace.cleanup()
+            except OSError:
+                report['cleanupErrors'].append('Throwaway signing workspace cleanup unconfirmed')
         (OUTPUT / 'provenance.json').write_text(json.dumps(report, indent=2) + '\n')
         text = ('## Emulator visual capture\n\n' + f'{kind} build; API {report["api"]}; last phase: {report["phase"]}.\n'
                 + f'Captured: {", ".join(report["captures"]) or "none"}. Cleanup/capture limitations: {len(report["cleanupErrors"])}.\n\n'

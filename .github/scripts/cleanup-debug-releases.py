@@ -54,7 +54,8 @@ def main():
     for release in releases:
         marker = MARKER.search(release.get('body') or '')
         if (marker and release['tag_name'] == f'debug-{marker[1]}-{marker[2]}'
-                and release['author']['login'] == 'github-actions[bot]' and not release['draft']):
+                and release['author']['login'] == 'github-actions[bot]' and not release['draft']
+                and not release.get('immutable', False)):
             owned.append((release, marker))
     owned.sort(key=lambda item: item[0]['published_at'], reverse=True)
     retained = {item[0]['id'] for item in owned[:keep]}

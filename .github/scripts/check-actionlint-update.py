@@ -22,11 +22,16 @@ def main():
     digest = asset.get('digest', '')
     if not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
         raise ValueError('No official asset SHA-256 available; verify upstream manually')
-    pins['actionlint'] = dict(version=version, sha256=digest.removeprefix('sha256:'))
+    current = pins['actionlint']['version']
+    if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', current):
+        raise ValueError('Invalid current pin')
+    newer = tuple(map(int, version.split('.'))) > tuple(map(int, current.split('.')))
+    if newer:
+        pins['actionlint'] = dict(version=version, sha256=digest.removeprefix('sha256:'))
     directory = Path('ci-output/actionlint-update')
     directory.mkdir(parents=True, exist_ok=True)
     patch = ''.join(difflib.unified_diff(original.splitlines(True), (json.dumps(pins, indent=2)+'\n').splitlines(True),
-                                       fromfile='a/.github/ci-tools.json', tofile='b/.github/ci-tools.json'))
+                                       fromfile='a/.github/ci-tools.json', tofile='b/.github/ci-tools.json')) if newer else ''
     (directory / 'proposed-update.patch').write_text(patch)
     (directory / 'results.md').write_text(f'Current pin: {json.loads(original)["actionlint"]["version"]}; upstream stable: {version}.\n'
                                         'Review the proposed patch; nothing was applied or executed.\n')

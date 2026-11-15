@@ -59,6 +59,9 @@ def main():
                      f'{context}: cache writes restricted to default branch')
 
     paths = sorted((ROOT / '.github/workflows').glob('*.yml'))
+    numbers = [load_yaml(path)['name'].split(' ', 1)[0] for path in paths]
+    need(sorted(numbers) == [f'{number:02d}' for number in range(16)],
+         'Workflow inventory must account for 00 and every reference workflow 01-15 exactly once')
     for path in paths:
         data = load_yaml(path)
         name = path.name
@@ -70,6 +73,10 @@ def main():
             need(confirm['type'] == 'boolean' and confirm['default'] is False,
                  f'{name}: explicit opt-in default false required')
         for job_id, job in data['jobs'].items():
+            dependencies = job.get('needs', [])
+            dependencies = [dependencies] if isinstance(dependencies, str) else dependencies
+            need(all(dependency in data['jobs'] for dependency in dependencies),
+                 f'{name}/{job_id}: unresolved job dependency')
             guard = PUBLIC if name == 'repository.yml' else CONFIRMED
             if name in SIGNING_FILES and job_id == 'publish':
                 guard = PUBLICATION_CONFIRMED
@@ -129,6 +136,12 @@ def main():
                 need(data['concurrency']['group'] == 'mukhtabir-hosted-android'
                      and job['steps'][0]['with'].get('ref') == '${{ github.event.repository.default_branch }}',
                      f'{name}: serialize delivery/cleanup and use trusted default-branch tooling')
+            if name == 'release.yml' and job_id == 'startup':
+                runners = [step for step in job['steps'] if step.get('uses', '').startswith('reactivecircus/android-emulator-runner@')]
+                need(job.get('needs') == 'check' and len(runners) == 1
+                     and runners[0].get('env', {}).get('CI_CAPTURE_KIND') == 'release'
+                     and runners[0].get('with', {}).get('emulator-port') == 5554,
+                     f'{name}: inspected-release dependency and owned release AVD required')
             if any(step.get('uses') == './.github/actions/setup-android' for step in job['steps']):
                 need(data['concurrency']['group'] == 'mukhtabir-hosted-android',
                      f'{name}: serialize hosted Android work across workflows')
