@@ -83,6 +83,8 @@ def main():
                 if name in SIGNING_FILES:
                     allowed = ((job_id == 'sign' and job['permissions'] == {'contents': 'read', 'actions': 'read'})
                                or (job_id == 'draft' and job['permissions'] == {'contents': 'write', 'actions': 'read'}))
+                if name == 'cleanup-evidence.yml':
+                    allowed = job_id == 'cleanup' and job['permissions'] == {'contents': 'read', 'actions': 'write'}
                 need(allowed,
                      f'{name}: unexpected job permissions')
             if name in SIGNING_FILES and job_id == 'sign':
@@ -102,6 +104,15 @@ def main():
                 need(len(runners) == 1 and runners[0].get('with', {}).get('emulator-port') == 5554
                      and runners[0].get('with', {}).get('script') == 'python3 .github/scripts/capture-emulator.py',
                      f'{name}: owned fixed-port capture helper required')
+            if name == 'cleanup-evidence.yml':
+                inputs = data['on']['workflow_dispatch']['inputs']
+                need(inputs['dry_run']['type'] == 'boolean' and inputs['dry_run']['default'] is True
+                     and inputs['older_than_days']['default'] == 7
+                     and inputs['scope']['options'] == ['all-workflows', 'emulator'],
+                     f'{name}: preview/retention/scope defaults required')
+                need(job['steps'][0].get('with', {}).get('ref') == '${{ github.event.repository.default_branch }}'
+                     and data['concurrency']['group'] == 'cleanup-ci-evidence',
+                     f'{name}: trusted default-branch tooling and cleanup serialization required')
             if any(step.get('uses') == './.github/actions/setup-android' for step in job['steps']):
                 need(data['concurrency']['group'] == 'mukhtabir-hosted-android',
                      f'{name}: serialize hosted Android work across workflows')
