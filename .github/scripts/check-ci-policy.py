@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[2]
 PIN = re.compile(r'[\w.-]+/[\w.-]+(?:/[\w./-]+)?@[0-9a-f]{40}')
 PUBLIC = '${{ github.event.repository.private == false }}'
 CONFIRMED = "${{ inputs.confirm && github.event.repository.private == false && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}"
+SIGNING_FILES = {'sign-debug.yml', 'sign-release.yml'}
+DRAFT_CONFIRMED = CONFIRMED[:-3] + " && inputs.publication == 'draft' }}"
 
 
 def main():
@@ -23,6 +25,12 @@ def main():
         for step in items:
             need(all(re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name) for name in step.get('env', {})),
                  f'{context}: literal valid shell environment names required')
+            for variable, value in step.get('env', {}).items():
+                if isinstance(value, str) and 'secrets.' in value:
+                    need(context in {'sign-debug.yml/sign', 'sign-release.yml/sign'}
+                         and variable.startswith('MUKHTABIR_SIGN_')
+                         and step.get('run', '').startswith('python3 .github/scripts/sign-apk.py '),
+                         f'{context}: secrets restricted to isolated signing step')
             if 'run' in step:
                 need('${{' not in step['run'], f'{context}: pass expressions through env')
                 continue
@@ -61,19 +69,34 @@ def main():
             confirm = data['on']['workflow_dispatch']['inputs']['confirm']
             need(confirm['type'] == 'boolean' and confirm['default'] is False,
                  f'{name}: explicit opt-in default false required')
-        for job in data['jobs'].values():
-            need(job['if'] == (PUBLIC if name == 'repository.yml' else CONFIRMED),
+        for job_id, job in data['jobs'].items():
+            guard = PUBLIC if name == 'repository.yml' else CONFIRMED
+            if name in SIGNING_FILES and job_id == 'draft':
+                guard = DRAFT_CONFIRMED
+            need(job['if'] == guard,
                  f'{name}: public/default-branch/confirmation guard required')
             need(job['runs-on'] == 'ubuntu-24.04', f'{name}: standard Ubuntu runner required')
             need(type(job['timeout-minutes']) is int and 0 < job['timeout-minutes'] <= 60,
                  f'{name}: bounded timeout required')
             if 'permissions' in job:
-                need(name == 'security.yml' and job['permissions'] == {'contents': 'read', 'security-events': 'write'},
+                allowed = name == 'security.yml' and job['permissions'] == {'contents': 'read', 'security-events': 'write'}
+                if name in SIGNING_FILES:
+                    allowed = ((job_id == 'sign' and job['permissions'] == {'contents': 'read', 'actions': 'read'})
+                               or (job_id == 'draft' and job['permissions'] == {'contents': 'write', 'actions': 'read'}))
+                need(allowed,
                      f'{name}: unexpected job permissions')
+            if name in SIGNING_FILES and job_id == 'sign':
+                need(job.get('environment') == name.removeprefix('sign-').removesuffix('.yml') + '-signing',
+                     f'{name}: dedicated signing environment required')
+                need(job.get('needs') == 'build' and not any(
+                    step.get('uses') == './.github/actions/setup-android' for step in job['steps']),
+                     f'{name}: signing isolated from build and Gradle caches')
+            if name in SIGNING_FILES and job_id == 'draft':
+                need(job.get('needs') == 'sign', f'{name}: draft requires verified signing')
             if any(step.get('uses') == './.github/actions/setup-android' for step in job['steps']):
                 need(data['concurrency']['group'] == 'mukhtabir-hosted-android',
                      f'{name}: serialize hosted Android work across workflows')
-            steps(job['steps'], name)
+            steps(job['steps'], f'{name}/{job_id}')
     for error in errors:
         print(error)
     print(f'Workflow policy: {len(paths)} manual workflows reviewed; {len(errors)} problems. Source checks only.')
