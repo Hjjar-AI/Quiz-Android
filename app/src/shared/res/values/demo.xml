@@ -1,43 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="demo_scope">Sample learner data · Fully offline</string>
-    <string name="demo_menu">Open navigation menu</string>
-    <string name="demo_learner">Sample learner</string>
-    <string name="demo_greeting">Welcome back, sample learner</string>
     <string name="demo_profile_hint">Explore the learner experience with a local sample profile.</string>
-    <string name="demo_account_limits">This is a sample account. Leave the demo and connect to your server to manage your own account. All demo changes are cleared when you leave.</string>
-    <string name="demo_history_hint">Two example sessions are included. Finished demo sessions appear here too; open one to review it.</string>
-    <string name="demo_answered_total">Answers recorded</string>
-    <string name="demo_accuracy">Accuracy of answered questions</string>
-    <string name="demo_percentage">%1$s%%</string>
     <string name="demo_category_circulation">Heart, blood and lungs</string>
     <string name="demo_category_systems">Cells and body systems</string>
-    <string name="demo_add_bookmark">Add bookmark</string>
     <string name="demo_daily_target">Daily question target (1–1000)</string>
-    <string name="demo_planner_hint">Choose a goal, categories and dates. Completed sessions update the matching daily progress; downloaded practice counts after its sample upload.</string>
-    <string name="demo_paused_hint">A sample session is in progress. Resume it before starting another session or opening a past result. Exam time continues while you browse.</string>
-    <string name="demo_pause">Keep session and return</string>
-    <string name="demo_discard">Discard session</string>
-    <string name="demo_exit_message">Leave the demo and clear its sample changes? Your account and downloaded study are unaffected.</string>
     <string name="demo_case">Case: During a physiology lesson, a learner follows oxygen from the lungs into the blood and around the body. Use this context for the following question.</string>
-    <string name="demo_recalled_limit">Up to 500 characters.</string>
-    <string name="demo_return">Return to demo</string>
-    <string name="demo_setup_hint">Choose a mode and question pool, narrow the categories, then select how many questions to practise.</string>
     <string name="demo_tag_foundations">Foundations</string>
     <string name="demo_tag_case_context">Case-based</string>
-    <string name="demo_connections">Sample connection</string>
-    <string name="demo_connections_hint">Try connected and offline behavior. This sample server is simulated entirely on this phone.</string>
-    <string name="demo_server">Sample learning server</string>
     <string name="demo_connected">Sample server connected</string>
     <string name="demo_disconnected">Sample server offline · Saved content is still available</string>
-    <string name="demo_connection_switch">Connect to sample server</string>
-    <string name="demo_connection_locked">Finish or discard the current online session before changing the sample connection.</string>
-    <string name="demo_read_failed">The sample server is offline. Your loaded content, filters and changes are kept. Reconnect and retry.</string>
-    <string name="demo_online_required">Reconnect the sample server to start online practice or save changes. Downloaded study remains available offline.</string>
-    <string name="demo_downloads_hint">A sample collection is ready. Turn off the sample connection, study offline, then reconnect and upload the completed practice.</string>
-    <string name="demo_pending_sync">Completed on this phone · Upload to the sample server to add it to History, planner progress and analytics.</string>
-    <string name="demo_synced">Added to sample History and progress.</string>
-    <string name="demo_no_pending">No completed practice is waiting to upload.</string>
-    <string name="demo_pending_limit">Upload the saved completions before starting more downloaded practice.</string>
-    <string name="demo_offline_downloads">You can study the saved collection while offline. Upload becomes available after reconnecting.</string>
 </resources>

@@ -2,7 +2,7 @@
 
 ## Standalone demo
 
-- Verify both debug APKs side by side and check the merged demo manifest. After first-release Library and practice device acceptance, remove the embedded demo and its main-app launch actions. Promote Home to the standalone start destination after verifying the other shared learner flows.
+- Verify both debug APKs side by side and check the merged demo manifest. Confirm that the standalone demo opens on Home and that the main app still reaches server setup, sign-in, and saved downloads.
 - Verify Arabic/English, large text, restoration, failure recovery and upload deduplication. Run hosted capture only after explicit approval.
 
 ## Other Android work

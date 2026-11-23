@@ -57,7 +57,6 @@ fun LoginScreen(
     onPrivacy: () -> Unit = {},
     onChangeServer: (() -> Unit)? = null,
     onOffline: (() -> Unit)? = null,
-    onDemo: (() -> Unit)? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val canSubmit = state.username.isNotBlank() && state.password.isNotBlank() && !state.isLoading
@@ -108,18 +107,15 @@ fun LoginScreen(
                     }
                 }
         }
-        if (onOffline != null || onDemo != null) {
+        if (onOffline != null) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
                 Divider(Modifier.weight(1f))
                 Text(stringResource(R.string.ui_or), style = MaterialTheme.typography.labelMedium)
                 Divider(Modifier.weight(1f))
             }
-            onDemo?.let { open ->
-                AppTextButton(open, Modifier.fillMaxWidth(), enabled = !state.isLoading) { Text(stringResource(R.string.demo_open)) }
-            }
-            onOffline?.let { open ->
-                AppTextButton(open, Modifier.fillMaxWidth(), enabled = !state.isLoading) { Text(stringResource(R.string.offline_open_cached)) }
+            AppTextButton(onOffline, Modifier.fillMaxWidth(), enabled = !state.isLoading) {
+                Text(stringResource(R.string.offline_open_cached))
             }
         }
         AppActionRow {

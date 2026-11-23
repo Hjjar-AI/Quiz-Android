@@ -47,27 +47,9 @@ fun AppLaunchHeader() {
         style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
 }
 
-/** Demo content is public sample practice, separate from account-owned downloads. */
-@Composable
-fun DemoLaunchCard(onOpen: () -> Unit, enabled: Boolean = true) {
-    AppCard(Modifier.fillMaxWidth()) {
-        AppCardBody(Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.launch_demo_title), style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth().semantics { heading() }, textAlign = TextAlign.Center)
-            Text(stringResource(R.string.launch_demo_hint), Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-            AppSecondaryButton(onOpen, Modifier.fillMaxWidth(), enabled = enabled) {
-                Text(stringResource(R.string.demo_open), textAlign = TextAlign.Center)
-            }
-        }
-    }
-}
-
 /** Eligibility stays with each caller; downloaded practice can remain available during recovery. */
 @Composable
-fun OfflineLaunchActions(onDownloaded: (() -> Unit)? = null, onDemo: (() -> Unit)? = null,
-    enabled: Boolean = true, downloadedEnabled: Boolean = enabled) {
-    onDemo?.let { DemoLaunchCard(it, enabled = enabled) }
+fun OfflineLaunchActions(onDownloaded: (() -> Unit)?) {
     onDownloaded?.let { open ->
         AppCard(Modifier.fillMaxWidth()) {
             AppCardBody(Modifier.fillMaxWidth()) {
@@ -75,7 +57,7 @@ fun OfflineLaunchActions(onDownloaded: (() -> Unit)? = null, onDemo: (() -> Unit
                     modifier = Modifier.fillMaxWidth().semantics { heading() }, textAlign = TextAlign.Center)
                 Text(stringResource(R.string.launch_downloaded_hint), Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                AppSecondaryButton(open, Modifier.fillMaxWidth(), enabled = downloadedEnabled) {
+                AppSecondaryButton(open, Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.offline_open_cached), textAlign = TextAlign.Center)
                 }
             }

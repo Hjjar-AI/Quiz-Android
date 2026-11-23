@@ -20,7 +20,6 @@ GitHub Actions workflow **03 – Checks – Compilation and JVM** runs all three
 | Device sessions | DeviceSessionsViewModelTest | 13 | Read failure versus empty state, preflight absence/failure, confirmed/current revocation, password guards/clearing, lost response, explicit read and acknowledgement before replay, failed reconciliation and refresh, negative acknowledgement and duplicate reads |
 | Native theme contrast | NativeContrastTest | 5 | Opaque ink, light/dark and multiple surfaces, derived error ink for all theme preferences, system versus fixed theme selection |
 | Shared Compose components | SharedComponentInteractionTest | 15 | Stable choice IDs/removal, disabled edits, exact tags/clear confirmation, confidence/rating/locales, recovery permissions, failed-read picker selections/paging/scrolling, export action locks/URI grants, busy-effect disposal, click-time dates and case-before-question previews |
-| Main learner demo expansion | DemoRepositoryTest (24), DemoSessionTest (13), DemoScreenInteractionTest (19) | 21 added; 56 total | Confidence/recall/navigation locks, category/tag/pool/count filters, library paging/restoration, retained planner drafts and validated date/category progress, connection failure/retry, offline completion/upload deduplication, bounded pending preservation, sample profile exit confirmation, rating persistence/locks and saved-state round trips. Updated classes are uncompiled/unrun. |
 | Standalone demo | StandaloneDemoTest | 6 | Launcher and permission isolation, connection and one-shot reads, recall/exam reveal, lost answer/Finish receipts, persistence/reset, and downloaded upload deduplication across History/planner/analytics |
 | Existing transport and DTO suites | ApiClientTest, ApiErrorContractTest, PersistentCookieJarTest, DtoContractTest | — | CSRF, error reasons, cookies, cancellation, uncertain transport, export cleanup, decoding and outgoing service contracts |
 | Existing learner and rendered UI suites | NavigationContractTest, SessionPresentationTest, DownloadedSessionSyncTest, OfflineStudyFlowTest, AppNavigationInteractionTest, QuizQuestionInteractionTest, OfflineStudyScreenInteractionTest | — | Navigation/capability gates, study/exam/recall, downloaded answer sync, local completion, restoration, case order, feedback locks, RTL/large text and answer targets |
@@ -50,7 +49,7 @@ For a focused run, select one module task and add its `--tests` filter. Use `:sh
 - Planner: `--tests 'com.mukhtabir.android.ui.planner.*'`
 - Device sessions: `--tests 'com.mukhtabir.android.ui.sessions.*'`
 - Authoring inputs: `--tests '*.QuestionTranslationDraftTest' --tests '*.ModerationTagDraftTest'`
-- Existing learner/UI regression: `--tests '*.ui.demo.*' --tests '*.ui.quiz.*' --tests '*.ui.offline.*' --tests '*.ui.navigation.*'`
+- Existing learner/UI regression: `--tests '*.ui.quiz.*' --tests '*.ui.offline.*' --tests '*.ui.navigation.*'`
 - Theme contrast: `--tests 'com.mukhtabir.android.ui.theme.*'`
 
 Approved component milestone selection (15 shared-component cases plus six existing quiz/offline interaction cases):
@@ -60,12 +59,6 @@ JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --
 ```
 
 Each module’s JVM task discovers its test classes. Package filters provide focused suites without aggregate JUnit classes that could run cases twice during full discovery. Test counts above count methods; table-driven boundary cases add multiple assertions within individual methods.
-
-Prepared main-demo selection (56 cases). The user requested test-file updates only and deferred **all execution and compilation**; this command requires a later explicit run request:
-
-```bash
-JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests '*.DemoRepositoryTest' --tests '*.DemoSessionTest' --tests '*.DemoScreenInteractionTest' -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-demo-expansion-tests.log 2>&1
-```
 
 ## Remaining coverage limits
 

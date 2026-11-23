@@ -1,43 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="demo_scope">بيانات متعلّم تجريبية · دون اتصال بالكامل</string>
-    <string name="demo_menu">فتح قائمة التنقل</string>
-    <string name="demo_learner">متعلّم تجريبي</string>
-    <string name="demo_greeting">مرحباً بعودتك، أيها المتعلّم التجريبي</string>
     <string name="demo_profile_hint">اكتشف تجربة المتعلّم باستخدام ملف تجريبي محلي.</string>
-    <string name="demo_account_limits">هذا حساب تجريبي. غادر العرض واتصل بخادمك لإدارة حسابك الخاص. تُمسح جميع التغييرات التجريبية عند المغادرة.</string>
-    <string name="demo_history_hint">يتضمن العرض جلستين مثاليتين. تظهر هنا أيضاً الجلسات التجريبية المكتملة؛ افتح إحداها لمراجعتها.</string>
-    <string name="demo_answered_total">الإجابات المسجّلة</string>
-    <string name="demo_accuracy">دقة الأسئلة المجابة</string>
-    <string name="demo_percentage">%1$s%%</string>
     <string name="demo_category_circulation">القلب والدم والرئتان</string>
     <string name="demo_category_systems">الخلايا وأجهزة الجسم</string>
-    <string name="demo_add_bookmark">إضافة إشارة مرجعية</string>
     <string name="demo_daily_target">الهدف اليومي للأسئلة (١–١٠٠٠)</string>
-    <string name="demo_planner_hint">اختر هدفاً وفئات وتواريخ. تُحدّث الجلسات المكتملة التقدّم اليومي المطابق، وتُحتسب الدراسة المنزّلة بعد رفعها التجريبي.</string>
-    <string name="demo_paused_hint">لديك جلسة تجريبية جارية. استأنفها قبل بدء جلسة أخرى أو فتح نتيجة سابقة. يستمر وقت الامتحان أثناء التصفح.</string>
-    <string name="demo_pause">الاحتفاظ بالجلسة والعودة</string>
-    <string name="demo_discard">تجاهل الجلسة</string>
-    <string name="demo_exit_message">هل تريد مغادرة العرض ومسح تغييراته التجريبية؟ لن يتأثر حسابك أو دراستك المنزّلة.</string>
     <string name="demo_case">حالة: في درس لعلم وظائف الأعضاء، يتتبّع متعلّم مسار الأكسجين من الرئتين إلى الدم ثم أنحاء الجسم. استخدم هذا السياق للإجابة عن السؤال التالي.</string>
-    <string name="demo_recalled_limit">حتى ٥٠٠ حرف.</string>
-    <string name="demo_return">العودة إلى العرض</string>
-    <string name="demo_setup_hint">اختر وضعاً ومجموعة أسئلة، وحدّد الفئات ثم عدد الأسئلة التي تريد التدرّب عليها.</string>
     <string name="demo_tag_foundations">أساسيات</string>
     <string name="demo_tag_case_context">أسئلة الحالات</string>
-    <string name="demo_connections">الاتصال التجريبي</string>
-    <string name="demo_connections_hint">جرّب العمل مع الاتصال ودونه. تُحاكى وظائف هذا الخادم التجريبي بالكامل على هذا الهاتف.</string>
-    <string name="demo_server">خادم تعلّم تجريبي</string>
     <string name="demo_connected">الخادم التجريبي متصل</string>
     <string name="demo_disconnected">الخادم التجريبي غير متصل · المحتوى المحفوظ ما زال متاحاً</string>
-    <string name="demo_connection_switch">الاتصال بالخادم التجريبي</string>
-    <string name="demo_connection_locked">أكمل الجلسة المتصلة الحالية أو تجاهلها قبل تغيير الاتصال التجريبي.</string>
-    <string name="demo_read_failed">الخادم التجريبي غير متصل. احتُفظ بالمحتوى المحمّل والمرشّحات والتغييرات. أعد الاتصال ثم حاول مجدداً.</string>
-    <string name="demo_online_required">أعد الاتصال بالخادم التجريبي لبدء تدريب متصل أو حفظ التغييرات. تبقى الدراسة المنزّلة متاحة دون اتصال.</string>
-    <string name="demo_downloads_hint">مجموعة تجريبية جاهزة. عطّل الاتصال التجريبي، وادرس دون اتصال، ثم أعد الاتصال وارفع التدريب المكتمل.</string>
-    <string name="demo_pending_sync">اكتمل على هذا الهاتف · ارفعه إلى الخادم التجريبي لإضافته إلى السجل وتقدّم المخطّط والإحصاءات.</string>
-    <string name="demo_synced">أُضيف إلى السجل والتقدّم التجريبيين.</string>
-    <string name="demo_no_pending">لا يوجد تدريب مكتمل بانتظار الرفع.</string>
-    <string name="demo_pending_limit">ارفع الجلسات المكتملة المحفوظة قبل بدء تدريب منزّل إضافي.</string>
-    <string name="demo_offline_downloads">يمكنك دراسة المجموعة المحفوظة دون اتصال. يصبح الرفع متاحاً بعد إعادة الاتصال.</string>
 </resources>

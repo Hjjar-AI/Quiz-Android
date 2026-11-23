@@ -53,7 +53,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
     onSelectServerFile: ((Int) -> Unit)? = null,
-    pendingLink: com.mukhtabir.android.core.AppLink? = null,onConsumeLink: () -> Unit = {}, onDemo: (() -> Unit)? = null) {
+    pendingLink: com.mukhtabir.android.core.AppLink? = null,onConsumeLink: () -> Unit = {}) {
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.Factory(container.authRepository),
     )
@@ -109,7 +109,7 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
                     localOnly=true,canSync=false,maxQuestions=publicConfig.maxQuizQuestions,onBack={localOfflineOwner=null})
                 publicInformation != null -> LearnerInformation(privacy=publicInformation=="privacy", onBack={ publicInformation=null })
                 authState.isRestoring || !startupFinished -> StartupScreen(onFinished={startupFinished=true},
-                    onOffline=cachedOwner?.let {owner -> ({localOfflineOwner=owner})}, onDemo=onDemo)
+                    onOffline=cachedOwner?.let {owner -> ({localOfflineOwner=owner})})
 
                 authState.restorePending && authState.user == null -> AppLaunchLayout {
                     AppLaunchHeader()
@@ -124,8 +124,7 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
                         }
                     }
                     OfflineLaunchActions(
-                        onDownloaded = cachedOwner?.let { owner -> ({ localOfflineOwner = owner }) },
-                        onDemo = onDemo, enabled = !authState.isLoading, downloadedEnabled = true)
+                        onDownloaded = cachedOwner?.let { owner -> ({ localOfflineOwner = owner }) })
                     AppSection(stringResource(R.string.startup_more_options),
                         enabled = !authState.isLoading, expandedOverride = showRecoveryOptions,
                         onExpandedChange = { showRecoveryOptions = it }) {
@@ -146,7 +145,6 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
                         onLogin = authViewModel::login,
                         onHelp = { publicInformation="help" },
                         onPrivacy = { publicInformation="privacy" },
-                        onDemo = onDemo,
                         onChangeServer = onChangeServer,
                         onOffline = cachedOwner?.let {owner -> ({localOfflineOwner=owner})},
                     )
@@ -185,7 +183,7 @@ fun MukhtabirApp(container: AppContainer,onChangeServer: (() -> Unit)? = null,
 }
 
 @Composable
-private fun StartupScreen(onFinished: () -> Unit, onOffline: (() -> Unit)? = null, onDemo: (() -> Unit)? = null) {
+private fun StartupScreen(onFinished: () -> Unit, onOffline: (() -> Unit)? = null) {
     AppLaunchLayout(centerVertically = true) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(com.mukhtabir.android.ui.theme.AppTheme.spacing.content)) {
@@ -194,6 +192,6 @@ private fun StartupScreen(onFinished: () -> Unit, onOffline: (() -> Unit)? = nul
             Text(stringResource(R.string.launch_checking_session),
                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
         }
-        OfflineLaunchActions(onDownloaded = onOffline, onDemo = onDemo)
+        OfflineLaunchActions(onDownloaded = onOffline)
     }
 }

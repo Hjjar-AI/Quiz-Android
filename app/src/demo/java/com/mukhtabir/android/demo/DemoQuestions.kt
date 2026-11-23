@@ -1,11 +1,11 @@
-package com.mukhtabir.android.ui.demo
+package com.mukhtabir.android.demo
 
 import com.mukhtabir.android.shared.R
 
-data class DemoQuestion(val stem: Int, val choices: List<Int>, val correct: Int, val explanation: Int,
+internal data class DemoQuestion(val stem: Int, val choices: List<Int>, val correct: Int, val explanation: Int,
     val category: Int = 2, val caseStem: Int? = null, val tags: List<Int> = listOf(R.string.demo_tag_foundations))
 
-val demoQuestions = listOf(
+internal val demoQuestions = listOf(
     DemoQuestion(R.string.demo_q1, listOf(R.string.demo_q1_c1, R.string.demo_q1_c2, R.string.demo_q1_c3, R.string.demo_q1_c4), 0, R.string.demo_q1_explanation),
     DemoQuestion(R.string.demo_q2, listOf(R.string.demo_q2_c1, R.string.demo_q2_c2, R.string.demo_q2_c3, R.string.demo_q2_c4), 1, R.string.demo_q2_explanation, category = 1, caseStem = R.string.demo_case,
         tags = listOf(R.string.demo_tag_foundations, R.string.demo_tag_case_context)),

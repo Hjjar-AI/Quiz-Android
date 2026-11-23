@@ -6,7 +6,7 @@ Current evidence and pending verification only. Reusable implementation guidance
 
 Moved shared learner screens, controllers and resources to `app/src/shared`. Added the separate launcher, local sample services, persistent progress, reset and connection simulation under `app/src/demo`. Both app modules reference the shared library. Hosted capture selects the standalone APK and verifies that its packaged manifest omits Internet permission. Release startup capture selects the main APK.
 
-Checked production Kotlin syntax, resource references, bilingual demo keys, source manifests and dependency boundaries, and changed Python syntax. APK builds, merged manifests, suites and device acceptance are pending. The embedded demo stays reachable until first-release device acceptance. See the [remaining work](../workPlan.md#standalone-demo).
+Checked production Kotlin syntax, resource references, bilingual demo keys, source manifests and dependency boundaries, and changed Python syntax. APK builds, merged manifests, suites and device acceptance are pending. At the user’s request, removed the main app’s Try Demo entry points, retired the embedded demo and its three test classes, and set Home as the standalone start screen. Hosted capture now checks the Home screen. Verify server setup, sign-in and access to saved downloads after the cutover. See the [remaining work](../workPlan.md#standalone-demo).
 
 The Android JVM tests now follow module ownership. Seven existing classes moved to the shared module, main-app integration tests still exercise the production routes and storage, and six standalone demo cases cover isolation, persistence and simulated recovery. Workflow 03 collects separate reports for `app`, `shared`, and `demo` on the `jvm` and `all` selections. Test compilation and execution are pending on GitHub.
 
@@ -40,13 +40,7 @@ Production-source checks: six demo Kotlin files passed lexical delimiter and dir
 
 After test-file approval, user explicitly requested **updates only, no execution or compilation for now**. Added **21 source cases**: ten repository, three session and eight UI cases. The focused selection now contains **56 cases**: DemoRepositoryTest 24, DemoSessionTest 13 and DemoScreenInteractionTest 19. Updated existing target-bound, confidence-before-finish and empty-recall cases. Coverage includes confidence/navigation locks, empty/intersected sources and localized counts, paging/restoration, planner drafts/date/category progress, connection failure/explicit retry, retained offline completion/upload deduplication, pending limits/retention, sample profile/exit and rating persistence/locks. Kotlin lexical delimiters, unique case names, 53 bilingual resource references, documentation links and whitespace passed source checks. These changes have not been compiled or executed.
 
-Remaining: a later explicit request to run the prepared selection, including app/test compilation. Device checks remain for actual offline isolation, rotation/restoration, narrow/large-text/RTL layouts and accessibility; a new APK/install requires its own authorized run. Authoring/admin and complete master-exam flows are outside this demo pass.
-
-Prepared focused command; do not run until the user requests execution:
-
-```bash
-JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests '*.DemoRepositoryTest' --tests '*.DemoSessionTest' --tests '*.DemoScreenInteractionTest' -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-demo-expansion-tests.log 2>&1
-```
+The embedded demo and this focused selection were retired during the standalone cutover.
 
 ## 2026-11-03 debug assembly and installation
 

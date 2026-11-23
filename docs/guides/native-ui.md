@@ -8,7 +8,7 @@ Production code is under `app/src/main`, standalone demo code under `app/src/dem
 | --- | --- |
 | `core`, `data`, `ui`, `util` | Storage/preferences/navigation; auth/HTTP/domain DTOs; Compose; formatting. |
 | `MukhtabirApp.kt`, `ui/navigation/AuthenticatedAppShell.kt` | Startup/auth; shell/routes/capability gates. `AppDrawerContent.kt` owns the drawer; More is legacy. |
-| `app/src/demo`, `app/src/shared` | Standalone launcher and local services, and the shared learner screens, controllers, storage interfaces and resources. The current main-app demo remains available until device acceptance. |
+| `app/src/demo`, `app/src/shared` | Standalone launcher and local services, and the shared learner screens, controllers, storage interfaces and resources. Open the demo from its own launcher. |
 | Question editor State/ViewModel/Screen/Preview | Serializable state, writes, form, previews. Other features similarly separate controllers/state/screens. |
 | `QuizSetupController.kt`, `QuizSetupStateStore.kt` | Filters/count jobs; account-checked lightweight restoration. |
 | `QuizViewModel.kt`, session chrome | Writes/deadlines/download/sync/recovery; separate lifecycle-collected clock flow. |
@@ -22,7 +22,7 @@ Trace route → controller → service/DTO → Django/Vue before contract change
 - Default/Compact spacing stays tight. Amiri defaults in both locales; retain saved fonts, real regular/variable weights, API 23–25 Amiri fallback and 13sp metadata floor. Reading size/spacing/width/reset also apply to Help/Privacy. Coordinate shared palettes/keys with web/PDF.
 - Fields preserve cursor/composition, Next/Done and memory-only password visibility. Collapsed sections retain forms. Editors protect dirty targets/exits, reveal/focus invalid fields and preserve drafts through failure; Categories flushes encrypted drafts before exit. See [recovery policy](offline-and-recovery.md).
 - Home prioritizes recovery/continuation; only fresh planner progress gets a ring. Heatmap includes session-only days; charts retain localized summaries and detailed values. Bookmarks filters apply to the loaded page; library labels explain combined/any-tag restrictions. Import cards retain status/reports/explicit uncertain-outcome review.
-- Welcome/login use a scrollable keyboard-aware 520dp cap; demo → server → language, with downloads/retry/help/privacy reachable. Demo learning stays separate from private progress. Personal History is user-scoped; all-user History and authoring/admin actions require their capabilities.
+- Welcome/login use a scrollable keyboard-aware 520dp cap; server → language, with downloads/retry/help/privacy reachable. Demo learning stays separate from private progress. Personal History is user-scoped; all-user History and authoring/admin actions require their capabilities.
 
 ## Adaptive layouts
 
@@ -32,7 +32,7 @@ Trace route → controller → service/DTO → Django/Vue before contract change
 
 ## Learner demo
 
-The standalone app opens to Library for the first release. The drawer also exposes the shared practice setup and session, bookmarks, results and History, mistakes/fragile notebooks, Home, planner, analytics, activity, profile and downloaded practice. Both apps use the same screens and controllers. The demo uses packaged sample questions and app-private progress. Dashboard, History, planner and analytics use the same completion data. Demo Connection toggles simulated availability, supports one-shot read and response failures, and offers a confirmed reset that preserves language and appearance.
+The standalone app opens on Home. The drawer exposes the shared Library, practice setup and session, bookmarks, results and History, mistakes/fragile notebooks, planner, analytics, activity, profile and downloaded practice. Both apps use the same screens and controllers. The demo uses packaged sample questions and app-private progress. Dashboard, History, planner and analytics use the same completion data. Demo Connection toggles simulated availability, supports one-shot read and response failures, and offers a confirmed reset that preserves language and appearance.
 
 Study and exam send queued answers at explicit sync. Recall submits directly. A lost response commits the sample write before reporting failure, so the ordinary recovery controls reconcile saved state. Downloaded practice remains available while disconnected. An explicit upload retry uses the frozen completion ID and data. The standalone demo sources reference no production app, HTTP transport, sign-in, account storage or server configuration.
 

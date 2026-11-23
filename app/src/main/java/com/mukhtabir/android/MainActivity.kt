@@ -53,7 +53,6 @@ class MainActivity : ComponentActivity() {
             val display by preferences.display.collectAsLifecycleState()
             val language by preferences.language.collectAsLifecycleState()
             var editingServer by rememberSaveable { mutableStateOf(app.serverSettings.read()==null) }
-            var demoActive by rememberSaveable { mutableStateOf(false) }
             // Unconfigured installs do not enter MukhtabirApp's saved-login splash.
             // Save completion through rotation and language recreation.
             var welcomeSplashFinished by rememberSaveable { mutableStateOf(app.serverSettings.read() != null) }
@@ -80,10 +79,6 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.align(Alignment.CenterHorizontally), onFinished = { welcomeSplashFinished = true })
                         }
                     }
-                } else if (demoActive) Surface(Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                        com.mukhtabir.android.ui.demo.DemoScreen(onExit = { demoActive = false })
-                    }
                 } else if(editingServer || app.serverSettings.read()==null) Surface(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                         ServerSetupScreen(app.serverSettings,app.serverSettings.read().orEmpty(),
@@ -99,11 +94,9 @@ class MainActivity : ComponentActivity() {
                                 finish()
                             },onCancel=if(app.serverSettings.read()!=null) ({editingServer=false;requestedFileSlot=null}) else null,
                             initialFileSlot=requestedFileSlot, language=language,
-                            onDemo={demoActive=true},
                             onLanguageChange={code -> preferences.setLanguage(code); recreate()})
                     }
                 } else MukhtabirApp(container = app.container,
-                    onDemo={demoActive=true},
                     onChangeServer={requestedFileSlot=null;editingServer=true},
                     onSelectServerFile={slot -> requestedFileSlot=slot;editingServer=true}, pendingLink=pendingLink,
                     onConsumeLink={pendingLink=null; intent.data=null})

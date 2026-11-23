@@ -1577,32 +1577,13 @@
     <string name="quiz_review_read_failed">تعذرت قراءة مراجعة الأسئلة. نتيجتك المكتملة ما زالت محفوظة.</string>
 
     <!-- Bundled, account-independent offline demonstration. -->
-    <string name="demo_open">استكشف العرض دون اتصال</string>
     <string name="demo_title">جلستك الأولى تبدأ هنا</string>
-    <string name="demo_badge">عرض تجريبي دون إنترنت</string>
     <string name="demo_intro">استكشف المكتبة والإشارات المرجعية والتدريب والسجل والتحليلات والمخطط ببيانات تجريبية محلية. لا حاجة إلى حساب أو خادم.</string>
     <string name="demo_collection">داخل جسم الإنسان</string>
     <string name="demo_collection_hint">٨ أسئلة نموذجية أصلية · أساسيات علم الأحياء</string>
-    <string name="demo_study_hint">تعلّم على مهل، مع تصحيح وشرح فوريين بعد كل إجابة.</string>
-    <string name="demo_exam_hint">تحدٍّ لمدة ٨ دقائق. تبقى الإجابات الصحيحة مخفية حتى تنتهي.</string>
-    <string name="demo_recall_hint">تذكّر أولاً، ثم أظهر الخيارات وتحقّق من فهمك.</string>
-    <string name="demo_local_notice">بيانات تجريبية فقط. تبقى التغييرات داخل العرض ولا تُرفع إلى أي خادم. تُمسح عند مغادرة العرض.</string>
-    <string name="demo_exit">مغادرة العرض</string>
-    <string name="demo_leave_title">مغادرة هذا التدريب؟</string>
-    <string name="demo_leave_message">احتفظ بالجلسة لاستئنافها لاحقاً، أو تجاهل إجاباتها. يستمر وقت الامتحان في العدّ.</string>
     <string name="demo_modes">استكشف وضعاً آخر</string>
-    <string name="demo_reveal">إظهار الخيارات</string>
-    <string name="demo_recall_prompt">تمهّل وصُغ إجابتك قبل إظهار الخيارات.</string>
-    <string name="demo_finish_message">هل تريد الإنهاء ومراجعة إجاباتك؟ تُحتسب الأسئلة غير المجاب عنها ضمن النتيجة.</string>
-    <string name="demo_result_title">تدريب صغير، واكتشاف جديد.</string>
-    <string name="demo_score">%1$s من %2$s إجابات صحيحة</string>
     <string name="demo_counts">%1$s غير صحيحة · %2$s دون إجابة</string>
-    <string name="demo_review">مراجعة جميع الأسئلة</string>
-    <string name="demo_retry">أعد تجربة هذا الوضع</string>
     <string name="demo_time">الوقت المتبقي: %1$s</string>
-    <string name="demo_expired">انتهى الوقت. إجاباتك التجريبية جاهزة للمراجعة.</string>
-    <string name="demo_answer_hint">اختر إجابة للمتابعة.</string>
-    <string name="demo_recalled">إجابتك من الذاكرة</string>
     <string name="demo_q1">ما الوحدة الأساسية للحياة؟</string>
     <string name="demo_q1_explanation">الخلايا هي الوحدات البنيوية والوظيفية الأساسية للكائنات الحية. تكوّن الخلايا المتشابهة أنسجة، وتكوّن الأنسجة أعضاء.</string>
     <string name="demo_q1_c1">الخلية</string>
@@ -1819,11 +1800,9 @@
     <string name="launch_connect_server">الاتصال بخادم</string>
     <string name="launch_offline_title">التدريب دون اتصال</string>
     <string name="launch_downloaded_hint">تابع باستخدام المحتوى الذي سبق تنزيله على هذا الجهاز.</string>
-    <string name="launch_demo_hint">تدرّب بأسئلة علمية نموذجية، حتى دون اتصال. لا تحتاج إلى حساب.</string>
     <string name="launch_checking_session">جارٍ تجهيز تسجيل الدخول…</string>
     <string name="drawer_help_information">المساعدة والمعلومات</string>
     <string name="drawer_authoring">إنشاء المحتوى وإدارته</string>
-    <string name="launch_demo_title">تدريب تجريبي</string>
     <string name="analytics_chart_summary">الأحدث: %1$s · النطاق: %2$s–%3$s</string>
     <string name="ui_or">أو</string>
     <string name="ui_theme_live_preview">اختر سمة لمعاينتها فوراً.</string>

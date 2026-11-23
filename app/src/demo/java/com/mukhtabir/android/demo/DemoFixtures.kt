@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.res.Configuration
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.shared.R as SharedR
-import com.mukhtabir.android.ui.demo.demoQuestions
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Locale

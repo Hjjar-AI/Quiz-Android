@@ -42,8 +42,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private enum class Destination(val route: String, val label: Int) {
-    LIBRARY("library", SharedR.string.question_library),
     HOME("home", SharedR.string.home),
+    LIBRARY("library", SharedR.string.question_library),
     QUIZZES("quizzes", SharedR.string.quizzes),
     BOOKMARKS("bookmarks", SharedR.string.bookmarks),
     HISTORY("history", SharedR.string.history),
@@ -123,7 +123,7 @@ internal fun DemoShell(runtime: DemoRuntime, onReset: suspend () -> Unit, onLang
                 })
             },
         ) { padding ->
-            NavHost(nav, startDestination = Destination.LIBRARY.route, modifier = Modifier
+            NavHost(nav, startDestination = Destination.HOME.route, modifier = Modifier
                 .padding(padding).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))) {
                 composable(Destination.LIBRARY.route) {
                     QuestionLibraryRoute(runtime.questions, display.difficulty, runtime.categories, runtime.images,

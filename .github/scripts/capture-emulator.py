@@ -171,7 +171,7 @@ def capture(kind, demo=False):
         report['phase'] = 'startup'
         launch = adb('shell', 'am', 'start', '-W', '-n', package + '/' + activity)
         (output / 'launch.txt').write_bytes(launch.stdout + launch.stderr)
-        label = (labels('question_library') if demo
+        label = (labels('home_intro') if demo
                  else labels('launch_connect_server') | labels('server_setup_title'))
         raw, _ = wait_for(package, label)
         name = 'demo' if demo else 'startup'

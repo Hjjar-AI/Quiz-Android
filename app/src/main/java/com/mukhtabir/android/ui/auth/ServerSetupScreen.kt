@@ -48,7 +48,6 @@ import com.mukhtabir.android.ui.components.AppSectionHeading
 import com.mukhtabir.android.ui.components.AppStatus
 import com.mukhtabir.android.ui.components.AppTextButton
 import com.mukhtabir.android.ui.components.AppTextField
-import com.mukhtabir.android.ui.components.DemoLaunchCard
 import com.mukhtabir.android.ui.components.appLanguageLabel
 import com.mukhtabir.android.ui.theme.AppTheme
 import kotlinx.coroutines.CancellationException
@@ -61,13 +60,12 @@ import kotlinx.coroutines.withContext
     androidx.compose.material3.ExperimentalMaterial3Api::class,
 )
 @Composable
-fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Boolean) -> Unit, onCancel: (() -> Unit)?, initialFileSlot: Int? = null, language: String = com.mukhtabir.android.core.AppPreferences.LANGUAGE_ARABIC, onLanguageChange: (String) -> Unit = {}, onDemo: (() -> Unit)? = null) {
-    val firstLaunch = onDemo != null && settings.read() == null && initialFileSlot == null
+fun ServerSetupScreen(settings: ServerSettings, initialUrl: String, onSaved: (Boolean) -> Unit, onCancel: (() -> Unit)?, initialFileSlot: Int? = null, language: String = com.mukhtabir.android.core.AppPreferences.LANGUAGE_ARABIC, onLanguageChange: (String) -> Unit = {}) {
+    val firstLaunch = settings.read() == null && initialFileSlot == null
     var showSetup by rememberSaveable { mutableStateOf(!firstLaunch) }
     if (!showSetup) {
         AppLaunchLayout {
             AppLaunchHeader()
-            onDemo?.let { DemoLaunchCard(onOpen = it) }
             AppCard(Modifier.fillMaxWidth()) {
                 AppCardBody(Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.launch_online_title), style = MaterialTheme.typography.titleMedium,
