@@ -1,6 +1,6 @@
 # Aqaqeer workflow audit — 2026-11-15
 
-Reviewed all **15 current Aqaqeer workflows (01–15)**, their job/step/helper contracts and the current Mukhtabir definitions. Mukhtabir now accounts for every number, plus **00** for the shared YAML/actionlint policy check. This is a source audit, not a hosted-run or full behavioral-parity result. [Operations, inputs and signing setup](git-and-github.md) remain canonical usage guidance.
+This dated audit compares the 15 Aqaqeer workflows (01–15) with the Mukhtabir definitions at the time. Mukhtabir includes workflow 00 for shared YAML/actionlint policy checks. See the [current operations and signing guide](git-and-github.md) and the [standalone-demo follow-up](../verification/checklist.md#2026-11-24-standalone-demo-and-hosted-workflows) for the later scope changes.
 
 | Aqaqeer workflow | Mukhtabir disposition and explicit differences |
 | --- | --- |

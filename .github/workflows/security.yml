@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'false = skip; true = authorize CodeQL downloads, production Kotlin compilation and uploading Java/Kotlin, Python and Actions security results. Default false.'
+        description: 'Options: false = skip; true = authorize CodeQL downloads, main and demo debug compilation including shared code, and upload of Java/Kotlin, Python and Actions results. Default: false.'
         type: boolean
         default: false
 

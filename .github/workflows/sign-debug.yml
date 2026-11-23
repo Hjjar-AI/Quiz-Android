@@ -1,12 +1,17 @@
-name: 10 - Delivery - Signed debug APK
+name: 10 - Delivery - Signed debug APKs
 
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'false = skip; true = authorize fresh debug APK build, configured signing and selected publication, preserving stored version. Default false. Keys must be configured first.'
+        description: 'Options: false = skip; true = authorize selected debug APK builds, configured signing and selected publication, preserving stored version. Default: false. Keys must be configured first.'
         type: boolean
         default: false
+      application:
+        description: 'Options: main = sign the main app; demo = sign the standalone demo; both = sign both APKs. Default: main.'
+        type: choice
+        options: [main, demo, both]
+        default: main
       publication:
         description: 'Options: artifact = retain signed bundle for one day; draft = create an unpublished GitHub Release; prerelease = publish a prerelease; release = publish a regular release. Default: artifact.'
         type: choice
@@ -25,6 +30,11 @@ jobs:
     if: ${{ inputs.confirm && github.event.repository.private == false && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        kind: ${{ fromJSON(inputs.application == 'both' && '["debug","demo"]' || inputs.application == 'main' && '["debug"]' || inputs.application == 'demo' && '["demo"]' || 'invalid-application') }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -37,20 +47,22 @@ jobs:
       - name: Set up build tooling without signing secrets
         uses: ./.github/actions/setup-android
       - name: Build using the stored version
-        run: python3 .github/scripts/hosted-android.py debug-apk
+        env:
+          CI_KIND: ${{ matrix.kind }}
+        run: python3 .github/scripts/hosted-android.py "$CI_KIND-apk"
       - name: Retain this run's signing input
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: signing-input-debug-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-output/debug-apk/
+          name: signing-input-${{ matrix.kind }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: ci-output/${{ matrix.kind }}-apk/
           retention-days: 1
           if-no-files-found: error
       - name: Retain build diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: signing-build-log-debug-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-output/debug-apk/gradle.log
+          name: signing-build-log-${{ matrix.kind }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-output/${{ matrix.kind }}-apk/gradle*.log
           retention-days: 1
           if-no-files-found: warn
 
@@ -59,6 +71,11 @@ jobs:
     if: ${{ inputs.confirm && github.event.repository.private == false && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        kind: ${{ fromJSON(inputs.application == 'both' && '["debug","demo"]' || inputs.application == 'main' && '["debug"]' || inputs.application == 'demo' && '["demo"]' || 'invalid-application') }}
     environment: debug-signing
     permissions:
       contents: read
@@ -79,7 +96,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh run download "$GITHUB_RUN_ID" --name "signing-input-debug-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir ci-output/signing-input
+          CI_KIND: ${{ matrix.kind }}
+        run: gh run download "$GITHUB_RUN_ID" --name "signing-input-$CI_KIND-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$GITHUB_SHA" --dir "ci-output/signing-input-$CI_KIND"
       - name: Sign and verify expected identity
         env:
           CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -88,12 +106,13 @@ jobs:
           MUKHTABIR_SIGN_STORE_PASSWORD: ${{ secrets.MUKHTABIR_SIGN_STORE_PASSWORD }}
           MUKHTABIR_SIGN_KEY_PASSWORD: ${{ secrets.MUKHTABIR_SIGN_KEY_PASSWORD }}
           MUKHTABIR_SIGN_CERT_SHA256: ${{ vars.MUKHTABIR_SIGN_CERT_SHA256 }}
-        run: python3 .github/scripts/sign-apk.py debug
+          CI_KIND: ${{ matrix.kind }}
+        run: python3 .github/scripts/sign-apk.py "$CI_KIND"
       - name: Retain verified public bundle only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: signed-debug-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-output/signed-debug/
+          name: signed-${{ matrix.kind }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: ci-output/signed-${{ matrix.kind }}/
           retention-days: 1
           if-no-files-found: error
 
@@ -110,15 +129,27 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Download this run's verified signed bundle
+      - name: Download selected verified bundles from this run
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh run download "$GITHUB_RUN_ID" --name "signed-debug-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir ci-output/signed-debug
+          CI_APPLICATION: ${{ inputs.application }}
+        run: |
+          set -euo pipefail
+          case "$CI_APPLICATION" in
+            main) kinds=(debug) ;;
+            demo) kinds=(demo) ;;
+            both) kinds=(debug demo) ;;
+            *) exit 1 ;;
+          esac
+          for kind in "${kinds[@]}"; do
+            gh run download "$GITHUB_RUN_ID" --name "signed-$kind-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$GITHUB_SHA" --dir "ci-output/signed-$kind"
+          done
       - name: Create the selected Release without overwriting existing releases
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           CI_PUBLICATION_MODE: ${{ inputs.publication }}
+          CI_APPLICATION: ${{ inputs.application }}
         run: python3 .github/scripts/draft-release.py debug

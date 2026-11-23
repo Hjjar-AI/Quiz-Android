@@ -10,6 +10,13 @@ ROOT = Path(__file__).resolve().parents[2]
 PIN = re.compile(r'[\w.-]+/[\w.-]+(?:/[\w./-]+)?@[0-9a-f]{40}')
 PUBLIC = '${{ github.event.repository.private == false }}'
 CONFIRMED = "${{ inputs.confirm && github.event.repository.private == false && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}"
+DEBUG_APK_FILES = {'android.yml', 'sign-debug.yml'}
+DEBUG_MATRIX = {
+    'kind': """${{ fromJSON(inputs.application == 'both' && '["debug","demo"]' || inputs.application == 'main' && '["debug"]' || inputs.application == 'demo' && '["demo"]' || 'invalid-application') }}""",
+}
+EMULATOR_MATRIX = {
+    'api': """${{ fromJSON(inputs.api == 'both' && '[29,35]' || inputs.api == '29' && '[29]' || inputs.api == '35' && '[35]' || 'invalid-api-selection') }}""",
+}
 SIGNING_FILES = {'sign-debug.yml', 'sign-release.yml'}
 PUBLICATION_CONFIRMED = CONFIRMED[:-3] + " && inputs.publication != 'artifact' }}"
 
@@ -72,6 +79,16 @@ def main():
             confirm = data['on']['workflow_dispatch']['inputs']['confirm']
             need(confirm['type'] == 'boolean' and confirm['default'] is False,
                  f'{name}: explicit opt-in default false required')
+        if name in DEBUG_APK_FILES:
+            choice = data['on']['workflow_dispatch']['inputs']['application']
+            need(choice['type'] == 'choice' and choice['options'] == ['main', 'demo', 'both']
+                 and choice['default'] == 'main',
+                 f'{name}: explicit main/demo/both selection with main default required')
+        if name == 'emulator.yml':
+            choice = data['on']['workflow_dispatch']['inputs']['api']
+            need(choice['type'] == 'choice' and choice['options'] == ['both', '29', '35']
+                 and choice['default'] == 'both',
+                 f'{name}: explicit API 29/35 choices with both as default required')
         for job_id, job in data['jobs'].items():
             dependencies = job.get('needs', [])
             dependencies = [dependencies] if isinstance(dependencies, str) else dependencies
@@ -110,11 +127,17 @@ def main():
                 need(publication['default'] == 'artifact'
                      and publication['options'] == ['artifact', 'draft', 'prerelease', 'release'],
                      f'{name}: explicit publication choices with artifact default required')
+            matrix = None
+            if name in DEBUG_APK_FILES and job_id != 'publish':
+                matrix = DEBUG_MATRIX
             if name == 'emulator.yml':
+                matrix = EMULATOR_MATRIX
+            if matrix:
                 strategy = job.get('strategy', {})
                 need(strategy.get('max-parallel') == 1 and strategy.get('fail-fast') is False
-                     and strategy.get('matrix') == {'api': [29, 35]},
-                     f'{name}: explicit serial API matrix required')
+                     and strategy.get('matrix') == matrix,
+                     f'{name}/{job_id}: explicit serial selection matrix required')
+            if name == 'emulator.yml':
                 runners = [step for step in job['steps'] if step.get('uses', '').startswith('reactivecircus/android-emulator-runner@')]
                 need(len(runners) == 1 and runners[0].get('with', {}).get('emulator-port') == 5554
                      and runners[0].get('with', {}).get('script') == 'python3 .github/scripts/capture-emulator.py',

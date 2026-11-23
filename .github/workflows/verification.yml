@@ -8,7 +8,7 @@ on:
         type: boolean
         default: false
       operation:
-        description: "Options: compile-debug = production debug compilation; compile-release = production release compilation; jvm = JVM suites for the main, shared, and demo modules; all = both main app variants and all three JVM suites. Default: compile-debug."
+        description: "Options: compile-debug = main and demo production debug compilation; compile-release = main production release compilation; jvm = JVM suites for the main, shared, and demo modules; all = both compilation selections and all three JVM suites. Default: compile-debug."
         type: choice
         options: [compile-debug, compile-release, jvm, all]
         default: compile-debug

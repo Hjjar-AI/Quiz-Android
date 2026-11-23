@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: "false = skip; true = authorize production lintDebug and dependency downloads, excluding test sources. Default false."
+        description: "Options: false = skip; true = authorize production debug lint for the main, shared, and demo modules and dependency downloads. Default: false."
         type: boolean
         default: false
 

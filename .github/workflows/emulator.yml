@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'false = skip; true = authorize debug build, emulator/image downloads, owned-emulator installation and startup/demo visual capture on API 29 and 35. Default false. No instrumentation suite or physical device.'
+        description: 'Options: false = skip; true = authorize debug builds, emulator/image downloads, owned-emulator installation and startup/demo capture on selected APIs. Default: false.'
         type: boolean
         default: false
+      api:
+        description: 'Options: both = run API 29 and 35 serially; 29 = run Android 10 only; 35 = run Android 15 only. Default: both.'
+        type: choice
+        options: [both, '29', '35']
+        default: both
 
 permissions:
   contents: read
@@ -24,7 +29,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        api: [29, 35]
+        api: ${{ fromJSON(inputs.api == 'both' && '[29,35]' || inputs.api == '29' && '[29]' || inputs.api == '35' && '[35]' || 'invalid-api-selection') }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -67,7 +72,7 @@ jobs:
           name: emulator-evidence-api${{ matrix.api }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ci-output/emulator/
-            ci-output/debug-apk/gradle.log
-            ci-output/demo-apk/gradle.log
+            ci-output/debug-apk/gradle*.log
+            ci-output/demo-apk/gradle*.log
           retention-days: 1
           if-no-files-found: error

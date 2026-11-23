@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: signing-build-log-release-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-output/release-apk/gradle.log
+          path: ci-output/release-apk/gradle*.log
           retention-days: 1
           if-no-files-found: warn
 

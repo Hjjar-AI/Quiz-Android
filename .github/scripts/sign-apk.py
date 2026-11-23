@@ -24,7 +24,7 @@ def command(arguments, environment=None):
 
 
 def main(kind):
-    if kind not in ('debug', 'release') or os.environ.get('GITHUB_ACTIONS') != 'true':
+    if kind not in ('debug', 'demo', 'release') or os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('Explicit hosted signing operation required')
     if os.environ['GITHUB_REF'] != 'refs/heads/' + os.environ['CI_DEFAULT_BRANCH']:
         raise ValueError('Default branch required')
@@ -34,7 +34,9 @@ def main(kind):
     expected = os.environ['MUKHTABIR_SIGN_CERT_SHA256'].replace(':', '').strip().lower()
     if not re.fullmatch(r'[a-f0-9]{64}', expected):
         raise ValueError('Invalid public certificate fingerprint')
-    source = ROOT / 'ci-output/signing-input'
+    package_name = 'com.mukhtabir.android.demo' if kind == 'demo' else 'com.mukhtabir.android'
+    source_name = 'signing-input' if kind == 'release' else f'signing-input-{kind}'
+    source = ROOT / 'ci-output' / source_name
     packages = list(source.glob('*.apk'))
     if len(packages) != 1 or packages[0].is_symlink():
         raise ValueError('Expected exactly one APK from this run')
@@ -54,13 +56,15 @@ def main(kind):
 
     def inspect(apk):
         badging = command([str(tools / 'aapt'), 'dump', 'badging', str(apk)], public_environment)
-        if not badging.startswith("package: name='com.mukhtabir.android' "):
+        if not badging.startswith(f"package: name='{package_name}' "):
             raise ValueError('Unexpected package')
         if (f"versionCode='{code}'" not in badging or f"versionName='{name}'" not in badging
                 or "sdkVersion:'23'" not in badging or "targetSdkVersion:'34'" not in badging):
             raise ValueError('Packaged version/SDK differs from source')
-        if ('application-debuggable' in badging) != (kind == 'debug'):
+        if ('application-debuggable' in badging) != (kind != 'release'):
             raise ValueError('Unexpected build type')
+        if kind == 'demo' and 'android.permission.INTERNET' in badging:
+            raise ValueError('Standalone demo requests Internet permission')
         command([str(tools / 'zipalign'), '-c', '4', str(apk)], public_environment)
 
     inspect(package)
@@ -92,10 +96,11 @@ def main(kind):
         if not mapping.is_file() or mapping.is_symlink():
             raise ValueError('Missing release shrinker mapping')
         shutil.copyfile(mapping, destination / 'mapping.txt')
-    receipt = dict(kind=kind, package='com.mukhtabir.android', versionCode=int(code), versionName=name,
+    receipt = dict(kind=kind, package=package_name, versionCode=int(code), versionName=name,
                    certificateSha256=expected, apk=signed.name, sourceCommit=os.environ['GITHUB_SHA'],
                    workflowRun=os.environ['GITHUB_RUN_ID'], workflowAttempt=os.environ['GITHUB_RUN_ATTEMPT'])
-    (destination / 'signing-info.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    receipt_name = 'signing-info-demo.json' if kind == 'demo' else 'signing-info.json'
+    (destination / receipt_name).write_text(json.dumps(receipt, indent=2) + '\n')
     public_files = sorted(destination.iterdir())
     (destination / 'SHA256SUMS.txt').write_text(''.join(
         f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n' for path in public_files))

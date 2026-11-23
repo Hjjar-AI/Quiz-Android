@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: "false = skip; true = authorize Gradle production/plugin dependency resolution and public Maven queries to OSV, without upgrades or compilation. Default false."
+        description: "Options: false = skip; true = authorize production runtime and plugin dependency resolution for the main app and demo and public Maven queries to OSV. Default: false."
         type: boolean
         default: false
 

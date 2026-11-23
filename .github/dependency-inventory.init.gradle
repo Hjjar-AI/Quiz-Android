@@ -4,17 +4,24 @@ import org.gradle.api.artifacts.result.UnresolvedDependencyResult
 
 // Production runtime and build-plugin coordinates only; no suite scopes or upgrades.
 gradle.projectsEvaluated {
-    def application = gradle.rootProject.project(':app')
-    application.tasks.register('ciDependencyInventory') {
+    gradle.rootProject.project(':app').tasks.register('ciDependencyInventory') {
         doLast {
             def scopes = []
-            ['debugRuntimeClasspath', 'releaseRuntimeClasspath'].each { name ->
-                def configuration = application.configurations.findByName(name)
-                if (configuration == null || !configuration.canBeResolved) {
-                    throw new GradleException("Missing production configuration: $name")
+            def runtimeScopes = [
+                ':app': ['debugRuntimeClasspath', 'releaseRuntimeClasspath'],
+                ':demo': ['debugRuntimeClasspath'],
+            ]
+            runtimeScopes.each { projectPath, names ->
+                def project = gradle.rootProject.project(projectPath)
+                names.each { name ->
+                    def configuration = project.configurations.findByName(name)
+                    if (configuration == null || !configuration.canBeResolved) {
+                        throw new GradleException("Missing production configuration: ${projectPath}:$name")
+                    }
+                    scopes.add([name: "${projectPath}:runtime:$name".toString(), configuration: configuration])
                 }
-                scopes.add([name: ":app:runtime:$name", configuration: configuration])
             }
+            def requiredRuntime = scopes.collect { it.name }
             gradle.rootProject.allprojects.sort { it.path }.each { project ->
                 project.buildscript.configurations.findAll {
                     it.canBeResolved && it.name == 'classpath'
@@ -43,7 +50,7 @@ gradle.projectsEvaluated {
                 }
                 if (count > 0) populated.add(scope.name.toString())
             }
-            if (!populated.containsAll([':app:runtime:debugRuntimeClasspath', ':app:runtime:releaseRuntimeClasspath']) ||
+            if (!populated.containsAll(requiredRuntime) ||
                     !populated.any { it.contains(':buildscript:') }) {
                 throw new GradleException('Production runtime/build-plugin inventory incomplete')
             }
