@@ -1,6 +1,8 @@
 # Android regression suites
 
-The JVM suite contains **334 source cases across 32 test classes**. The main learner demo expansion adds **21 source cases** and updates existing demo cases; these three modified classes have **not been compiled or run after the expansion**, at the user's request. Separately, **167 cases across 17 classes remain unexecuted**, although they compiled in the earlier 2026-11-03 component milestone. See the [verification checklist](../../../docs/verification/checklist.md) for passing selections that predate the current demo changes. Source case counts are not execution results or coverage percentages.
+The regression sources follow the three Android modules. Main-app tests remain under `app/src/test`, shared tests live under [`app/src/shared/test`](../shared/test), and standalone demo tests live under [`app/src/demo/test`](../demo/test). See the [verification checklist](../../../docs/verification/checklist.md) for historical runs and current limits. The tests updated for the standalone split are awaiting compilation and execution.
+
+GitHub Actions workflow **03 – Checks – Compilation and JVM** runs all three suites with `operation: jvm` and `confirm: true`. The `all` option adds main-app debug and release compilation. Reports and JUnit XML are retained separately for each module.
 
 ## Coverage map
 
@@ -19,12 +21,13 @@ The JVM suite contains **334 source cases across 32 test classes**. The main lea
 | Native theme contrast | NativeContrastTest | 5 | Opaque ink, light/dark and multiple surfaces, derived error ink for all theme preferences, system versus fixed theme selection |
 | Shared Compose components | SharedComponentInteractionTest | 15 | Stable choice IDs/removal, disabled edits, exact tags/clear confirmation, confidence/rating/locales, recovery permissions, failed-read picker selections/paging/scrolling, export action locks/URI grants, busy-effect disposal, click-time dates and case-before-question previews |
 | Main learner demo expansion | DemoRepositoryTest (24), DemoSessionTest (13), DemoScreenInteractionTest (19) | 21 added; 56 total | Confidence/recall/navigation locks, category/tag/pool/count filters, library paging/restoration, retained planner drafts and validated date/category progress, connection failure/retry, offline completion/upload deduplication, bounded pending preservation, sample profile exit confirmation, rating persistence/locks and saved-state round trips. Updated classes are uncompiled/unrun. |
+| Standalone demo | StandaloneDemoTest | 6 | Launcher and permission isolation, connection and one-shot reads, recall/exam reveal, lost answer/Finish receipts, persistence/reset, and downloaded upload deduplication across History/planner/analytics |
 | Existing transport and DTO suites | ApiClientTest, ApiErrorContractTest, PersistentCookieJarTest, DtoContractTest | — | CSRF, error reasons, cookies, cancellation, uncertain transport, export cleanup, decoding and outgoing service contracts |
 | Existing learner and rendered UI suites | NavigationContractTest, SessionPresentationTest, DownloadedSessionSyncTest, OfflineStudyFlowTest, AppNavigationInteractionTest, QuizQuestionInteractionTest, OfflineStudyScreenInteractionTest | — | Navigation/capability gates, study/exam/recall, downloaded answer sync, local completion, restoration, case order, feedback locks, RTL/large text and answer targets |
 
 ## Test architecture and fixtures
 
-JUnit 4, Robolectric API 33, the existing Compose test artifacts and MockWebServer remain pinned to the project dependencies. New tests require no new dependencies. HTTP ViewModel suites instantiate real ViewModels, services and ApiClient. `testing/HttpViewModelTest.kt` owns their ViewModelStores, local HTTP server and Main dispatcher; bounded response gates exercise busy guards without timing sleeps. Teardown releases held responses, clears ViewModels and closes the server/dispatcher.
+JUnit 4, Robolectric API 33, the existing Compose test artifacts and MockWebServer remain pinned to the project dependencies. The shared and demo modules reuse the project’s existing dependency pins. HTTP ViewModel suites instantiate real ViewModels, services and ApiClient. `testing/HttpViewModelTest.kt` owns their ViewModelStores, local HTTP server and Main dispatcher; bounded response gates exercise busy guards without timing sleeps. Teardown releases held responses, clears ViewModels and closes the server/dispatcher.
 
 The existing `TransportMasterKeysShadow`/`TransportPreferencesShadow` substitute encrypted preference creation only. These suites exercise real storage policies and recovery code, but do not verify AndroidKeyStore or ciphertext. New fixtures are synthetic and checked against current Android DTOs/services, not captured from a deployed server. Existing DTO fixture provenance remains in [contracts/README.md](resources/contracts/README.md). No frontend or backend contract changes are included.
 
@@ -35,10 +38,10 @@ The existing `TransportMasterKeysShadow`/`TransportPreferencesShadow` substitute
 Full suite, including all newly prepared classes and existing regression classes:
 
 ```bash
-JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-android-regression-tests.log 2>&1
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest :shared:testDebugUnitTest :demo:testDebugUnitTest -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-android-regression-tests.log 2>&1
 ```
 
-Package suites use the same command with the appropriate `--tests` filters, for example:
+For a focused run, select one module task and add its `--tests` filter. Use `:shared:testDebugUnitTest` for shared validation, theme contrast, and session presentation. Use `:demo:testDebugUnitTest --tests '*.StandaloneDemoTest'` for the standalone app. The remaining examples also include main-app packages:
 
 - Storage/connections/navigation: `--tests 'com.mukhtabir.android.core.*'`
 - Transport/DTO/localization/image limits: `--tests 'com.mukhtabir.android.data.remote.*'`
@@ -56,7 +59,7 @@ Approved component milestone selection (15 shared-component cases plus six exist
 JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :app:testDebugUnitTest --tests '*.SharedComponentInteractionTest' --tests '*.QuizQuestionInteractionTest' --tests '*.OfflineStudyScreenInteractionTest' -Pmukhtabir.autoVersion=false -Pkotlin.compiler.execution.strategy=in-process --max-workers=1 --no-parallel --no-daemon --offline --console=plain > /tmp/mukhtabir-android-components-tests.log 2>&1
 ```
 
-Gradle's existing task discovers all test classes. Package filters provide focused suites without aggregate JUnit classes that could run cases twice during full discovery. Test counts above count methods; table-driven boundary cases add multiple assertions within individual methods.
+Each module’s JVM task discovers its test classes. Package filters provide focused suites without aggregate JUnit classes that could run cases twice during full discovery. Test counts above count methods; table-driven boundary cases add multiple assertions within individual methods.
 
 Prepared main-demo selection (56 cases). The user requested test-file updates only and deferred **all execution and compilation**; this command requires a later explicit run request:
 

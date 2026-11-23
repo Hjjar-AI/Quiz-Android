@@ -9,9 +9,14 @@ android {
     compileSdk = 34
 
     sourceSets.getByName("main").setRoot(".")
+    sourceSets.getByName("test").setRoot("test")
 
     defaultConfig {
         minSdk = 23
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     buildFeatures {
@@ -34,6 +39,8 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.12.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     api(platform("androidx.compose:compose-bom:2023.10.01"))
     api("androidx.compose.foundation:foundation")

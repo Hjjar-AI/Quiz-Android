@@ -3,22 +3,16 @@ package com.mukhtabir.android.ui.quiz
 import android.app.Application
 import android.content.Context
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import com.mukhtabir.android.testing.ContractTestTheme
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.AppPreferences
 import com.mukhtabir.android.core.DownloadedSession
+import com.mukhtabir.android.core.QuizPresetHolder
 import com.mukhtabir.android.core.SessionDraftStore
 import com.mukhtabir.android.data.remote.*
 import com.mukhtabir.android.testing.answerChoices
@@ -42,10 +36,12 @@ import org.robolectric.annotation.LooperMode
 @LooperMode(LooperMode.Mode.PAUSED)
 class QuizQuestionInteractionTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
-    private val owners = ViewModelStore()
     private var server: MockWebServer? = null
     private lateinit var vm: QuizViewModel
-    @After fun tearDown() { compose.runOnIdle { owners.clear() }; server?.shutdown() }
+    @After fun tearDown() {
+        compose.runOnIdle { compose.activity.viewModelStore.clear() }
+        server?.shutdown()
+    }
     private fun launch(mode: TestMode, selected: Int? = null, confidence: Int? = null) {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val store = SessionDraftStore(context).also { it.bind(41).getOrThrow() }
@@ -62,14 +58,18 @@ class QuizQuestionInteractionTest {
         }
         server = backend
         val api = ApiClient(context, backend.url("/api/v1/").toString())
-        val images = ImageRepository(api)
-        vm = QuizViewModel(QuestionService(api), TestSessionService(api), BookmarkService(api), CategoryService(api), BlueprintService(api),
-            false, 41, SavedStateHandle(), store, AppPreferences(context), images)
-        owners.put("quiz", vm)
-        compose.setContent { ContractTestTheme {
-            val state by vm.state.collectAsState()
-            Column(Modifier.verticalScroll(rememberScrollState())) { QuizQuestionContent(state, images, vm) }
-        } }
+        val preferences = AppPreferences(context)
+        val presets = QuizPresetHolder()
+        compose.setContent {
+            ContractTestTheme {
+                QuizRoute(QuestionService(api), TestSessionService(api), BookmarkService(api), CategoryService(api),
+                    BlueprintService(api), ImageRepository(api), presets, canUseBlueprint = false, maxQuizQuestions = 200,
+                    userId = 41, draftStore = store, preferences = preferences, onBack = {}, onSessionActiveChanged = {})
+            }
+        }
+        compose.runOnIdle {
+            vm = ViewModelProvider(compose.activity)["quiz-41", QuizViewModel::class.java]
+        }
     }
     @Test fun `production reader lays out case before question and retains minimum answer targets`() {
         launch(TestMode.STUDY)

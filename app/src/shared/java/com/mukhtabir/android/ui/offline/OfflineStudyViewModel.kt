@@ -1,5 +1,6 @@
 package com.mukhtabir.android.ui.offline
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -32,7 +33,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.coroutineContext
 
-internal data class OfflineStudyState(val materials: List<OfflineMaterial> = emptyList(),val selected: String? = null,
+@VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+data class OfflineStudyState(val materials: List<OfflineMaterial> = emptyList(),val selected: String? = null,
     val ids: String = "",val busy: Boolean = false,val pendingStorage: Boolean = false,val storageFailed: Boolean = false,val error: Throwable? = null,
     val message: Int? = null,val validation: Int? = null, val bank: OfflineBankProgress? = null, val bankDownloading: Boolean = false, val legacyStorage: Boolean = false, val bankAllowed: Boolean = false,
     val selection: OfflineSelection = OfflineSelection(), val includeImages: Boolean = true,
@@ -41,7 +43,8 @@ internal data class OfflineStudyState(val materials: List<OfflineMaterial> = emp
     val current: OfflineMaterial? get() = materials.firstOrNull {it.pack.id==selected}
     val canDelete: Boolean get() = !busy && (!storageFailed || (pendingStorage && error is OfflineCacheCapacityException))
 }
-internal class OfflineStudyViewModel(private val service: LearnerOffline,private val store: LearnerStorage,
+@VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+class OfflineStudyViewModel(private val service: LearnerOffline,private val store: LearnerStorage,
     private val userId: Long,private val localOnly: Boolean,private val canSync: Boolean,
     private val maxQuestions: Int,initialIds: String) : ViewModel() {
     private val _state=MutableStateFlow(OfflineStudyState(ids=initialIds))

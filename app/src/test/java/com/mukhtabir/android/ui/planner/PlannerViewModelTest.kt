@@ -93,8 +93,11 @@ class PlannerViewModelTest : HttpViewModelTest() {
     }
     @Test fun `stored uncertain draft suppresses automatic progress and save replay`() {
         defaults(); val store = store()
-        val saved = StoredPlannerDraft("25", emptySet(), listOf("tag"), "", "2026-10-23", "", true, 3, 7)
-        store.writeEditor(41, "planner-new", json.encodeToString(StoredPlannerDraft.serializer(), saved)).getOrThrow()
+        val saved = """
+            {"target":"25","categories":[],"tags":["tag"],"tagInput":"",
+             "start":"2026-10-23","end":"","pending":true,"version":3,"plannerId":7}
+        """.trimIndent()
+        store.writeEditor(41, "planner-new", saved).getOrThrow()
         val vm = model(store); assertTrue(vm.hasRecovery.value)
         assertEquals(0, requests.count { it.requestUrl?.encodedPath == "/api/v1/study-planner/progress/" })
         vm.restoreDraft(); ready(vm)

@@ -16,6 +16,7 @@ android {
     compileSdk = 34
 
     sourceSets.getByName("main").setRoot(".")
+    sourceSets.getByName("test").setRoot("test")
 
     defaultConfig {
         applicationId = "com.mukhtabir.android.demo"
@@ -23,6 +24,10 @@ android {
         targetSdk = 34
         versionCode = storedVersion.getProperty("versionCode").toInt()
         versionName = storedVersion.getProperty("versionName")
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     buildFeatures {
@@ -49,6 +54,8 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.12.2")
     implementation(project(":shared"))
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.navigation:navigation-compose:2.7.6")

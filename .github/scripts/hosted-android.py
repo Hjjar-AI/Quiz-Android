@@ -10,11 +10,13 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+JVM_MODULES = ('app', 'shared', 'demo')
+JVM_TASKS = [f':{module}:testDebugUnitTest' for module in JVM_MODULES]
 OPERATIONS = {
     'compile-debug': [':app:compileDebugSources'],
     'compile-release': [':app:compileReleaseSources'],
-    'jvm': [':app:testDebugUnitTest'],
-    'all': [':app:compileDebugSources', ':app:compileReleaseSources', ':app:testDebugUnitTest'],
+    'jvm': JVM_TASKS,
+    'all': [':app:compileDebugSources', ':app:compileReleaseSources', *JVM_TASKS],
     'lint': ['-I', '.github/production-lint.init.gradle', ':app:lintDebug'],
     'debug-apk': [':app:assembleDebug'],
     'demo-apk': [':demo:assembleDebug'],
@@ -91,13 +93,18 @@ def run(operation):
     unchanged = hashlib.sha256(version.read_bytes()).digest() == before
     if not unchanged:
         raise ValueError('Stored version changed unexpectedly; preserve evidence and investigate')
-    # Collect reports from the actual redirected module output, never app/build.
-    if operation == 'demo-apk':
-        build = build.parent / 'demo'
-    if (build / 'reports').is_dir():
-        shutil.copytree(build / 'reports', directory / 'reports', dirs_exist_ok=True)
-    if operation in ('jvm', 'all') and (build / 'test-results').is_dir():
-        shutil.copytree(build / 'test-results', directory / 'test-results', dirs_exist_ok=True)
+    # Use the redirected module outputs and keep each suite's reports separate.
+    if operation in ('jvm', 'all'):
+        for module in JVM_MODULES:
+            for folder in ('reports', 'test-results'):
+                source = build.parent / module / folder
+                if source.is_dir():
+                    shutil.copytree(source, directory / module / folder, dirs_exist_ok=True)
+    else:
+        if operation == 'demo-apk':
+            build = build.parent / 'demo'
+        if (build / 'reports').is_dir():
+            shutil.copytree(build / 'reports', directory / 'reports', dirs_exist_ok=True)
     if operation in ('debug-apk', 'demo-apk', 'release-apk') and result.returncode == 0:
         variant = 'release' if operation == 'release-apk' else 'debug'
         packages = sorted((build / 'outputs/apk' / variant).glob('*.apk'))

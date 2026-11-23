@@ -8,6 +8,8 @@ Moved shared learner screens, controllers and resources to `app/src/shared`. Add
 
 Checked production Kotlin syntax, resource references, bilingual demo keys, source manifests and dependency boundaries, and changed Python syntax. APK builds, merged manifests, suites and device acceptance are pending. The embedded demo stays reachable until first-release device acceptance. See the [remaining work](../workPlan.md#standalone-demo).
 
+The Android JVM tests now follow module ownership. Seven existing classes moved to the shared module, main-app integration tests still exercise the production routes and storage, and six standalone demo cases cover isolation, persistence and simulated recovery. Workflow 03 collects separate reports for `app`, `shared`, and `demo` on the `jvm` and `all` selections. Test compilation and execution are pending on GitHub.
+
 ## 2026-11-15 Git/GitHub adaptation
 
 Rechecked all 15 current Aqaqeer workflow definitions, their job dependencies and helper contracts against current Mukhtabir source. [The complete audit](../guides/workflow-audit.md) accounts for each reference workflow and intentional differences; [the repository guide](../guides/git-and-github.md) owns commands/signing setup and deferred backend/Vue suggestions. Repository foundations include attributes/editor/ignore rules, source integrity checks, optional pre-push hook, review templates/CODEOWNERS/security guidance and grouped Actions dependency proposals. No backend/Vue application or repository files were changed.
