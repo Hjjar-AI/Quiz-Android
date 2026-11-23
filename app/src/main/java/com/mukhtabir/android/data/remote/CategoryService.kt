@@ -3,8 +3,8 @@ package com.mukhtabir.android.data.remote
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class CategoryService(private val api: ApiClient) {
-    suspend fun list(): CategoryListDto =
+class CategoryService(private val api: ApiClient) : LearnerCategories {
+    override suspend fun list(): CategoryListDto =
         api.decode(CategoryListDto.serializer(), api.get(ApiEndpoints.Categories.LIST))
 
     suspend fun create(request: CategoryWriteRequest): CategoryDto = api.decode(

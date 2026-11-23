@@ -61,7 +61,7 @@ def main():
     # app uses the transparent density PNGs on every Android version.
     # Android adaptive foreground: 52dp artwork on the 108dp layer. The
     # asymmetric paper/handle needs more mask clearance than a circular mark.
-    target = RES / 'drawable-nodpi/ic_launcher_artwork.png'
+    target = RES.parents[1] / 'shared/res/drawable-nodpi/ic_launcher_artwork.png'
     target.parent.mkdir(parents=True, exist_ok=True)
     filters = (f'{crop},scale=208:208:force_original_aspect_ratio=decrease:flags=lanczos,'
                'format=rgba,pad=432:432:(ow-iw)/2:(oh-ih)/2:color=black@0,format=rgba')

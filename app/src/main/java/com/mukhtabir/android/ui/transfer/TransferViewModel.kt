@@ -93,7 +93,8 @@ internal class TransferViewModel(private val service: TransferService, private v
                 ensureActive()
                 _state.update { it.copy(error = error) }
                 // Recover the grant with a read after response loss; do not replay the POST.
-                if (error !is ApiException || error.statusCode == null || error.statusCode >= 500) {
+                val statusCode = (error as? ApiException)?.statusCode
+                if (statusCode == null || statusCode >= 500) {
                     try {
                         val status = service.importLimitStatus()
                         ensureActive()

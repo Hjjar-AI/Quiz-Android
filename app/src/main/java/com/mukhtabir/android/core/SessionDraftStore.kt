@@ -14,75 +14,10 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
-enum class SessionDraftKind { RECALL_TEXT, REVEAL, ANSWER, REFLECTION }
-
-@Serializable
-data class PendingSessionFinish(val sessionId: String, val mode: String)
-
-@Serializable
 private data class SessionFlags(val sessionId: String, val indices: Set<Int>)
 
-/** Downloaded ordinary session and ordered, unconfirmed answer changes. */
-@Serializable
-data class DownloadedSession(
-    val session: ExamSessionDto,
-    val pages: List<SessionQuestionPageDto>,
-    val answers: List<SessionDraft> = emptyList(),
-    val timerDisabled: Boolean = false,
-    val images: Map<String, String> = emptyMap(),
-    val locallyFinished: Boolean = false,
-    val finishedTimerSeconds: Int = 0,
-    val finishedTimerOvertime: Boolean = false,
-)
-
-/** Capacity rejection happens before touching encrypted preferences. */
-class OfflineCacheCapacityException : IllegalStateException()
-
-/** Last learner destination and at most one unresolved answer, in the existing encrypted account store. */
-@Serializable
-data class MasterExamRecovery(
-    val examId: Long,
-    val sessionId: String? = null,
-    val draft: MasterExamAnswerRequest? = null,
-    val page: SessionQuestionPageDto? = null,
-    val finishPending: Boolean = false,
-)
-
-/** One unresolved question only, with the last confirmed slot for conflict detection. */
-@Serializable
-data class SessionDraft(
-    val sessionId: String,
-    val mode: String,
-    val questionId: Long,
-    val index: Int,
-    val kind: SessionDraftKind,
-    val answer: Int? = null,
-    val confidence: Int? = null,
-    val preAnswer: String = "",
-    val errorReason: String? = null,
-    val baseAnswer: Int? = null,
-    val baseConfidence: Int? = null,
-    val basePreAnswer: String? = null,
-    val baseErrorReason: String? = null,
-) {
-    fun matches(page: SessionQuestionPageDto): Boolean = index == page.index && questionId == page.question.id
-
-    fun acknowledged(page: SessionQuestionPageDto): Boolean = when (kind) {
-        SessionDraftKind.RECALL_TEXT, SessionDraftKind.REVEAL ->
-            page.savedPreAnswer == preAnswer.trim() && !page.question.choicesHidden
-        SessionDraftKind.ANSWER -> page.savedAnswer == answer && page.savedConfidence == confidence &&
-            (mode != "recall" || page.savedPreAnswer == preAnswer.trim())
-        SessionDraftKind.REFLECTION -> page.savedAnswer == answer && page.savedConfidence == confidence &&
-            page.savedErrorReason == errorReason
-    }
-
-    fun baselineUnchanged(page: SessionQuestionPageDto): Boolean =
-        page.savedAnswer == baseAnswer && page.savedConfidence == baseConfidence &&
-            page.savedPreAnswer == basePreAnswer && page.savedErrorReason == baseErrorReason
-}
-
 /** Private encrypted storage. Access starts only after authenticated account binding. */
-class SessionDraftStore(context: Context) {
+class SessionDraftStore(context: Context) : LearnerStorage {
     private val applicationContext = context.applicationContext
     private val json = Json { ignoreUnknownKeys = true }
     // Capture before a setting change; old instances must never touch a new server's data.
@@ -127,13 +62,13 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun retryBinding(userId: Long): Result<Unit> {
+    override fun retryBinding(userId: Long): Result<Unit> {
         if (authenticatedUserId != userId) return Result.failure(IllegalStateException())
         return bind(userId, authenticatedUserUuid)
     }
 
     @Synchronized
-    fun authorNavigation(userId: Long): Result<AuthorNavigation> = runCatching {
+    override fun authorNavigation(userId: Long): Result<AuthorNavigation> = runCatching {
         check(activeUserId==userId && preferences.getLong("owner",-1L)==userId)
         check(serverSettings.profile()==serverProfile && serverSettings.read()==serverAddress)
         preferences.getString("author_navigation",null)?.let {json.decodeFromString(AuthorNavigation.serializer(),it)} ?: AuthorNavigation()
@@ -146,7 +81,7 @@ class SessionDraftStore(context: Context) {
         check(preferences.edit().putString("author_navigation",json.encodeToString(AuthorNavigation.serializer(),value)).commit())
     }
     @Synchronized
-    fun recordLastQuestion(userId: Long, id: Long?): Result<Unit> = runCatching {
+    override fun recordLastQuestion(userId: Long, id: Long?): Result<Unit> = runCatching {
         require(id==null || id>0)
         val value=authorNavigation(userId).getOrThrow().copy(lastQuestionId=id)
         check(preferences.edit().putString("author_navigation",json.encodeToString(AuthorNavigation.serializer(),value)).commit())
@@ -154,14 +89,14 @@ class SessionDraftStore(context: Context) {
 
     /** Authoring uses the same authenticated account binding and encrypted cleanup policy. */
     @Synchronized
-    fun readEditor(userId: Long, key: String): Result<String?> = runCatching {
+    override fun readEditor(userId: Long, key: String): Result<String?> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(key.matches(Regex("[a-z_]+-(?:new|[0-9]+|[a-f0-9]{64})")))
         preferences.getString("editor:$key", null)
     }
 
     @Synchronized
-    fun writeEditor(userId: Long, key: String, value: String): Result<Unit> = runCatching {
+    override fun writeEditor(userId: Long, key: String, value: String): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(key.matches(Regex("[a-z_]+-(?:new|[0-9]+|[a-f0-9]{64})")))
         check(value.length <= if (key.startsWith("image-")) 8 * 1024 * 1024 else 512 * 1024)
@@ -171,7 +106,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun clearEditor(userId: Long, key: String): Result<Unit> = runCatching {
+    override fun clearEditor(userId: Long, key: String): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(preferences.edit().remove("editor:$key").commit())
     }
@@ -183,13 +118,13 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun read(userId: Long): Result<SessionDraft?> = runCatching {
+    override fun read(userId: Long): Result<SessionDraft?> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         preferences.getString("draft", null)?.let { json.decodeFromString(SessionDraft.serializer(), it) }
     }
 
     @Synchronized
-    fun write(userId: Long, draft: SessionDraft): Result<Unit> = runCatching {
+    override fun write(userId: Long, draft: SessionDraft): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(draft.preAnswer.length <= 1_000 && draft.index >= 0 && draft.questionId > 0)
         // A synchronous commit must succeed before any answer/reveal write starts.
@@ -197,13 +132,13 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun clearDraft(userId: Long): Result<Unit> = runCatching {
+    override fun clearDraft(userId: Long): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(preferences.edit().remove("draft").commit())
     }
 
     @Synchronized
-    fun readDownloadedSession(userId: Long): Result<DownloadedSession?> = runCatching {
+    override fun readDownloadedSession(userId: Long): Result<DownloadedSession?> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(serverSettings.profile() == serverProfile && serverSettings.read() == serverAddress)
         preferences.getString("downloaded_session", null)?.let {
@@ -217,7 +152,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun writeDownloadedSession(userId: Long, session: DownloadedSession?): Result<Unit> = runCatching {
+    override fun writeDownloadedSession(userId: Long, session: DownloadedSession?): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(serverSettings.profile() == serverProfile && serverSettings.read() == serverAddress)
         val editor = preferences.edit()
@@ -236,7 +171,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun readFlags(userId: Long, sessionId: String): Result<Set<Int>> = runCatching {
+    override fun readFlags(userId: Long, sessionId: String): Result<Set<Int>> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(serverSettings.profile() == serverProfile && serverSettings.read() == serverAddress)
         val stored = preferences.getString("session_flags_$sessionId", null)?.let { json.decodeFromString(SessionFlags.serializer(), it) }
@@ -244,7 +179,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun writeFlags(userId: Long, sessionId: String, indices: Set<Int>): Result<Unit> = runCatching {
+    override fun writeFlags(userId: Long, sessionId: String, indices: Set<Int>): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(serverSettings.profile() == serverProfile && serverSettings.read() == serverAddress)
         check(sessionId.isNotBlank() && indices.all { it >= 0 })
@@ -253,7 +188,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun readFinish(userId: Long): Result<PendingSessionFinish?> = runCatching {
+    override fun readFinish(userId: Long): Result<PendingSessionFinish?> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         preferences.getString("finish_recovery", null)?.let {
             json.decodeFromString(PendingSessionFinish.serializer(), it).also(::validateFinish)
@@ -261,7 +196,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun writeFinish(userId: Long, recovery: PendingSessionFinish): Result<Unit> = runCatching {
+    override fun writeFinish(userId: Long, recovery: PendingSessionFinish): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         validateFinish(recovery)
         check(preferences.edit().putString("finish_recovery",
@@ -269,7 +204,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun clearFinish(userId: Long): Result<Unit> = runCatching {
+    override fun clearFinish(userId: Long): Result<Unit> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         check(preferences.edit().remove("finish_recovery").commit())
     }
@@ -280,7 +215,7 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun readMaster(userId: Long): Result<MasterExamRecovery?> = runCatching {
+    override fun readMaster(userId: Long): Result<MasterExamRecovery?> = runCatching {
         check(activeUserId == userId && preferences.getLong("owner", -1L) == userId)
         preferences.getString("master_recovery", null)?.let {
             json.decodeFromString(MasterExamRecovery.serializer(), it).also(::validateMaster)
@@ -320,25 +255,25 @@ class SessionDraftStore(context: Context) {
     }
 
     @Synchronized
-    fun readOffline(userId: Long, localOnly: Boolean): Result<List<com.mukhtabir.android.data.remote.OfflineMaterial>> = runCatching {
+    override fun readOffline(userId: Long, localOnly: Boolean): Result<List<com.mukhtabir.android.data.remote.OfflineMaterial>> = runCatching {
         checkOfflineOwner(userId, localOnly)
         offlineFiles.read()
     }
 
     @Synchronized
-    fun readOfflinePack(userId: Long, localOnly: Boolean, id: String): Result<com.mukhtabir.android.data.remote.OfflineMaterial> = runCatching {
+    override fun readOfflinePack(userId: Long, localOnly: Boolean, id: String): Result<com.mukhtabir.android.data.remote.OfflineMaterial> = runCatching {
         checkOfflineOwner(userId, localOnly)
         offlineFiles.readPack(id)
     }
 
     @Synchronized
-    fun readOfflineBankProgress(userId: Long, localOnly: Boolean): Result<com.mukhtabir.android.data.remote.OfflineBankProgress?> = runCatching {
+    override fun readOfflineBankProgress(userId: Long, localOnly: Boolean): Result<com.mukhtabir.android.data.remote.OfflineBankProgress?> = runCatching {
         checkOfflineOwner(userId, localOnly)
         offlineFiles.progress()
     }
 
     @Synchronized
-    fun writeOffline(userId: Long, localOnly: Boolean, materials: List<com.mukhtabir.android.data.remote.OfflineMaterial>,
+    override fun writeOffline(userId: Long, localOnly: Boolean, materials: List<com.mukhtabir.android.data.remote.OfflineMaterial>,
         progress: com.mukhtabir.android.data.remote.OfflineBankProgress?): Result<Unit> = runCatching {
         checkOfflineOwner(userId, localOnly)
         offlineFiles.write(materials, progress)

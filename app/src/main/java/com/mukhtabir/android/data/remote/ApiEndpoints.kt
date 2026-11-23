@@ -204,9 +204,3 @@ object ApiEndpoints {
         else -> error("Unknown session action")
     }
 }
-
-enum class TestMode(val path: String) {
-    EXAM("exam"),
-    STUDY("study"),
-    RECALL("recall"),
-}

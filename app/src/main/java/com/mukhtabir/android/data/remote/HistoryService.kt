@@ -1,10 +1,10 @@
 package com.mukhtabir.android.data.remote
 
-class HistoryService(private val api: ApiClient) {
-    suspend fun list(
-        page: Int = 1,
-        perPage: Int = 20,
-        userId: Long? = null,
+class HistoryService(private val api: ApiClient) : LearnerHistory {
+    override suspend fun list(
+        page: Int,
+        perPage: Int,
+        userId: Long?,
     ): HistoryPageDto = api.decode(
         HistoryPageDto.serializer(),
         api.get(
@@ -17,7 +17,7 @@ class HistoryService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun detail(id: Long): HistoryDetailDto = api.decode(
+    override suspend fun detail(id: Long): HistoryDetailDto = api.decode(
         HistoryDetailDto.serializer(), api.get(ApiEndpoints.History.detail(id)),
     )
 }

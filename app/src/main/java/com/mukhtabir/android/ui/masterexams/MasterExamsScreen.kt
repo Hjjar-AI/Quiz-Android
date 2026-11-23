@@ -199,7 +199,9 @@ fun MasterExamsRoute(userId: Long, service: MasterExamService, images: ImageRepo
                         MasterExamSummary(exam, notices = {
                             if (exam.id in s.notices) Text(stringResource(R.string.master_ack_required), color = MaterialTheme.colorScheme.primary)
                         }, actions = {
-                            if (exam.myAttempt != null) Text(stringResource(if (exam.myAttempt.isComplete) R.string.master_result else R.string.master_resume))
+                            exam.myAttempt?.let { attempt ->
+                                Text(stringResource(if (attempt.isComplete) R.string.master_result else R.string.master_resume))
+                            }
                         })
                     }
                 }

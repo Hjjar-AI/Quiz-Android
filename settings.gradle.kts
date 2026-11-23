@@ -15,6 +15,7 @@ pluginManagement {
     }
     plugins {
         id("com.android.application") version "8.5.0"
+        id("com.android.library") version "8.5.0"
         id("org.jetbrains.kotlin.android") version "1.9.0"
         id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
     }
@@ -29,7 +30,9 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Mukhtabir Android"
-include(":app")
+include(":app", ":shared", ":demo")
+project(":shared").projectDir = file("app/src/shared")
+project(":demo").projectDir = file("app/src/demo")
 
 
 // Follow the effective Gradle home and registered local namespace; preserve portable defaults.

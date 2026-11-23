@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="demo_launcher_name">مُختبِر التجريبي</string>
+    <string name="sample_learner">متعلّم تجريبي</string>
+    <string name="demo_navigation">فتح قائمة النسخة التجريبية</string>
+    <string name="demo_connection_title">الاتصال التجريبي</string>
+    <string name="demo_connected">الاتصال التجريبي مفعّل</string>
+    <string name="demo_disconnected">الاتصال التجريبي متوقّف</string>
+    <string name="demo_connection_failed">تعذّر الاتصال التجريبي. تحقّق من إعداد الاتصال ثم حاول مجددًا.</string>
+    <string name="demo_connection_hint">تؤثر هذه الخيارات على الطلبات التجريبية. يمكنك متابعة الدراسة من المجموعات المحفوظة عند إيقاف الاتصال.</string>
+    <string name="demo_lose_read">محاكاة فشل القراءة التالية</string>
+    <string name="demo_lose_answer">محاكاة فقدان الرد التالي على حفظ إجابة</string>
+    <string name="demo_lose_finish">محاكاة فقدان الرد التالي على إنهاء الجلسة</string>
+    <string name="demo_lose_upload">محاكاة فقدان الرد التالي على الرفع</string>
+    <string name="demo_loss_hint">تُرسل الإجابات المحفوظة في الدراسة والاختبار عند المزامنة، وتُرسل في الاسترجاع عند الحفظ. يبقى التغيير محفوظًا ويمكن التحقّق منه عند فقدان الرد.</string>
+    <string name="demo_reset_progress">إعادة ضبط النسخة التجريبية</string>
+    <string name="demo_reset_progress_message">هل تريد استبدال تقدّمك وعلاماتك المرجعية وتنزيلاتك بالبيانات التجريبية الأصلية؟ ستُحفظ إعدادات العرض واللغة.</string>
+    <string name="demo_reset_failed">تعذّرت إعادة ضبط النسخة التجريبية. حاول مجددًا.</string>
+</resources>

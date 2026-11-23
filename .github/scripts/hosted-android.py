@@ -17,6 +17,7 @@ OPERATIONS = {
     'all': [':app:compileDebugSources', ':app:compileReleaseSources', ':app:testDebugUnitTest'],
     'lint': ['-I', '.github/production-lint.init.gradle', ':app:lintDebug'],
     'debug-apk': [':app:assembleDebug'],
+    'demo-apk': [':demo:assembleDebug'],
     'release-apk': [':app:assembleRelease'],
     'dependencies': ['-I', '.github/dependency-inventory.init.gradle', ':app:ciDependencyInventory'],
     'codeql': ['--no-build-cache', '--rerun-tasks', ':app:compileDebugSources'],
@@ -91,12 +92,14 @@ def run(operation):
     if not unchanged:
         raise ValueError('Stored version changed unexpectedly; preserve evidence and investigate')
     # Collect reports from the actual redirected module output, never app/build.
+    if operation == 'demo-apk':
+        build = build.parent / 'demo'
     if (build / 'reports').is_dir():
         shutil.copytree(build / 'reports', directory / 'reports', dirs_exist_ok=True)
     if operation in ('jvm', 'all') and (build / 'test-results').is_dir():
         shutil.copytree(build / 'test-results', directory / 'test-results', dirs_exist_ok=True)
-    if operation in ('debug-apk', 'release-apk') and result.returncode == 0:
-        variant = 'debug' if operation == 'debug-apk' else 'release'
+    if operation in ('debug-apk', 'demo-apk', 'release-apk') and result.returncode == 0:
+        variant = 'release' if operation == 'release-apk' else 'debug'
         packages = sorted((build / 'outputs/apk' / variant).glob('*.apk'))
         if len(packages) != 1:
             raise ValueError('Expected exactly one fresh universal APK')
@@ -111,7 +114,7 @@ def run(operation):
             shutil.copytree(build / 'outputs/mapping/release', directory / 'mapping', dirs_exist_ok=True)
     text = (f'## {operation}\n\nGradle exit code: {result.returncode}. Stored version unchanged.\n\n'
             'Hosted output only; no device installation, publication, production signing or live API verification.\n')
-    if operation == 'debug-apk':
+    if operation in ('debug-apk', 'demo-apk'):
         text += 'Debug APK uses an ephemeral runner signer; it is not an update for an existing differently signed installation.\n'
     if operation == 'release-apk':
         text += 'Release APK is unsigned and is not an installable production distribution.\n'

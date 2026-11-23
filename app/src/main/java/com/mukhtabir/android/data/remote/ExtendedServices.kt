@@ -7,16 +7,16 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class PlannerService(private val api: ApiClient) {
-    suspend fun recordProgress() { api.post(ApiEndpoints.Planner.PROGRESS) }
+class PlannerService(private val api: ApiClient) : LearnerPlanner {
+    override suspend fun recordProgress() { api.post(ApiEndpoints.Planner.PROGRESS) }
 
-    suspend fun get(): PlannerDto =
+    override suspend fun get(): PlannerDto =
         api.decode(PlannerDto.serializer(), api.get(ApiEndpoints.Planner.GET))
 
-    suspend fun update(request: PlannerWriteRequest): PlannerDto = api.decode(PlannerDto.serializer(),
+    override suspend fun update(request: PlannerWriteRequest): PlannerDto = api.decode(PlannerDto.serializer(),
         api.post(ApiEndpoints.Planner.UPDATE, api.encode(PlannerWriteRequest.serializer(), request)))
 
-    suspend fun delete(id: Long, version: Int) { api.delete(ApiEndpoints.Planner.DELETE+"?expected_id=$id&expected_version=$version") }
+    override suspend fun delete(id: Long, version: Int) { api.delete(ApiEndpoints.Planner.DELETE+"?expected_id=$id&expected_version=$version") }
 }
 
 class GroupService(private val api: ApiClient) {

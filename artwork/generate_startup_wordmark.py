@@ -4,7 +4,7 @@ import ctypes
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-RES = ROOT / "app/src/main/res"
+RES = ROOT / "app/src/shared/res"
 NAME = next(node.text for node in ET.parse(RES / "values/strings.xml").getroot()
             if node.attrib.get("name") == "launcher_name")
 fontconfig = ctypes.CDLL("libfontconfig.so.1")

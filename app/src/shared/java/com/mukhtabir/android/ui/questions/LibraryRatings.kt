@@ -1,0 +1,161 @@
+package com.mukhtabir.android.ui.questions
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.mukhtabir.android.shared.R
+import com.mukhtabir.android.data.remote.ApiException
+import com.mukhtabir.android.data.remote.QuestionRatingRowDto
+import com.mukhtabir.android.data.remote.LearnerQuestions
+import com.mukhtabir.android.ui.components.AppConfirmationDialog
+import com.mukhtabir.android.ui.components.AppLayoutTokens
+import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppSuccessText
+import com.mukhtabir.android.ui.components.AppTextButton
+import com.mukhtabir.android.ui.components.ErrorState
+import com.mukhtabir.android.ui.components.QuestionRatingSelector
+import com.mukhtabir.android.util.formatNumber
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+data class LibraryRatingsState(
+    val rows: Map<Long, QuestionRatingRowDto> = emptyMap(),
+    val drafts: Map<Long, Int> = emptyMap(),
+    val saved: Map<Long, Int> = emptyMap(),
+    val loading: Boolean = false,
+    val savingId: Long? = null,
+    val error: Throwable? = null,
+    val writeErrors: Map<Long, Throwable> = emptyMap(),
+    val uncertain: Set<Long> = emptySet(),
+    val reviewed: Set<Long> = emptySet(),
+)
+
+/** Memory-only page ratings/drafts. Unknown writes require a fresh read and explicit review. */
+class LibraryRatingsViewModel(private val service: LearnerQuestions) : ViewModel() {
+    private val mutable = MutableStateFlow(LibraryRatingsState())
+    val state = mutable.asStateFlow()
+    private var visible = emptyList<Long>()
+    private var readJob: Job? = null
+
+    fun visible(ids: List<Long>) {
+        visible = ids.distinct()
+        refresh()
+    }
+
+    fun refresh() {
+        if (mutable.value.savingId != null) return
+        readJob?.cancel()
+        val ids = (visible + mutable.value.uncertain).distinct()
+        if (ids.isEmpty()) {
+            mutable.update { it.copy(rows = emptyMap(), loading = false, error = null) }
+            return
+        }
+        mutable.update { it.copy(loading = true, error = null) }
+        readJob = viewModelScope.launch {
+            try {
+                val rows = service.ratings(ids)
+                ensureActive()
+                mutable.update { it.copy(rows = rows, loading = false,
+                    reviewed = it.reviewed + it.uncertain.intersect(rows.keys)) }
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (failure: Exception) {
+                ensureActive(); mutable.update { it.copy(loading = false, error = failure) }
+            }
+        }
+    }
+
+    fun select(id: Long, value: Int) {
+        val s = mutable.value
+        if (value !in 1..5 || s.loading || s.savingId != null || id in s.uncertain || id !in s.rows) return
+        mutable.update { it.copy(drafts = it.drafts + (id to value), writeErrors = it.writeErrors - id, saved = it.saved - id) }
+    }
+
+    fun acknowledge(id: Long) {
+        val s = mutable.value
+        if (s.loading || s.savingId != null || id !in s.reviewed) return
+        mutable.update { it.copy(uncertain = it.uncertain - id, reviewed = it.reviewed - id, writeErrors = it.writeErrors - id) }
+    }
+
+    fun save(id: Long) {
+        val s = mutable.value
+        val value = s.drafts[id] ?: return
+        if (s.loading || s.savingId != null || id in s.uncertain || id !in visible || id !in s.rows ||
+            value !in 1..5 || value == (s.saved[id] ?: s.rows[id]?.userRating)) return
+        mutable.update { it.copy(savingId = id, writeErrors = it.writeErrors - id, reviewed = it.reviewed - id) }
+        val pageAtDispatch = visible.toList()
+        viewModelScope.launch {
+            var confirmed = false
+            try {
+                service.rate(id, value)
+                ensureActive(); confirmed = true
+                // Confirmed success survives an aggregate refresh failure.
+                mutable.update { it.copy(saved = it.saved + (id to value), rows = it.rows - id) }
+                val rating = service.rating(id)
+                ensureActive()
+                mutable.update { it.copy(rows = it.rows + (id to QuestionRatingRowDto(id, rating.userRating, rating.average, rating.count))) }
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (failure: Exception) {
+                ensureActive()
+                val rejected = failure is ApiException && failure.statusCode in setOf(400, 401, 403, 404, 409, 422, 429)
+                mutable.update { it.copy(writeErrors = it.writeErrors + (id to failure),
+                    uncertain = if (!confirmed && !rejected) it.uncertain + id else it.uncertain) }
+            } finally {
+                // No detached refresh or mutation replay after account disposal.
+                if (kotlin.coroutines.coroutineContext[kotlinx.coroutines.Job]?.isActive == true) {
+                    mutable.update { it.copy(savingId = null) }
+                    if (visible != pageAtDispatch || (confirmed && visible.any { it !in mutable.value.rows })) refresh()
+                }
+            }
+        }
+    }
+
+    class Factory(private val service: LearnerQuestions) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = LibraryRatingsViewModel(service) as T
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun LibraryRatingDialog(id: Long, state: LibraryRatingsState, vm: LibraryRatingsViewModel, dismiss: () -> Unit) {
+    val row = state.rows[id]
+    val selected = state.drafts[id] ?: row?.userRating ?: 0
+    val busy = state.loading || state.savingId != null
+    val uncertain = id in state.uncertain
+    AppConfirmationDialog(
+        onDismissRequest = { if (state.savingId != id) dismiss() },
+        title = { Text(stringResource(R.string.select_question_number, com.mukhtabir.android.util.formatNumber(id))) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                row?.let { Text(if (it.count == 0) stringResource(R.string.no_ratings)
+                    else stringResource(R.string.rating_average, it.average, com.mukhtabir.android.util.formatNumber(it.count))) }
+                if (busy) AppLoadingIndicator()
+                if (!busy && row == null) Text(stringResource(R.string.library_rating_unavailable))
+                QuestionRatingSelector(selected, { vm.select(id, it) }, enabled = !busy && !uncertain && row != null)
+                if (id in state.saved) AppSuccessText(stringResource(R.string.saved))
+                if (uncertain) Text(stringResource(R.string.library_rating_unknown))
+                state.writeErrors[id]?.let { ErrorState(throwable = it) }
+                state.error?.let { ErrorState(throwable = it) }
+                AppTextButton(vm::refresh, enabled = !busy) { Text(stringResource(R.string.refresh_rating)) }
+                if (uncertain && id in state.reviewed) AppTextButton({ vm.acknowledge(id) }, enabled = !busy) {
+                    Text(stringResource(R.string.content_reviewed))
+                }
+            }
+        },
+        confirmButton = {
+            AppTextButton({ vm.save(id) }, enabled = !busy && !uncertain && row != null && selected in 1..5 &&
+                selected != (state.saved[id] ?: row.userRating)) { Text(stringResource(R.string.save_rating)) }
+        },
+        dismissButton = { AppTextButton(dismiss, enabled = state.savingId != id) { Text(stringResource(R.string.close)) } },
+    )
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="demo_launcher_name">Mukhtabir Demo</string>
+    <string name="sample_learner">Sample learner</string>
+    <string name="demo_navigation">Open demo navigation</string>
+    <string name="demo_connection_title">Demo Connection</string>
+    <string name="demo_connected">Simulated connection is on</string>
+    <string name="demo_disconnected">Simulated connection is off</string>
+    <string name="demo_connection_failed">The simulated connection failed. Check Demo Connection and try again.</string>
+    <string name="demo_connection_hint">These controls affect sample requests. Saved collections can still be studied when the connection is off.</string>
+    <string name="demo_lose_read">Fail the next read</string>
+    <string name="demo_lose_answer">Lose the next saved answer response</string>
+    <string name="demo_lose_finish">Lose the next Finish response</string>
+    <string name="demo_lose_upload">Lose the next upload response</string>
+    <string name="demo_loss_hint">Study and exam send saved answers when you sync. Recall sends answers as you save them. A lost response leaves the saved change available for recovery.</string>
+    <string name="demo_reset_progress">Reset Demo</string>
+    <string name="demo_reset_progress_message">Replace your demo progress, bookmarks and downloads with the original sample data? Your display and language settings will be kept.</string>
+    <string name="demo_reset_failed">Couldn’t reset the demo. Try again.</string>
+</resources>

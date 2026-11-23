@@ -14,12 +14,12 @@ import kotlinx.serialization.json.put
  *   • `streakHistory` and `categoryMastery` returned `JsonObject`.
  *     Both now return typed DTOs.
  */
-class AnalyticsService(private val api: ApiClient) {
+class AnalyticsService(private val api: ApiClient) : LearnerAnalytics {
     suspend fun verificationStats(): VerificationStatsDto = api.decode(
         VerificationStatsDto.serializer(), api.get(ApiEndpoints.Analytics.VERIFICATION_STATS),
     )
 
-    suspend fun summary(days: Int = 30): AnalyticsSummaryDto = api.decode(
+    override suspend fun summary(days: Int): AnalyticsSummaryDto = api.decode(
         AnalyticsSummaryDto.serializer(),
         api.get(
             ApiEndpoints.Analytics.SUMMARY,
@@ -27,7 +27,7 @@ class AnalyticsService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun activeUsers(days: Int = 30): List<ActiveUsersPointDto> = api.decode(
+    override suspend fun activeUsers(days: Int): List<ActiveUsersPointDto> = api.decode(
         ListSerializer(ActiveUsersPointDto.serializer()),
         api.get(
             ApiEndpoints.Analytics.ACTIVE_USERS,
@@ -35,9 +35,9 @@ class AnalyticsService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun categoryMastery(
-        minAttempts: Int? = null,
-        top: Int? = null,
+    override suspend fun categoryMastery(
+        minAttempts: Int?,
+        top: Int?,
     ): CategoryMasteryDto = api.decode(
         CategoryMasteryDto.serializer(),
         api.get(
@@ -49,7 +49,7 @@ class AnalyticsService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun streakHistory(days: Int = 30): StreakHistoryDto = api.decode(
+    override suspend fun streakHistory(days: Int): StreakHistoryDto = api.decode(
         StreakHistoryDto.serializer(),
         api.get(
             ApiEndpoints.Analytics.STREAK_HISTORY,
@@ -57,11 +57,11 @@ class AnalyticsService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun difficultyCalibration(): ReportRowsDto = report(ApiEndpoints.Analytics.DIFFICULTY_CALIBRATION)
-    suspend fun authorFlagRate(): ReportRowsDto = report(ApiEndpoints.Analytics.AUTHOR_FLAG_RATE)
-    suspend fun cohortComparison(): ReportRowsDto = report(ApiEndpoints.Analytics.COHORT_COMPARISON)
-    suspend fun retention(): ReportRowsDto = report(ApiEndpoints.Analytics.RETENTION)
-    suspend fun examDuration(): ExamDurationReportDto = api.decode(
+    override suspend fun difficultyCalibration(): ReportRowsDto = report(ApiEndpoints.Analytics.DIFFICULTY_CALIBRATION)
+    override suspend fun authorFlagRate(): ReportRowsDto = report(ApiEndpoints.Analytics.AUTHOR_FLAG_RATE)
+    override suspend fun cohortComparison(): ReportRowsDto = report(ApiEndpoints.Analytics.COHORT_COMPARISON)
+    override suspend fun retention(): ReportRowsDto = report(ApiEndpoints.Analytics.RETENTION)
+    override suspend fun examDuration(): ExamDurationReportDto = api.decode(
         ExamDurationReportDto.serializer(), api.get(ApiEndpoints.Analytics.EXAM_DURATION),
     )
 

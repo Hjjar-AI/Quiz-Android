@@ -1,6 +1,6 @@
 # Native UI/source guide
 
-Paths below are relative to `app/src/main/java/com/mukhtabir/android/`. Follow [working rules](../../Agents.md); verification belongs in the [checklist](../verification/checklist.md).
+Production code is under `app/src/main`, standalone demo code under `app/src/demo`, and code and resources compiled by both apps under `app/src/shared`. Paths in the table are relative to each source folder’s `java/com/mukhtabir/android/`. Follow [working rules](../../Agents.md); verification belongs in the [checklist](../verification/checklist.md).
 
 ## Source ownership
 
@@ -8,7 +8,7 @@ Paths below are relative to `app/src/main/java/com/mukhtabir/android/`. Follow [
 | --- | --- |
 | `core`, `data`, `ui`, `util` | Storage/preferences/navigation; auth/HTTP/domain DTOs; Compose; formatting. |
 | `MukhtabirApp.kt`, `ui/navigation/AuthenticatedAppShell.kt` | Startup/auth; shell/routes/capability gates. `AppDrawerContent.kt` owns the drawer; More is legacy. |
-| `ui/demo/DemoScreen.kt`, `DemoRepository.kt`, `DemoPracticeScreen.kt`, `DemoLearnerScreens.kt` | Local learner shell/fixtures, sample practice/setup/planner/downloads/connection and the real profile presentation. No API/account-storage dependency. |
+| `app/src/demo`, `app/src/shared` | Standalone launcher and local services, and the shared learner screens, controllers, storage interfaces and resources. The current main-app demo remains available until device acceptance. |
 | Question editor State/ViewModel/Screen/Preview | Serializable state, writes, form, previews. Other features similarly separate controllers/state/screens. |
 | `QuizSetupController.kt`, `QuizSetupStateStore.kt` | Filters/count jobs; account-checked lightweight restoration. |
 | `QuizViewModel.kt`, session chrome | Writes/deadlines/download/sync/recovery; separate lifecycle-collected clock flow. |
@@ -32,9 +32,9 @@ Trace route → controller → service/DTO → Django/Vue before contract change
 
 ## Learner demo
 
-The four learner tabs and categorized drawer use one saved-state fake repository. Main flows include category/tag/search/pagination and question ratings; study/exam/recall setup with pool/count filters; confidence before learning navigation; frozen results, mode-filtered History, latest-answer mistakes/uncertainty lists and derived activity. Planner targets/categories/dates feed Home and matching daily progress. Navigation retains per-screen filters, scroll and planner drafts; confirmed exit clears demo changes.
+The standalone app opens to Library for the first release. The drawer also exposes the shared practice setup and session, bookmarks, results and History, mistakes/fragile notebooks, Home, planner, analytics, activity, profile and downloaded practice. Both apps use the same screens and controllers. The demo uses packaged sample questions and app-private progress. Dashboard, History, planner and analytics use the same completion data. Demo Connection toggles simulated availability, supports one-shot read and response failures, and offers a confirmed reset that preserves language and appearance.
 
-The sample connection switch simulates availability without constructing an HTTP/auth client. Failed refresh keeps loaded content and filters; reconnect plus explicit retry clears the error. Online-session connection changes are locked until finish/discard. A seeded collection supports local study while disconnected; completion remains pending until an explicit simulated upload, then contributes once to History/planner/analytics. Pending completions are retained (at ten, further downloaded starts require upload); confirmed History retains twenty records. Profile reuses `ProfileScreen` with a public fixture and demo-only callbacks. No real credentials, account stores, providers, downloads or server connections are used. Authoring/admin and full master-exam workflows remain outside the demo.
+Study and exam send queued answers at explicit sync. Recall submits directly. A lost response commits the sample write before reporting failure, so the ordinary recovery controls reconcile saved state. Downloaded practice remains available while disconnected. An explicit upload retry uses the frozen completion ID and data. The standalone demo sources reference no production app, HTTP transport, sign-in, account storage or server configuration.
 
 ## Shared design APIs
 
@@ -63,6 +63,6 @@ Only with real callers: labelled multi-series chart colors/markers, progress-siz
 
 ## Artwork and diagnostics
 
-Master: [app_icon.png](../../artwork/app_icon.png); reference [monochrome vector](../../app/src/main/res/drawable/ic_launcher_monochrome.xml). Regenerate via `python3 artwork/generate_launcher_icons.py` (FFmpeg) or `python3 artwork/generate_startup_wordmark.py` (Fontconfig/Pango/Cairo). Manifest selects transparent density PNGs, no adaptive/round override. Preserve transparent exterior, white paper/lens and **مُختبِر** label; launcher normalization/caches still need device verification.
+Master: [app_icon.png](../../artwork/app_icon.png); reference [monochrome vector](../../app/src/shared/res/drawable/ic_launcher_monochrome.xml). Regenerate via `python3 artwork/generate_launcher_icons.py` (FFmpeg) or `python3 artwork/generate_startup_wordmark.py` (Fontconfig/Pango/Cairo). Manifest selects transparent density PNGs, no adaptive/round override. Preserve transparent exterior, white paper/lens and **مُختبِر** label; launcher normalization/caches still need device verification.
 
 Device diagnostics when authorized: `adb devices -l`, `adb shell pidof com.mukhtabir.android`, `adb logcat --pid=PID -v threadtime`. Signing stays external; verify minified serialization/navigation before distribution.

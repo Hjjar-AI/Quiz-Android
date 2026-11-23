@@ -10,14 +10,14 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class QuestionService(private val api: ApiClient) {
+class QuestionService(private val api: ApiClient) : LearnerQuestions {
     suspend fun batch(ids: List<Long>): QuestionBatchDto {
         require(ids.size <= 500)
         return api.decode(QuestionBatchDto.serializer(), api.post(ApiEndpoints.Questions.BATCH,
             buildJsonObject { put("ids", JsonArray(ids.map { JsonPrimitive(it) })) }))
     }
 
-    suspend fun get(questionId: Long): QuestionDto = api.decode(
+    override suspend fun get(questionId: Long): QuestionDto = api.decode(
         QuestionDto.serializer(),
         api.get(ApiEndpoints.Questions.item(questionId)),
     )
@@ -31,23 +31,23 @@ class QuestionService(private val api: ApiClient) {
         api.decode(QuestionImageResultDto.serializer(),api.postMultipart(ApiEndpoints.Questions.image(id),
             MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("delete","true").build()))
 
-    suspend fun sourceBookFilters(name: String): SourceBookFiltersDto = api.decode(
+    override suspend fun sourceBookFilters(name: String): SourceBookFiltersDto = api.decode(
         SourceBookFiltersDto.serializer(), api.get(ApiEndpoints.Questions.SOURCE_BOOK_FILTERS, mapOf("source_document" to name)))
 
-    suspend fun sourceBooks(): SourceBookListDto =
+    override suspend fun sourceBooks(): SourceBookListDto =
         api.decode(SourceBookListDto.serializer(), api.get(ApiEndpoints.Questions.SOURCE_BOOKS))
 
-    suspend fun tags(): TagListDto =
+    override suspend fun tags(): TagListDto =
         api.decode(TagListDto.serializer(), api.get(ApiEndpoints.Questions.TAGS))
 
-    suspend fun list(
-        page: Int = 1,
-        perPage: Int = 20,
-        search: String? = null,
-        categoryId: Long? = null,
-        difficulty: String? = null,
-        verifiedOnly: Boolean = false,
-        tag: String? = null,
+    override suspend fun list(
+        page: Int,
+        perPage: Int,
+        search: String?,
+        categoryId: Long?,
+        difficulty: String?,
+        verifiedOnly: Boolean,
+        tag: String?,
     ): QuestionPageDto = api.decode(
         QuestionPageDto.serializer(),
         api.get(
@@ -64,7 +64,7 @@ class QuestionService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun unverified(page: Int = 1, perPage: Int = 20): QuestionPageDto = api.decode(
+    override suspend fun unverified(page: Int, perPage: Int): QuestionPageDto = api.decode(
         QuestionPageDto.serializer(),
         api.get(
             ApiEndpoints.Questions.UNVERIFIED,
@@ -72,15 +72,15 @@ class QuestionService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun availableCount(
-        categoryIds: List<Long> = emptyList(),
-        difficulty: String? = null,
-        verifiedOnly: Boolean = false,
-        useBookmarks: Boolean = false,
-        useSrs: Boolean = false,
-        tags: List<String> = emptyList(),
-        blueprintId: Long? = null,
-        sourceDocument: String? = null,
+    override suspend fun availableCount(
+        categoryIds: List<Long>,
+        difficulty: String?,
+        verifiedOnly: Boolean,
+        useBookmarks: Boolean,
+        useSrs: Boolean,
+        tags: List<String>,
+        blueprintId: Long?,
+        sourceDocument: String?,
     ): Int = api.decode(
         CountDto.serializer(),
         api.get(
@@ -98,13 +98,13 @@ class QuestionService(private val api: ApiClient) {
         ),
     ).count
 
-    suspend fun attemptSummary(): AttemptSummaryDto =
+    override suspend fun attemptSummary(): AttemptSummaryDto =
         api.decode(AttemptSummaryDto.serializer(), api.get(ApiEndpoints.Questions.ATTEMPT_SUMMARY))
 
-    suspend fun srsDueCount(): Int =
+    override suspend fun srsDueCount(): Int =
         api.decode(CountDto.serializer(), api.get(ApiEndpoints.Questions.SRS_DUE_COUNT)).count
 
-    suspend fun mistakes(page: Int = 1, perPage: Int = 20): QuestionPageDto = api.decode(
+    override suspend fun mistakes(page: Int, perPage: Int): QuestionPageDto = api.decode(
         QuestionPageDto.serializer(),
         api.get(
             ApiEndpoints.Questions.MISTAKES,
@@ -112,7 +112,7 @@ class QuestionService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun fragile(page: Int = 1, perPage: Int = 20): QuestionPageDto = api.decode(
+    override suspend fun fragile(page: Int, perPage: Int): QuestionPageDto = api.decode(
         QuestionPageDto.serializer(),
         api.get(
             ApiEndpoints.Questions.FRAGILE,
@@ -120,7 +120,7 @@ class QuestionService(private val api: ApiClient) {
         ),
     )
 
-    suspend fun studyNow(limit: Int = 20): StudyNowDto = api.decode(
+    override suspend fun studyNow(limit: Int): StudyNowDto = api.decode(
         StudyNowDto.serializer(),
         api.get(ApiEndpoints.Questions.STUDY_NOW, mapOf("limit" to limit.toString())),
     )
@@ -203,23 +203,23 @@ class QuestionService(private val api: ApiClient) {
         api.put(ApiEndpoints.Questions.item(questionId), questionBody(request)),
     )
 
-    suspend fun duplicate(questionId: Long, operationId: String): QuestionDto = api.decode(
+    override suspend fun duplicate(questionId: Long, operationId: String): QuestionDto = api.decode(
         QuestionDto.serializer(), api.post(ApiEndpoints.Questions.duplicate(questionId), buildJsonObject { put("operation_id", operationId) }),
     )
-    suspend fun duplicateReceipt(questionId: Long, operationId: String): QuestionDto = api.decode(
+    override suspend fun duplicateReceipt(questionId: Long, operationId: String): QuestionDto = api.decode(
         QuestionDto.serializer(), api.get(ApiEndpoints.Questions.duplicate(questionId), mapOf("operation_id" to operationId)),
     )
 
-    suspend fun delete(questionId: Long, version: Int) {
+    override suspend fun delete(questionId: Long, version: Int) {
         api.delete(ApiEndpoints.Questions.item(questionId)+"?expected_version=$version")
     }
 
-    suspend fun verify(questionId: Long): Boolean = api.decode(
+    override suspend fun verify(questionId: Long): Boolean = api.decode(
         VerifyQuestionDto.serializer(), api.post(ApiEndpoints.Questions.verify(questionId)),
     ).verified
 
     /** One bounded read per visible page; never launch one request per card. */
-    suspend fun ratings(ids: List<Long>): Map<Long, QuestionRatingRowDto> {
+    override suspend fun ratings(ids: List<Long>): Map<Long, QuestionRatingRowDto> {
         val requested = ids.filter { it > 0 }.distinct()
         return requested.chunked(500).flatMap { chunk ->
             api.decode(QuestionRatingsPageDto.serializer(), api.get(ApiEndpoints.Questions.RATINGS,
@@ -227,20 +227,20 @@ class QuestionService(private val api: ApiClient) {
         }.filter { it.questionId in requested }.associateBy { it.questionId }
     }
 
-    suspend fun rating(questionId: Long): QuestionRatingDto = api.decode(
+    override suspend fun rating(questionId: Long): QuestionRatingDto = api.decode(
         QuestionRatingDto.serializer(), api.get(ApiEndpoints.Questions.rating(questionId)),
     )
 
-    suspend fun rate(questionId: Long, rating: Int) {
+    override suspend fun rate(questionId: Long, rating: Int) {
         require(rating in 1..5)
         api.post(ApiEndpoints.Questions.rate(questionId), api.encode(
             QuestionRatingRequest.serializer(), QuestionRatingRequest(rating),
         ))
     }
 
-    suspend fun reportState(questionId: Long): ReportStateDto = api.decode(ReportStateDto.serializer(), api.get(ApiEndpoints.Questions.flag(questionId)))
+    override suspend fun reportState(questionId: Long): ReportStateDto = api.decode(ReportStateDto.serializer(), api.get(ApiEndpoints.Questions.flag(questionId)))
 
-    suspend fun report(questionId: Long, reason: String) {
+    override suspend fun report(questionId: Long, reason: String) {
         api.post(ApiEndpoints.Questions.flag(questionId), api.encode(
             QuestionReportRequest.serializer(), QuestionReportRequest(reason.trim()),
         ))

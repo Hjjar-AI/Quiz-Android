@@ -69,13 +69,13 @@ def main(apk):
         native = [name for name in package.namelist() if name.startswith('lib/') and name.endswith('.so')]
         if native:
             raise ValueError('Unexpected native libraries; review ABI/alignment contract before distribution')
-        assets = ROOT / 'app/src/main/assets'
         checked = 0
-        for path in assets.rglob('*'):
-            if path.is_file():
-                if path.is_symlink() or package.read('assets/' + path.relative_to(assets).as_posix()) != path.read_bytes():
-                    raise ValueError('Packaged public asset differs from source')
-                checked += 1
+        for assets in (ROOT / 'app/src/main/assets', ROOT / 'app/src/shared/assets'):
+            for path in assets.rglob('*'):
+                if path.is_file():
+                    if path.is_symlink() or package.read('assets/' + path.relative_to(assets).as_posix()) != path.read_bytes():
+                        raise ValueError('Packaged public asset differs from source')
+                    checked += 1
     subprocess.run([str(tools / 'zipalign'), '-c', '4', str(apk)], capture_output=True, check=True, timeout=30)
     receipt = dict(package=manifest.get('package'), versionCode=int(version['versionCode']),
                    versionName=version['versionName'], apkSha256=hashlib.sha256(apk.read_bytes()).hexdigest(),

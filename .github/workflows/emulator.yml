@@ -36,6 +36,8 @@ jobs:
         uses: ./.github/actions/setup-android
       - name: Build the current application without reserving a version
         run: python3 .github/scripts/hosted-android.py debug-apk
+      - name: Build the standalone demo APK
+        run: python3 .github/scripts/hosted-android.py demo-apk
       - name: Enable KVM on the ephemeral hosted runner
         shell: bash
         run: |
@@ -66,5 +68,6 @@ jobs:
           path: |
             ci-output/emulator/
             ci-output/debug-apk/gradle.log
+            ci-output/demo-apk/gradle.log
           retention-days: 1
           if-no-files-found: error

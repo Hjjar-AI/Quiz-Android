@@ -2,6 +2,12 @@
 
 Current evidence and pending verification only. Reusable implementation guidance stays in the [native UI](../guides/native-ui.md) and [offline/recovery](../guides/offline-and-recovery.md) guides.
 
+## Standalone Android demo
+
+Moved shared learner screens, controllers and resources to `app/src/shared`. Added the separate launcher, local sample services, persistent progress, reset and connection simulation under `app/src/demo`. Both app modules reference the shared library. Hosted capture selects the standalone APK and verifies that its packaged manifest omits Internet permission. Release startup capture selects the main APK.
+
+Checked production Kotlin syntax, resource references, bilingual demo keys, source manifests and dependency boundaries, and changed Python syntax. APK builds, merged manifests, suites and device acceptance are pending. The embedded demo stays reachable until first-release device acceptance. See the [remaining work](../workPlan.md#standalone-demo).
+
 ## 2026-11-15 Git/GitHub adaptation
 
 Rechecked all 15 current Aqaqeer workflow definitions, their job dependencies and helper contracts against current Mukhtabir source. [The complete audit](../guides/workflow-audit.md) accounts for each reference workflow and intentional differences; [the repository guide](../guides/git-and-github.md) owns commands/signing setup and deferred backend/Vue suggestions. Repository foundations include attributes/editor/ignore rules, source integrity checks, optional pre-push hook, review templates/CODEOWNERS/security guidance and grouped Actions dependency proposals. No backend/Vue application or repository files were changed.

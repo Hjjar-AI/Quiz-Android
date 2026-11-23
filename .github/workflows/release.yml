@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: "Options: false = skip; true = authorize release build/inspection and fresh API 35 emulator startup/demo capture with a throwaway signer. Default: false. Stored version preserved; no production signing or publication."
+        description: "Options: false = skip; true = authorize release build/inspection and fresh API 35 emulator main-app startup capture with a throwaway signer. Default: false. Stored version preserved; no production signing or publication."
         type: boolean
         default: false
 

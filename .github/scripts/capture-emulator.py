@@ -13,7 +13,8 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / 'ci-output/emulator'
 SERIAL = 'emulator-5554'
-PACKAGE = 'com.mukhtabir.android'
+MAIN_PACKAGE = 'com.mukhtabir.android'
+DEMO_PACKAGE = 'com.mukhtabir.android.demo'
 
 
 def adb(*arguments, check=True, timeout=30):
@@ -32,8 +33,8 @@ def owned_device():
         raise RuntimeError('Owned AVD identity mismatch')
 
 
-def identity():
-    details = adb('shell', 'dumpsys', 'package', PACKAGE).stdout.decode()
+def identity(package):
+    details = adb('shell', 'dumpsys', 'package', package).stdout.decode()
     values = {}
     for key in ('userId', 'codePath', 'firstInstallTime', 'lastUpdateTime'):
         matches = set(re.findall(r'^\s*' + key + r'=([^\r\n]+)', details, re.M))
@@ -45,11 +46,11 @@ def identity():
     return values
 
 
-def screenshot(name):
+def screenshot(output, name):
     data = adb('exec-out', 'screencap', '-p').stdout
     if not data.startswith(b'\x89PNG\r\n\x1a\n'):
         raise RuntimeError('Missing/invalid PNG evidence')
-    (OUTPUT / f'{name}.png').write_bytes(data)
+    (output / f'{name}.png').write_bytes(data)
 
 
 def hierarchy():
@@ -59,37 +60,37 @@ def hierarchy():
     return raw, ET.fromstring(raw)
 
 
-def labels(key):
+def labels(key, source='shared'):
     found = set()
     for values in ('values', 'values-ar'):
-        tree = ET.parse(ROOT / f'app/src/main/res/{values}/strings.xml')
+        tree = ET.parse(ROOT / f'app/src/{source}/res/{values}/strings.xml')
         for node in tree.findall('string'):
             if node.get('name') == key:
                 found.add(''.join(node.itertext()))
     return found
 
 
-def wait_for(label_values, contains=False):
+def wait_for(package, label_values):
     deadline = time.monotonic() + 45
     while time.monotonic() < deadline:
         raw, tree = hierarchy()
         for node in tree.iter('node'):
             text = node.get('text', '')
-            if node.get('package') == PACKAGE and any(
-                    (label in text if contains else label == text) for label in label_values):
+            if node.get('package') == package and text in label_values:
                 return raw, node
         time.sleep(1)
     raise RuntimeError('Expected startup/demo content not observed; no pass claimed')
 
 
-def main():
+def capture(kind, demo=False):
     owned_device()
-    kind = os.environ.get('CI_CAPTURE_KIND', 'debug')
-    if kind not in ('debug', 'release'):
-        raise RuntimeError('Unknown capture build type')
-    OUTPUT.mkdir(parents=True, exist_ok=True)
+    package = DEMO_PACKAGE if demo else MAIN_PACKAGE
+    activity = '.DemoActivity' if demo else '.MainActivity'
+    artifact = 'demo-apk' if demo else f'{kind}-apk'
+    output = OUTPUT / ('demo' if demo else 'main')
+    output.mkdir(parents=True, exist_ok=True)
     report = dict(api=os.environ['CI_EXPECTED_API'], avd=os.environ['CI_AVD_NAME'], serial=SERIAL,
-                  package=PACKAGE, sourceCommit=os.environ['GITHUB_SHA'], run=os.environ['GITHUB_RUN_ID'],
+                  package=package, sourceCommit=os.environ['GITHUB_SHA'], run=os.environ['GITHUB_RUN_ID'],
                   attempt=os.environ['GITHUB_RUN_ATTEMPT'], kind=kind, phase='prepare', captures=[], cleanupErrors=[])
     installed = None
     installation_started = False
@@ -98,10 +99,10 @@ def main():
     signing_workspace = None
     remote = f'/sdcard/mukhtabir-ci-{os.environ["GITHUB_RUN_ID"]}-{os.environ["GITHUB_RUN_ATTEMPT"]}.mp4'
     try:
-        probe = adb('shell', 'pm', 'path', PACKAGE, check=False)
+        probe = adb('shell', 'pm', 'path', package, check=False)
         if probe.returncode not in (0, 1) or probe.stdout.strip() or probe.stderr.strip():
             raise RuntimeError('Existing package found; refusing replacement or data clearing')
-        paths = list((ROOT / f'ci-output/{kind}-apk').glob('*.apk'))
+        paths = list((ROOT / 'ci-output' / artifact).glob('*.apk'))
         if len(paths) != 1:
             raise RuntimeError('Expected one fresh application APK')
         apk = paths[0]
@@ -136,16 +137,18 @@ def main():
                 ('apksigner', ['verify', '--print-certs', str(apk)])):
             result = subprocess.run([str(tools / executable), *arguments], capture_output=True,
                                     text=True, check=True, timeout=30).stdout
-            (OUTPUT / f'apk-{executable}.txt').write_text(result)
-            if executable == 'aapt' and not result.startswith(f"package: name='{PACKAGE}' "):
+            (output / f'apk-{executable}.txt').write_text(result)
+            if executable == 'aapt' and not result.startswith(f"package: name='{package}' "):
                 raise RuntimeError('Unexpected application package')
             if executable == 'aapt' and ('application-debuggable' in result) != (kind == 'debug'):
                 raise RuntimeError('Unexpected packaged build type')
+            if executable == 'aapt' and demo and 'android.permission.INTERNET' in result:
+                raise RuntimeError('Standalone demo requests Internet permission')
         installation_started = True
         adb('install', '-t', str(apk), timeout=90)
-        installed = identity()
+        installed = identity(package)
         report['installation'] = installed
-        installed_path = adb('shell', 'pm', 'path', PACKAGE).stdout.decode().strip()
+        installed_path = adb('shell', 'pm', 'path', package).stdout.decode().strip()
         if not installed_path.startswith('package:/data/app/') or '\n' in installed_path:
             raise RuntimeError('Unexpected installed APK path')
         copy = Path(os.environ['RUNNER_TEMP']) / 'mukhtabir-installed.apk'
@@ -161,52 +164,44 @@ def main():
             for name in ('wifi_on', 'mobile_data')}
         if any(value != '0' for value in report['network'].values()):
             raise RuntimeError('Network-radio disablement was not confirmed')
-        recorder_log = (OUTPUT / 'recorder.log').open('wb')
+        recorder_log = (output / 'recorder.log').open('wb')
         recorder = subprocess.Popen(['adb', '-s', SERIAL, 'shell', 'screenrecord', '--size', '360x640',
                                      '--bit-rate', '1000000', '--time-limit', '45', remote],
                                     stdout=recorder_log, stderr=subprocess.STDOUT)
         report['phase'] = 'startup'
-        launch = adb('shell', 'am', 'start', '-W', '-n', PACKAGE + '/.MainActivity')
-        (OUTPUT / 'launch.txt').write_bytes(launch.stdout + launch.stderr)
-        raw, node = wait_for(labels('demo_open'))
-        (OUTPUT / 'startup.xml').write_bytes(raw)
-        screenshot('startup')
-        report['captures'].append('startup')
-        bounds = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.get('bounds', ''))
-        if not bounds or node.get('enabled') != 'true':
-            raise RuntimeError('Demo entry has no usable visible bounds')
-        left, top, right, bottom = map(int, bounds.groups())
-        if right <= left or bottom <= top:
-            raise RuntimeError('Empty demo entry bounds')
-        # One explicit navigation through the real visible control; never retry a tap.
-        adb('shell', 'input', 'tap', str((left + right) // 2), str((top + bottom) // 2))
-        report['phase'] = 'demo'
-        raw, _ = wait_for(labels('demo_badge'), contains=True)
-        (OUTPUT / 'demo.xml').write_bytes(raw)
-        screenshot('demo')
-        report['captures'].append('demo')
-        adb('shell', 'settings', 'put', 'system', 'font_scale', '1.3')
-        if adb('shell', 'settings', 'get', 'system', 'font_scale').stdout.strip() != b'1.3':
-            raise RuntimeError('Large-text setting did not apply')
-        wait_for(labels('demo_badge'), contains=True)
-        screenshot('demo-large-text')
-        report['captures'].append('demo-large-text')
+        launch = adb('shell', 'am', 'start', '-W', '-n', package + '/' + activity)
+        (output / 'launch.txt').write_bytes(launch.stdout + launch.stderr)
+        label = (labels('question_library') if demo
+                 else labels('launch_connect_server') | labels('server_setup_title'))
+        raw, _ = wait_for(package, label)
+        name = 'demo' if demo else 'startup'
+        (output / f'{name}.xml').write_bytes(raw)
+        screenshot(output, name)
+        report['captures'].append(name)
+        if demo:
+            wait_for(package, labels('demo_launcher_name', 'demo'))
+            adb('shell', 'settings', 'put', 'system', 'font_scale', '1.3')
+            if adb('shell', 'settings', 'get', 'system', 'font_scale').stdout.strip() != b'1.3':
+                raise RuntimeError('Large-text setting did not apply')
+            wait_for(package, label)
+            screenshot(output, 'demo-large-text')
+            report['captures'].append('demo-large-text')
         if kind == 'release':
-            pid = adb('shell', 'pidof', PACKAGE).stdout.strip()
+            pid = adb('shell', 'pidof', package).stdout.strip()
             if not re.fullmatch(rb'\d+', pid):
                 raise RuntimeError('Expected one release application process')
             for _ in range(3):
                 time.sleep(10)
-                if adb('shell', 'pidof', PACKAGE).stdout.strip() != pid:
+                if adb('shell', 'pidof', package).stdout.strip() != pid:
                     raise RuntimeError('Minified release process exited/restarted during observation')
             report['releaseProcessSurvivalSeconds'] = 30
         report['phase'] = 'capture completed'
     except Exception as error:
         report['failure'] = type(error).__name__ + ': ' + str(error)
         try:
-            screenshot('failure')
+            screenshot(output, 'failure')
             log = adb('logcat', '-d', '-t', '1500', check=False)
-            (OUTPUT / 'failure-logcat.txt').write_bytes(log.stdout + log.stderr)
+            (output / 'failure-logcat.txt').write_bytes(log.stdout + log.stderr)
         except Exception:
             report['cleanupErrors'].append('Failure capture unavailable')
         raise
@@ -220,8 +215,8 @@ def main():
                         if b'screenrecord' in command and remote.encode() in command:
                             adb('shell', 'kill', '-INT', pid)
                 recorder.wait(timeout=10)
-                adb('pull', remote, str(OUTPUT / 'startup-demo.mp4'))
-                if (OUTPUT / 'startup-demo.mp4').stat().st_size == 0:
+                adb('pull', remote, str(output / 'launch.mp4'))
+                if (output / 'launch.mp4').stat().st_size == 0:
                     raise RuntimeError('Empty recording')
                 adb('shell', 'rm', '-f', remote)
             except Exception:
@@ -238,12 +233,12 @@ def main():
         if installed is not None:
             try:
                 owned_device()
-                if identity() != installed:
+                if identity(package) != installed:
                     raise RuntimeError('Installation identity changed; refusing cleanup')
-                adb('shell', 'am', 'force-stop', PACKAGE)
+                adb('shell', 'am', 'force-stop', package)
                 adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
-                adb('uninstall', PACKAGE)
-                if adb('shell', 'pm', 'path', PACKAGE, check=False).stdout.strip():
+                adb('uninstall', package)
+                if adb('shell', 'pm', 'path', package, check=False).stdout.strip():
                     raise RuntimeError('Owned package cleanup not confirmed')
                 report['ownedPackageCleanup'] = 'absent'
             except Exception:
@@ -255,12 +250,12 @@ def main():
                 signing_workspace.cleanup()
             except OSError:
                 report['cleanupErrors'].append('Throwaway signing workspace cleanup unconfirmed')
-        (OUTPUT / 'provenance.json').write_text(json.dumps(report, indent=2) + '\n')
+        (output / 'provenance.json').write_text(json.dumps(report, indent=2) + '\n')
         text = ('## Emulator visual capture\n\n' + f'{kind} build; API {report["api"]}; last phase: {report["phase"]}.\n'
                 + f'Captured: {", ".join(report["captures"]) or "none"}. Cleanup/capture limitations: {len(report["cleanupErrors"])}.\n\n'
                 'Startup/demo evidence only. No instrumentation suite, functional-regression, accessibility or human visual acceptance claim.\n'
                 'Network radios were requested off; this is not packet-level network isolation proof.\n')
-        (OUTPUT / 'results.md').write_text(text)
+        (output / 'results.md').write_text(text)
         with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as summary:
             summary.write(text)
     if report['cleanupErrors']:
@@ -268,4 +263,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    kind = os.environ.get('CI_CAPTURE_KIND', 'debug')
+    if kind not in ('debug', 'release'):
+        raise RuntimeError('Unknown capture build type')
+    capture(kind)
+    if kind == 'debug':
+        capture(kind, demo=True)

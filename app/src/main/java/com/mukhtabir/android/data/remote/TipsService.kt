@@ -9,8 +9,8 @@ package com.mukhtabir.android.data.remote
  * default locale and reports that in the `locale` field — the client
  * trusts the returned list rather than re-checking the locale.
  */
-class TipsService(private val api: ApiClient) {
-    suspend fun forLocale(locale: String): TipsResponseDto = api.decode(
+class TipsService(private val api: ApiClient) : LearnerTips {
+    override suspend fun forLocale(locale: String): TipsResponseDto = api.decode(
         TipsResponseDto.serializer(),
         api.get(
             ApiEndpoints.TIPS,

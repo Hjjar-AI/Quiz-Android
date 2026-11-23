@@ -14,6 +14,12 @@ Native Kotlin/Compose client for Mukhtabir Django: Arabic/English and RTL; Andro
 | Shared server contracts | [Learning](../backend/docs/contracts/learningConsistency.md) · [Writes/recovery](../backend/docs/contracts/writeRecovery.md) · [Schema readiness](../backend/docs/contracts/schemaReadiness.md) |
 | Vue client documentation | [Frontend index](../frontend/docs/README.md) |
 
+## Android source folders
+
+- [`app/src/main`](app/src/main) builds the main app (`:app`) and owns sign-in, Django services and account storage.
+- [`app/src/demo`](app/src/demo) builds Mukhtabir Demo (`:demo`) and owns the launcher, sample data, simulation and demo progress.
+- [`app/src/shared`](app/src/shared) is the library (`:shared`) both apps build against. Edit shared screens, controllers, themes and translations here.
+
 ## Current capabilities
 
 - Offline learner demo with filtered library/bookmarks, study/exam/recall setup, confidence, history/review notebooks, analytics, planner, profile and simulated connection/download/upload flows; ordinary study/exam/recall; downloaded practice and explicit synchronization; master exams and frozen result review.
