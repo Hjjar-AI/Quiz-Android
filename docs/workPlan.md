@@ -3,6 +3,7 @@
 ## Standalone demo
 
 - Verify both debug APKs side by side and check the merged demo manifest. Confirm that the standalone demo opens on Home and that the main app still reaches server setup, sign-in, and saved downloads.
+- Verify that the next local demo assemble exports the versioned APK to `Desktop/Mukhtabir/demo/debug/`.
 - Verify Arabic/English, large text, restoration, failure recovery and upload deduplication. After explicit approval, verify workflow 06 with `application=both` and workflow 07 with a single API selection plus the default two-API matrix.
 
 ## Other Android work

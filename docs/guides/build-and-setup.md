@@ -35,7 +35,9 @@ JDK 17 and 21 are supported build runtimes for this project's pinned Gradle 8.7.
 | Add `--format aab`, `--offline`, `--dry-run` | Bundle / cached dependencies / command preview. |
 | `python3 build.py --install` | Debug APK + connected-device install; requires device authorization. |
 
-Signing/keys stay external; helper runs no suites. No native libraries/ABI splits. On this workstation, the active user home is `/opt/android-shared/gradle/user-homes/mhmmd`; future project/task caches and build outputs use `/opt/android-shared/gradle/projects/mukhtabir/cf21ef8e871a281c/`, with APK/AAB outputs under `build/app/outputs/{apk,bundle}/<variant>/`. On other machines, the existing per-checkout layout follows the effective Gradle user home. All pre-existing `.gradle/`, `app/build/`, and personal-home generated data remain untouched. Copies: account/XDG `Desktop/Mukhtabir/<variant>/`, AABs `Mukhtabir/bundles/<variant>/`; APK name `Mukhtabir-<version>-app-<variant>.apk`. Override with `-Pmukhtabir.desktopDir=/absolute/path` or `MUKHTABIR_DESKTOP_DIR`; older copies retained.
+Signing keys stay external. The helper runs no suites. The apps produce one APK per variant and use no native libraries. On this workstation, the Gradle user home is `/opt/android-shared/gradle/user-homes/mhmmd` and build outputs are under `/opt/android-shared/gradle/projects/mukhtabir/cf21ef8e871a281c/build/`. APKs are under `app/outputs/apk/<variant>/` and `demo/outputs/apk/<variant>/`. Main bundles are under `app/outputs/bundle/<variant>/`. On other machines, the per-checkout layout follows the effective Gradle user home.
+
+Assemble and install tasks copy versioned APKs to the account's Desktop. `:app:assembleDebug` exports `Mukhtabir-<version>-app-debug.apk` to `Mukhtabir/debug/`, and `:demo:assembleDebug` exports `Mukhtabir-<version>-demo-debug.apk` to `Mukhtabir/demo/debug/`. Main bundles export to `Mukhtabir/bundles/<variant>/`. Select a different Desktop root with `-Pmukhtabir.desktopDir=/absolute/path` or `MUKHTABIR_DESKTOP_DIR`. Copies from earlier versions are retained.
 
 ### Shared debug signing
 

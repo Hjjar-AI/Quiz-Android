@@ -12,6 +12,8 @@ The Android JVM tests now follow module ownership. Seven existing classes moved 
 
 ## 2026-11-24 standalone demo and hosted workflows
 
+The user built the demo debug APK locally. APK metadata reports `com.mukhtabir.android.demo`, version `0.1.14.20261023` (code 15). The Desktop copy matches the build output byte for byte. The shared Gradle export now includes demo APKs under `Mukhtabir/demo/<variant>/`; the new task wiring still needs a build to verify.
+
 Workflows 06 and 10 select main, demo or both and retain separate APK artifacts. Signing verifies package, SDK, stored version, checksum and certificate. Demo signing also checks absence of Internet permission. Artifact-only is the default. Explicit publication verifies selected bundles together. Workflows 02–05 include demo debug runtime, compilation, lint and Java/Kotlin extraction. Workflow 07 can select API 29, API 35 or both.
 
 Hosted JVM and lint summaries report per-module counts and missing reports. Confirmed dependency-resolution HTTP 429 can trigger bounded retries in compilation-only and APK operations, with each attempt retained. The workflow policy accepted all 16 definitions. Repository integrity checked 403 text files and 64 local links with zero problems. Five Python helpers parsed and 24 shell steps across eight changed workflows passed syntax checks. Whitespace checks passed. Hosted execution, APK builds, suites, signing, publication and emulator verification remain pending. [Pending checks](../workPlan.md).

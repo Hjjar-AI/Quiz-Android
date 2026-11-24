@@ -1,6 +1,4 @@
-import com.android.build.api.artifact.SingleArtifact
 import java.io.StringReader
-import java.io.File
 import java.util.Properties
 
 plugins {
@@ -158,39 +156,4 @@ dependencies {
     // Versions follow the existing Compose BOM; no production/release dependency changes.
     testImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-}
-
-// Successful package artifacts are exported; no stale-output glob after a failed build.
-val accountHome = file(System.getProperty("user.home"))
-val xdgConfig = providers.environmentVariable("XDG_CONFIG_HOME").orNull?.let(::File)
-    ?: File(accountHome, ".config")
-val xdgDesktop = File(xdgConfig, "user-dirs.dirs").takeIf { it.isFile }?.readLines()
-    ?.firstOrNull { it.trimStart().startsWith("XDG_DESKTOP_DIR=") }?.substringAfter('=')?.trim()
-    ?.removeSurrounding("\"")?.replace("\$HOME", accountHome.path)?.replace("\${HOME}", accountHome.path)
-val desktopDirectory = providers.gradleProperty("mukhtabir.desktopDir").orNull
-    ?: providers.environmentVariable("MUKHTABIR_DESKTOP_DIR").orNull
-    ?: xdgDesktop?.takeIf { File(it).isAbsolute && File(it) != accountHome }
-    ?: File(accountHome, "Desktop").path
-require(File(desktopDirectory).isAbsolute) { "Desktop export directory must be absolute." }
-androidComponents {
-    onVariants(selector().all()) { variant ->
-        val suffix = variant.name.replaceFirstChar { it.uppercaseChar() }
-        val apkExport = tasks.register<Copy>("export${suffix}Apk") {
-            group = "build"
-            description = "Copy packaged APKs to this account's Desktop."
-            from(variant.artifacts.get(SingleArtifact.APK))
-            include("*.apk")
-            into(File(desktopDirectory, "Mukhtabir/${variant.name}"))
-            rename("^(.+\\.apk)$", "Mukhtabir-$buildVersionName-\$1")
-        }
-        val bundleExport = tasks.register<Copy>("export${suffix}Bundle") {
-            group = "build"
-            description = "Copy packaged AABs to this account's Desktop."
-            from(variant.artifacts.get(SingleArtifact.BUNDLE))
-            into(File(desktopDirectory, "Mukhtabir/bundles/${variant.name}"))
-            rename("^(.+\\.aab)$", "Mukhtabir-$buildVersionName-\$1")
-        }
-        tasks.matching { it.name == "assemble$suffix" || it.name == "install$suffix" }.configureEach { dependsOn(apkExport) }
-        tasks.matching { it.name == "bundle$suffix" }.configureEach { dependsOn(bundleExport) }
-    }
 }
