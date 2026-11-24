@@ -36,6 +36,8 @@ import com.mukhtabir.android.data.remote.LearnerQuestions
 import com.mukhtabir.android.data.remote.TestMode
 import com.mukhtabir.android.ui.components.ActiveFilter
 import com.mukhtabir.android.ui.components.ActiveFilterSummary
+import com.mukhtabir.android.ui.components.AppActionPanel
+import com.mukhtabir.android.ui.components.AppActionPanelStyle
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppFilterChip
@@ -218,15 +220,12 @@ fun QuestionLibraryRoute(
         }
     }
     }
-    if (canStartSessions && state.selectedIds.isNotEmpty()) androidx.compose.material3.Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant) {
-        Column(Modifier.fillMaxWidth().padding(AppLayoutTokens.cardInsets)) {
-            Text(stringResource(R.string.ui_selected_count, com.mukhtabir.android.util.formatNumber(state.selectedIds.size)),
-                style = MaterialTheme.typography.labelLarge)
-            AppActionRow {
-                AppTextButton(viewModel::clearSelection, enabled = !state.isLoading) { Text(stringResource(R.string.clear_selection)) }
-                AppButton({ showPractice = true }, enabled = canLaunch) { Text(stringResource(R.string.library_practice, com.mukhtabir.android.util.formatNumber(sessionIds.size))) }
-            }
+    if (canStartSessions && state.selectedIds.isNotEmpty()) AppActionPanel(AppActionPanelStyle.SELECTION) {
+        Text(stringResource(R.string.ui_selected_count, com.mukhtabir.android.util.formatNumber(state.selectedIds.size)),
+            style = MaterialTheme.typography.labelLarge)
+        AppActionRow {
+            AppTextButton(viewModel::clearSelection, enabled = !state.isLoading) { Text(stringResource(R.string.clear_selection)) }
+            AppButton({ showPractice = true }, enabled = canLaunch) { Text(stringResource(R.string.library_practice, com.mukhtabir.android.util.formatNumber(sessionIds.size))) }
         }
     }
     }

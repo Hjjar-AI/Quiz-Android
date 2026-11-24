@@ -2,6 +2,25 @@
 
 Current evidence and pending verification only. Reusable implementation guidance stays in the [native UI](../guides/native-ui.md) and [offline/recovery](../guides/offline-and-recovery.md) guides.
 
+## Android charts and visual review
+
+Source review covered seven Kotlin files, 87 string references in English and Arabic, and five changed or new labels with matching format placeholders. Shared display roles, chart tap geometry, exact daily values, and retained activity ranges were checked in source. The available demo APK predates the changes and the ADB daemon could not start in the workspace sandbox. Current builds, device rendering and TalkBack remain unverified.
+
+Use matching main and demo builds for the same English/Arabic comparison. Include RTL, 200% text, Compact density, and dark and high-contrast themes.
+
+| Target | Device acceptance |
+| --- | --- |
+| Both apps | Tap the first, middle and last chart positions, then compare the displayed day and count with Daily values. Confirm RTL order and TalkBack access to the list. Check heatmap marks for a quiet day, a session-only day, and increasing question counts. Compare planner progress and category mastery with their text values. |
+| Demo | Simulate a read failure after data loads, switch the activity period, and confirm the previous range remains identified with a Retry action. |
+| Main app | Open both editors’ category fields at 200% text. Confirm the menu scrolls, selection persists, and validation focuses the field. In Admin Users, use TalkBack to select the name/checkbox in one action and confirm disabled rows stay disabled. |
+| Component preview or device harness | Compare 2dp, 4dp and 8dp progress tracks at the same value in dark and high contrast, including label and range semantics. |
+
+## Android component and token consolidation
+
+The main app and demo share drawer and top-bar presentation. Shared controls cover the admin checkbox rows, editor category fields, menu density, dividers, and library/quiz action panels. Progress bars support 2dp, 4dp and 8dp, with 4dp as the existing-screen default. [Native UI contracts](../guides/native-ui.md#shared-design-apis).
+
+Reviewed production callers, enablement and recovery boundaries, checked 280 referenced string keys in both locales, and checked the final diff for whitespace. Compilation, lint, automated tests, preview rendering, and device and accessibility verification were outside this milestone.
+
 ## Standalone Android demo
 
 Moved shared learner screens, controllers and resources to `app/src/shared`. Added the separate launcher, local sample services, persistent progress, reset and connection simulation under `app/src/demo`. Both app modules reference the shared library. Hosted capture selects the standalone APK and verifies that its packaged manifest omits Internet permission. Release startup capture selects the main APK.

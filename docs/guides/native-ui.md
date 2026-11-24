@@ -42,6 +42,13 @@ Study and exam send queued answers at explicit sync. Recall submits directly. A 
 - `AppScreenBar` shares title/insets/navigation/actions; tabs/rail share the icon pill. `AppSheetSize`: Half/Standard/Full = 50/85/100%, bounded by available height; default Standard, question map Full; constrained sheets scroll actions.
 - `AppShapes`/`AppSurfaces` own semantic geometry/fills; keep component-only dimensions local. Titles 22/19/17sp, labels 15/14/13sp, headlines 34/30/26sp; preserve Arabic line-height floors. `SharedComponentPreviews.kt` covers modes/narrow Arabic/large text/Compact; source is not rendered evidence.
 
+- `AppDrawerHeader`, `AppDrawerItem`, and `AppTopBar` give the main and demo shells the same styling. The main app owns grouped destinations, icons, account information and adaptive tabs/rail. The demo owns its flat drawer list, launcher title and Back action. `AppDivider` uses a 1dp theme outline in the drawer, Profile and Login.
+- `AppCheckboxRow` accepts a plain label or custom label and supporting content. Keep the checkbox passive inside the 48dp-minimum toggle row. Admin Users and Permissions keep their own selection and enablement rules.
+- `AppCategoryField` uses a read-only anchored field and bounded menu. Callers supply the choices, current selection, missing-category label and validation focus. `AppMenuItem` supports standard category rows and compact quiz command rows.
+- `AppActionPanel` shares card insets. Use Selection for the tinted library actions and Elevated for the quiz setup summary. Callers choose when and where the panel appears.
+- `AppProgressBar` defaults to Standard (4dp). Thin (2dp) and Thick (8dp) are available and are shown alongside Standard in the shared preview. All three share the same colors and range semantics.
+- Name measurements by design role even when today’s values match. Keep renderer-specific measurements with their component, such as analytics chart marks, startup artwork and the profile avatar. Shells keep their own inset handling and route behavior.
+
 ### Shared feature presentation
 
 - `AuthoringFields.kt` shares choice text/correct/reorder/remove controls and exact-name tag entry. Editors retain stable choice IDs, validation/focus wrappers, suggestion limits and mutation guards. `AuthoringQuestionPreview.kt` renders authoring/reconciliation case context before the question; active/frozen learner readers retain their own reveal rules.
@@ -50,16 +57,21 @@ Study and exam send queued answers at explicit sync. Recall submits directly. A 
 - `AppSearchPicker` supplies bounded lazy lookup presentation with search/status/content/action slots. Callers own request drafts, freshness, staging, missing selected targets and action gates. Reuse `AppPagination`, `AppSearchRow`, `AppPageHeading.action` and `AppSwitchRow` rather than rebuilding their geometry/semantics.
 - `ExportArtifactActions` presents Save and shares only an already-saved document URI with read grants; file pickers, artifacts and writes remain controller-owned. `AppDateField` opens date-only pickers with caller parsing/formatting and a click-time initial date; exam timezone/DST handling stays in its date/time field. `masterexams/MasterExamSummary.kt` shares list summaries with caller-owned notices/actions and containers.
 
+### Charts and activity
+
+- Analytics charts, planner progress and calendar cells share roles derived from the native theme. Tap a chart to inspect a date and open Daily values for the same data as text. Line points use a ring for selection and bars use a cap. Nonfinite chart points leave gaps.
+- Heatmaps use a dash for no activity and one to three bars for increasing activity. A session-only day stays active. Numbered cells show question counts, and both modes offer localized dates and daily counts. Activity identifies the displayed period if changing ranges fails and the previous data remains visible.
+
 ### Optional UI priorities
 
 - Pin results New session/Done and long-editor Save/Discard; simplify exam-row actions.
 - Keep library search/filters reachable; one Practice entry point.
-- Simplify Home metrics/recent cards; add chart axes/inspection and heatmap date/count details.
+- Simplify Home metrics and recent cards, and evaluate chart axes.
 - Compare Comfortable spacing on narrow/large-text screens before adding it.
 
 ### Future consolidation shortlist
 
-Only with real callers: labelled multi-series chart colors/markers, progress-size roles, motion-gated state durations and preference/system-gated tick/confirm/reject haptics. Preserve defaults; avoid unused modes, automatic sounds and duplicate announcements.
+Only with real callers: labelled multi-series chart colors/markers, motion-gated state durations and preference/system-gated tick/confirm/reject haptics. Preserve defaults; avoid unused modes, automatic sounds and duplicate announcements.
 
 ## Artwork and diagnostics
 

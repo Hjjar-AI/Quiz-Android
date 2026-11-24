@@ -19,8 +19,10 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +39,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.dp
 import com.mukhtabir.android.shared.R
 import com.mukhtabir.android.ui.theme.AppShapes
 import com.mukhtabir.android.ui.theme.AppSurfaces
@@ -145,6 +148,34 @@ fun AppCardBody(modifier: Modifier = Modifier, dense: Boolean = false, content: 
 }
 
 @Composable
+fun AppDivider(modifier: Modifier = Modifier) {
+    Divider(modifier, thickness = AppLayoutTokens.dividerThickness,
+        color = MaterialTheme.colorScheme.outlineVariant)
+}
+
+enum class AppActionPanelStyle { SELECTION, ELEVATED }
+
+@Composable
+fun AppActionPanel(
+    style: AppActionPanelStyle,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val elevated = style == AppActionPanelStyle.ELEVATED
+    Surface(
+        modifier = modifier,
+        color = if (elevated) AppSurfaces.container else AppSurfaces.muted,
+        tonalElevation = if (elevated) AppLayoutTokens.actionPanelElevation else 0.dp,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(AppLayoutTokens.cardInsets),
+            verticalArrangement = if (elevated) Arrangement.spacedBy(AppLayoutTokens.controlGap) else Arrangement.Top,
+            content = content,
+        )
+    }
+}
+
+@Composable
 fun AppToggleRow(modifier: Modifier = Modifier,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(AppLayoutTokens.controlGap),
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically, content: @Composable RowScope.() -> Unit) {
@@ -174,10 +205,27 @@ fun AppSwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> 
 @Composable
 fun AppCheckboxRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier, enabled: Boolean = true) {
+    AppCheckboxRow(checked, onCheckedChange, modifier, enabled,
+        label = { Text(label, style = MaterialTheme.typography.bodyLarge) })
+}
+
+/** One toggle target for the indicator, label and any supporting text. */
+@Composable
+fun AppCheckboxRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    label: @Composable () -> Unit,
+    supportingContent: (@Composable ColumnScope.() -> Unit)? = null,
+) {
     AppToggleRow(modifier.toggleable(value = checked, enabled = enabled, role = Role.Checkbox,
         onValueChange = onCheckedChange)) {
         androidx.compose.material3.Checkbox(checked, onCheckedChange = null, enabled = enabled)
-        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+        Column(Modifier.weight(1f)) {
+            label()
+            supportingContent?.invoke(this)
+        }
     }
 }
 

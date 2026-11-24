@@ -5,13 +5,10 @@ package com.mukhtabir.android.ui.admin
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,11 +16,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.ViewModel
@@ -40,6 +35,7 @@ import com.mukhtabir.android.data.remote.RoleCapabilitiesDto
 import com.mukhtabir.android.data.remote.UserCapabilitiesDto
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppDangerTextButton
 import com.mukhtabir.android.ui.components.AppFilterChip
@@ -283,14 +279,20 @@ fun PermissionsRoute(service: AdminService, canManage: Boolean, actingUserId: Lo
             }
             groups.forEach { group -> AppSection(group.label) {
                 group.capabilities.distinct().forEach { cap ->
-                    Row(Modifier.fillMaxWidth().toggleable(value = cap in s.selected, enabled = enabled, role = Role.Checkbox, onValueChange = { vm.toggle(cap) }), verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(cap in s.selected, null, enabled = enabled)
-                        Column(Modifier.weight(1f)) {
-                            Text(if(cap=="tests.download_full_bank") stringResource(R.string.offline_bank_download) else cap)
-                            if(cap=="tests.download_full_bank") Text(stringResource(R.string.offline_bank_capability_description),style=MaterialTheme.typography.bodySmall)
-                            Text(stringResource(if (cap in catalog?.roles?.get(s.role).orEmpty()) R.string.permissions_role_allow else R.string.permissions_role_deny), style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
+                    val fullBank = cap == "tests.download_full_bank"
+                    val allowed = cap in catalog?.roles?.get(s.role).orEmpty()
+                    AppCheckboxRow(
+                        checked = cap in s.selected,
+                        onCheckedChange = { vm.toggle(cap) },
+                        enabled = enabled,
+                        label = { Text(if (fullBank) stringResource(R.string.offline_bank_download) else cap) },
+                        supportingContent = {
+                            if (fullBank) Text(stringResource(R.string.offline_bank_capability_description),
+                                style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(if (allowed) R.string.permissions_role_allow else R.string.permissions_role_deny),
+                                style = MaterialTheme.typography.bodySmall)
+                        },
+                    )
                 }
             } }
             if (s.userDirty && s.user?.role == s.role) Text(stringResource(R.string.permissions_save_user_first))

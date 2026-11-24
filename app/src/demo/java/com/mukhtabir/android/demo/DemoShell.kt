@@ -6,8 +6,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -90,18 +88,22 @@ internal fun DemoShell(runtime: DemoRuntime, onReset: suspend () -> Unit, onLang
         gesturesEnabled = false,
         drawerContent = {
             ModalDrawerSheet {
-                Column(Modifier.verticalScroll(rememberScrollState()).padding(AppLayoutTokens.pageInsets)) {
-                    AppPageHeading(stringResource(R.string.demo_launcher_name))
+                Column(
+                    Modifier.verticalScroll(rememberScrollState())
+                        .padding(horizontal = AppLayoutTokens.drawerHorizontalPadding),
+                    verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.tightGap),
+                ) {
+                    AppDrawerHeader(stringResource(R.string.demo_launcher_name))
+                    AppDivider()
                     Destination.entries.forEach { destination ->
-                        NavigationDrawerItem(
-                            label = { Text(stringResource(destination.label)) },
+                        AppDrawerItem(
+                            label = stringResource(destination.label),
                             selected = entry?.destination?.route?.substringBefore('?') == destination.route,
+                            enabled = !routeBusy,
                             onClick = {
-                                if (!routeBusy) {
-                                    scope.launch {
-                                        drawer.close()
-                                        go(destination)
-                                    }
+                                scope.launch {
+                                    drawer.close()
+                                    go(destination)
                                 }
                             },
                         )
@@ -112,15 +114,16 @@ internal fun DemoShell(runtime: DemoRuntime, onReset: suspend () -> Unit, onLang
     ) {
         Scaffold(
             topBar = {
-                AppScreenBar(stringResource(R.string.demo_launcher_name), navigation = {
-                    AppIconButton({ scope.launch { drawer.open() } }, enabled = !routeBusy) {
-                        Icon(Icons.Filled.Menu, stringResource(R.string.demo_navigation))
-                    }
-                }, actions = {
+                AppTopBar(
+                    stringResource(R.string.demo_launcher_name),
+                    enabled = !routeBusy,
+                    onMenu = { scope.launch { drawer.open() } },
+                    menuLabel = stringResource(R.string.demo_navigation),
+                ) {
                     if (nav.previousBackStackEntry != null && entry?.destination?.route != Destination.QUIZZES.route) {
                         AppTextButton(back, enabled = !routeBusy) { Text(stringResource(SharedR.string.back)) }
                     }
-                })
+                }
             },
         ) { padding ->
             NavHost(nav, startDestination = Destination.HOME.route, modifier = Modifier

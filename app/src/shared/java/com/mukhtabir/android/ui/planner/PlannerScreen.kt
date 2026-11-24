@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,6 +31,7 @@ import com.mukhtabir.android.data.remote.LearnerPlanner
 import com.mukhtabir.android.data.remote.LearnerQuestions
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCardBody
 import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
@@ -51,6 +53,7 @@ import com.mukhtabir.android.ui.components.ExactTagEditor
 import com.mukhtabir.android.ui.components.ScreenBusyEffect
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.ui.theme.appDataColors
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -131,9 +134,18 @@ fun PlannerRoute(service: LearnerPlanner, categoryService: LearnerCategories, qu
         }
         progress?.let { (done, target) ->
             AppCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(AppLayoutTokens.denseCardInsets), verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                    Text(stringResource(R.string.today_progress, com.mukhtabir.android.util.formatNumber(done), com.mukhtabir.android.util.formatNumber(target)))
-                    AppProgressBar((done.toFloat() / target.coerceAtLeast(1)).coerceIn(0f, 1f), Modifier.fillMaxWidth())
+                val colors = appDataColors()
+                AppCardBody(dense = true) {
+                    val label = stringResource(R.string.today_progress,
+                        com.mukhtabir.android.util.formatNumber(done), com.mukhtabir.android.util.formatNumber(target))
+                    Text(label, style = MaterialTheme.typography.bodySmall, color = colors.label)
+                    AppProgressBar(
+                        progress = done.toFloat() / target.coerceAtLeast(1),
+                        modifier = Modifier.fillMaxWidth(),
+                        label = label,
+                        color = colors.primary,
+                        trackColor = colors.track,
+                    )
                 }
             }
         }

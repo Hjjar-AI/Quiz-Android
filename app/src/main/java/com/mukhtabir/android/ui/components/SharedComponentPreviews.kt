@@ -4,7 +4,9 @@ package com.mukhtabir.android.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -18,11 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.mukhtabir.android.R
 import com.mukhtabir.android.core.DisplayPreferences
+import com.mukhtabir.android.data.remote.CategoryDto
 import com.mukhtabir.android.ui.theme.MukhtabirTheme
 
 /** Public localized sample content only; no services, private state or writes. */
@@ -110,5 +114,64 @@ private fun SheetModePreviews() {
                 repeat(12) { Text(stringResource(R.string.reading_preview_hint)) }
             }
         }
+    }
+}
+
+@Preview(name = "Shared selection and actions", showBackground = true, widthDp = 360)
+@Preview(name = "Shared selection and actions Arabic large text", showBackground = true,
+    widthDp = 300, heightDp = 640, locale = "ar", fontScale = 2f)
+@Composable
+private fun SharedSelectionAndActionPreviews() {
+    MukhtabirTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(AppLayoutTokens.pageInsets),
+                verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    for (size in AppProgressBarSize.entries) {
+                        AppProgressBar(.5f, Modifier.weight(1f),
+                            label = stringResource(R.string.session_question_navigation), size = size)
+                    }
+                }
+                SharedMenuAndPanelSamples()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SharedMenuAndPanelSamples() {
+    var selected by remember { mutableStateOf(true) }
+    var selectedCategory by remember { mutableStateOf<Long?>(1L) }
+    var toolsOpen by remember { mutableStateOf(false) }
+    AppCheckboxRow(
+        checked = selected,
+        onCheckedChange = { selected = it },
+        label = { AppSectionHeading(stringResource(R.string.offline_bank_download)) },
+        supportingContent = {
+            Text(stringResource(R.string.offline_bank_capability_description),
+                style = MaterialTheme.typography.bodySmall)
+        },
+    )
+    val categoryLabel = stringResource(R.string.demo_category_circulation)
+    AppCategoryField(listOf(CategoryDto(id = 1L, name = categoryLabel)), selectedCategory,
+        onSelect = { selectedCategory = it }, emptySelectionLabel = stringResource(R.string.none))
+    Box {
+        AppOutlinedButton({ toolsOpen = true }) { Text(stringResource(R.string.quiz_tools)) }
+        AppMenu(toolsOpen, onDismissRequest = { toolsOpen = false }) {
+            AppMenuItem(stringResource(R.string.preferences_sound), onClick = { toolsOpen = false },
+                style = AppMenuItemStyle.COMPACT, isSelected = true, showSelectionIndicator = true)
+            AppMenuItem(stringResource(R.string.pause_and_leave), onClick = { toolsOpen = false },
+                style = AppMenuItemStyle.COMPACT, enabled = false)
+        }
+    }
+    AppActionPanel(AppActionPanelStyle.SELECTION) {
+        Text(stringResource(R.string.ui_selected_count, com.mukhtabir.android.util.formatNumber(2)))
+        AppTextButton({}) { Text(stringResource(R.string.clear_selection)) }
+    }
+    AppDivider()
+    AppActionPanel(AppActionPanelStyle.ELEVATED) {
+        Text(stringResource(R.string.quiz_no_matching_questions))
+        AppButton({}, enabled = false) { Text(stringResource(R.string.start_study)) }
     }
 }

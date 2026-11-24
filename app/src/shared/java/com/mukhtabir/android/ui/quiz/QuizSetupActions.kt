@@ -1,16 +1,16 @@
 package com.mukhtabir.android.ui.quiz
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.mukhtabir.android.shared.R
 import com.mukhtabir.android.data.remote.TestMode
+import com.mukhtabir.android.ui.components.AppActionPanel
+import com.mukhtabir.android.ui.components.AppActionPanelStyle
 import com.mukhtabir.android.ui.components.AppButton
-import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.util.formatNumber
 
 internal data class SetupReadiness(val maximum: Int, val countValid: Boolean, val bookExists: Boolean,
@@ -62,20 +62,17 @@ internal fun QuizSetupActions(state: QuizUiState, canUseBlueprint: Boolean, view
         QuizSource.BLUEPRINT -> R.string.source_blueprint
         else -> R.string.choose_source
     })
-    Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = AppLayoutTokens.heroElevation) {
-        Column(Modifier.fillMaxWidth().padding(AppLayoutTokens.cardInsets),
-            verticalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-            Text(stringResource(R.string.ui_setup_summary, quizModeLabel(state.mode),
-                state.requestedCount.toIntOrNull()?.let(::formatNumber) ?: state.requestedCount, pool),
-                style = MaterialTheme.typography.bodySmall)
-            hint?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            AppButton(viewModel::start, Modifier.fillMaxWidth(), enabled = ready.canStart) {
-                Text(stringResource(when (state.mode) {
-                    TestMode.EXAM -> R.string.start_exam
-                    TestMode.STUDY -> R.string.start_study
-                    TestMode.RECALL -> R.string.start_recall
-                }))
-            }
+    AppActionPanel(AppActionPanelStyle.ELEVATED) {
+        Text(stringResource(R.string.ui_setup_summary, quizModeLabel(state.mode),
+            state.requestedCount.toIntOrNull()?.let(::formatNumber) ?: state.requestedCount, pool),
+            style = MaterialTheme.typography.bodySmall)
+        hint?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        AppButton(viewModel::start, Modifier.fillMaxWidth(), enabled = ready.canStart) {
+            Text(stringResource(when (state.mode) {
+                TestMode.EXAM -> R.string.start_exam
+                TestMode.STUDY -> R.string.start_study
+                TestMode.RECALL -> R.string.start_recall
+            }))
         }
     }
 }

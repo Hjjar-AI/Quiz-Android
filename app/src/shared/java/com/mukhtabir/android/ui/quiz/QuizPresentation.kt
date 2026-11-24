@@ -6,20 +6,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +45,9 @@ import com.mukhtabir.android.ui.components.AppHeroRow
 import com.mukhtabir.android.ui.components.AppIconButton
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
+import com.mukhtabir.android.ui.components.AppMenu
+import com.mukhtabir.android.ui.components.AppMenuItem
+import com.mukhtabir.android.ui.components.AppMenuItemStyle
 import com.mukhtabir.android.ui.components.AppMotion
 import com.mukhtabir.android.ui.components.AppProgressRing
 import com.mukhtabir.android.ui.components.AppTextButton
@@ -85,14 +83,12 @@ internal fun SessionSyncStatus(state: QuizUiState, viewModel: QuizViewModel) {
 }
 
 /** One stable header action; secondary controls preserve their existing handler guards. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SessionToolsMenu(state: QuizUiState, ui: SessionPresentation, viewModel: QuizViewModel,
     preferences: AppPreferences, onPause: () -> Unit) {
     var expanded by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
     var showDetails by rememberSaveable(ui.sessionId) { mutableStateOf(false) }
     val display by preferences.display.collectAsLifecycleState()
-    val menuColors = MenuDefaults.itemColors(disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = com.mukhtabir.android.ui.components.AppControlTokens.disabledContentAlpha))
     if (showDetails) AppConfirmationDialog(
         onDismissRequest = { showDetails = false },
         title = { Text(stringResource(R.string.quiz_download_details)) },
@@ -104,31 +100,32 @@ internal fun SessionToolsMenu(state: QuizUiState, ui: SessionPresentation, viewM
         AppIconButton({ expanded = true }) {
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.quiz_tools))
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false },
-            modifier = Modifier.heightIn(max = AppLayoutTokens.menuMaxHeight)) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.pause_and_leave), style = MaterialTheme.typography.labelLarge) },
-                enabled = ui.canRequestPause, colors = menuColors, contentPadding = AppLayoutTokens.secondaryContentPadding,
-                onClick = { expanded = false; onPause() })
+        AppMenu(expanded, onDismissRequest = { expanded = false }) {
+            AppMenuItem(stringResource(R.string.pause_and_leave),
+                onClick = { expanded = false; onPause() },
+                style = AppMenuItemStyle.COMPACT, enabled = ui.canRequestPause)
             if (state.downloaded) {
-                if (state.syncRequired || state.queuedAnswers > 0) DropdownMenuItem(
-                    text = { Text(stringResource(R.string.session_sync_answers), style = MaterialTheme.typography.labelLarge) },
-                    colors = menuColors, contentPadding = AppLayoutTokens.secondaryContentPadding,
-                    enabled = !state.isLoading && !state.draftStorageFailed && state.syncConflict == null,
-                    onClick = { expanded = false; viewModel.syncDownloadedAnswers() })
-                DropdownMenuItem(text = { Text(stringResource(R.string.quiz_download_details), style = MaterialTheme.typography.labelLarge) },
-                    contentPadding = AppLayoutTokens.secondaryContentPadding,
-                    onClick = { expanded = false; showDetails = true })
+                if (state.syncRequired || state.queuedAnswers > 0) AppMenuItem(
+                    stringResource(R.string.session_sync_answers),
+                    onClick = { expanded = false; viewModel.syncDownloadedAnswers() },
+                    style = AppMenuItemStyle.COMPACT,
+                    enabled = !state.isLoading && !state.draftStorageFailed && state.syncConflict == null)
+                AppMenuItem(stringResource(R.string.quiz_download_details),
+                    onClick = { expanded = false; showDetails = true },
+                    style = AppMenuItemStyle.COMPACT)
             }
-            DropdownMenuItem(text = { Text(stringResource(R.string.preferences_sound), style = MaterialTheme.typography.labelLarge) },
-                contentPadding = AppLayoutTokens.secondaryContentPadding,
-                modifier = Modifier.semantics { selected = display.sound },
-                trailingIcon = { if (display.sound) Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(AppLayoutTokens.secondaryIconSize)) },
-                onClick = { preferences.setDisplay(preferences.display.value.copy(sound = !display.sound)); expanded = false })
-            DropdownMenuItem(text = { Text(stringResource(R.string.preferences_haptics), style = MaterialTheme.typography.labelLarge) },
-                contentPadding = AppLayoutTokens.secondaryContentPadding,
-                modifier = Modifier.semantics { selected = display.haptics },
-                trailingIcon = { if (display.haptics) Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(AppLayoutTokens.secondaryIconSize)) },
-                onClick = { preferences.setDisplay(preferences.display.value.copy(haptics = !display.haptics)); expanded = false })
+            AppMenuItem(stringResource(R.string.preferences_sound),
+                onClick = {
+                    preferences.setDisplay(preferences.display.value.copy(sound = !display.sound))
+                    expanded = false
+                },
+                style = AppMenuItemStyle.COMPACT, isSelected = display.sound, showSelectionIndicator = true)
+            AppMenuItem(stringResource(R.string.preferences_haptics),
+                onClick = {
+                    preferences.setDisplay(preferences.display.value.copy(haptics = !display.haptics))
+                    expanded = false
+                },
+                style = AppMenuItemStyle.COMPACT, isSelected = display.haptics, showSelectionIndicator = true)
         }
     }
 }

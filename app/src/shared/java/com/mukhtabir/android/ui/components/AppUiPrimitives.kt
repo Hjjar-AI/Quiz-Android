@@ -77,6 +77,7 @@ object AppLayoutTokens {
     val sessionHeaderBreakpoint = 300.dp
     val sessionPinnedMinHeight = 420.dp
     val drawerPinnedMinHeight = 360.dp
+    val drawerHorizontalPadding = 12.dp
     val imageMaxHeight = 360.dp
     val menuMaxHeight = 360.dp
     val filterMenuMaxHeight = 280.dp
@@ -92,6 +93,8 @@ object AppLayoutTokens {
     val tightGap: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.content
     val shellVerticalPadding = 0.dp
     val bottomNavigationHeight = 48.dp
+    val bottomNavigationHorizontalPadding = 4.dp
+    val navigationItemInsets = PaddingValues(horizontal = 4.dp, vertical = 1.dp)
     val libraryPadding = 12.dp
     val libraryCardPadding: androidx.compose.ui.unit.Dp @Composable get() = AppTheme.spacing.denseCard
     val libraryGap: androidx.compose.ui.unit.Dp
@@ -99,6 +102,8 @@ object AppLayoutTokens {
     val touchTarget = 48.dp
     val secondaryIconSize = AppIconSize.small
     val cardBorderWidth = 1.dp
+    val dividerThickness = 1.dp
+    val actionPanelElevation = 2.dp
     val selectedBorderWidth = 2.dp
     val answerFeedbackBorderWidth = 1.dp
     val questionBorderWidth = 1.5.dp

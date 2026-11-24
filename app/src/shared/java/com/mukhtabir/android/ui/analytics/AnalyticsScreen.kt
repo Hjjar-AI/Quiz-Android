@@ -33,6 +33,7 @@ import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.collectAsLifecycleState
 import com.mukhtabir.android.ui.theme.AppTheme
+import com.mukhtabir.android.ui.theme.appDataColors
 import com.mukhtabir.android.util.bidi
 import com.mukhtabir.android.util.formatDecimal
 import com.mukhtabir.android.util.formatNumber
@@ -84,12 +85,12 @@ fun AnalyticsRoute(
             if (summary.userPerformance.isNotEmpty()) {
                 item {
                     AnalyticsCard(stringResource(R.string.performance_trend)) {
-                        AnalyticsLineChart(summary.userPerformance.map { it.accuracy })
-                        AppSection(stringResource(R.string.analytics_daily_values)) {
-                            summary.userPerformance.forEach { point ->
-                                AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(point.date), stringResource(R.string.analytics_daily_performance, point.accuracy, formatNumber(point.questionsAnswered)))
-                            }
-                        }
+                        AnalyticsChart(summary.userPerformance.map { point ->
+                            val detail = if (point.accuracy.isFinite()) {
+                                stringResource(R.string.analytics_daily_performance, point.accuracy, formatNumber(point.questionsAnswered))
+                            } else stringResource(R.string.unknown)
+                            AnalyticsChartPoint(point.date, point.accuracy, detail)
+                        }, AnalyticsChartKind.LINE)
                     }
                 }
             }
@@ -125,12 +126,11 @@ fun AnalyticsRoute(
                 period?.let { Text(stringResource(R.string.analytics_showing_period, formatNumber(it))) }
                 if (points.isEmpty() && !state.isLoading && state.errors.isEmpty()) EmptyState(stringResource(R.string.no_items))
                 else {
-                    AnalyticsLineChart(points.map { it.activeUsers.toDouble() })
-                    AppSection(stringResource(R.string.analytics_daily_values)) {
-                        points.forEach { point ->
-                            AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(point.date), stringResource(R.string.active_users_metric, com.mukhtabir.android.util.formatNumber(point.activeUsers), com.mukhtabir.android.util.formatNumber(point.newUsers), com.mukhtabir.android.util.formatNumber(point.totalSessions)))
-                        }
-                    }
+                    AnalyticsChart(points.map { point ->
+                        AnalyticsChartPoint(point.date, point.activeUsers.toDouble(),
+                            stringResource(R.string.active_users_metric, formatNumber(point.activeUsers),
+                                formatNumber(point.newUsers), formatNumber(point.totalSessions)))
+                    }, AnalyticsChartKind.LINE)
                 }
             }
         } }
@@ -138,12 +138,16 @@ fun AnalyticsRoute(
         state.mastery?.let { mastery ->
             item {
                 AnalyticsCard(stringResource(R.string.category_mastery)) {
+                    val colors = appDataColors()
                     if (mastery.categories.isEmpty() && !state.isLoading && state.errors.isEmpty()) EmptyState(stringResource(R.string.no_items))
                     mastery.categories.forEach { category ->
                         Text(category.categoryName, style = MaterialTheme.typography.titleSmall)
                         AppProgressBar(
                             progress = (category.masteryScore / 100.0).toFloat().coerceIn(0f, 1f),
                             modifier = Modifier.fillMaxWidth(),
+                            label = category.categoryName,
+                            color = colors.primary,
+                            trackColor = colors.track,
                         )
                         AppMetricRow(
                             stringResource(R.string.mastery_details, com.mukhtabir.android.util.formatNumber(category.attempts), com.mukhtabir.android.util.formatNumber(category.distinctQuestions)),
@@ -163,18 +167,16 @@ fun AnalyticsRoute(
                     AppTileGrid(values.size) { index,tileModifier ->
                         AppMetricTile(formatNumber(values[index]),labels[index],tileModifier)
                     }
-                    AnalyticsBarChart(streak.days.map { it.questions.toDouble() })
+                    AnalyticsChart(streak.days.map { day ->
+                        AnalyticsChartPoint(day.date, day.questions.toDouble(),
+                            stringResource(R.string.analytics_daily_activity, formatNumber(day.questions), formatNumber(day.sessions)))
+                    }, AnalyticsChartKind.BAR)
                     AppMetricRow(stringResource(R.string.sessions), formatNumber(streak.totalSessions))
                     AppMetricRow(stringResource(R.string.questions), formatNumber(streak.totalQuestions))
                     AppMetricRow(stringResource(R.string.unique_questions), formatNumber(streak.uniqueQuestions))
                     AppMetricRow(stringResource(R.string.unique_concepts), formatNumber(streak.uniqueConcepts))
                     AppMetricRow(stringResource(R.string.due_reviews_completed), formatNumber(streak.dueReviews))
                     AppMetricRow(stringResource(R.string.mastery_change), formatDecimal(streak.masteryGain))
-                    AppSection(stringResource(R.string.analytics_daily_values)) {
-                        streak.days.forEach { day ->
-                            AppMetricRow(com.mukhtabir.android.util.formatCalendarDate(day.date), stringResource(R.string.analytics_daily_activity, formatNumber(day.questions), formatNumber(day.sessions)))
-                        }
-                    }
                 }
             }
         }

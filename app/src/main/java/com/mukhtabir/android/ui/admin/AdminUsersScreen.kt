@@ -4,25 +4,20 @@ package com.mukhtabir.android.ui.admin
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mukhtabir.android.R
@@ -30,6 +25,7 @@ import com.mukhtabir.android.data.remote.AdminService
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
 import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppCheckboxRow
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppFilterChip
 import com.mukhtabir.android.ui.components.AppLayoutTokens
@@ -140,10 +136,13 @@ import com.mukhtabir.android.util.formatLocalDateTime
         }
         if(s.loading) item { AppLoadingIndicator() }
         items(s.users,key={it.id}) { u -> AppCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(AppLayoutTokens.denseCardInsets),verticalArrangement=Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-            Row(verticalAlignment=Alignment.CenterVertically) {
-                Checkbox(u.id in s.batchIds,{vm.selectBatch(u.id)},enabled=!s.loading && !s.needsReview && !s.createUncertain && s.batchUnknown.isEmpty() && !u.isStub && u.id!=actingUserId,modifier=Modifier.semantics {contentDescription=u.displayName})
-                AppSectionHeading(u.displayName)
-            }
+            AppCheckboxRow(
+                checked = u.id in s.batchIds,
+                onCheckedChange = { vm.selectBatch(u.id) },
+                enabled = !s.loading && !s.needsReview && !s.createUncertain &&
+                    s.batchUnknown.isEmpty() && !u.isStub && u.id != actingUserId,
+                label = { AppSectionHeading(u.displayName) },
+            )
             Text(com.mukhtabir.android.util.accountIdentity("", u.username, u.id))
             Text("${com.mukhtabir.android.util.roleLabel(u.role)} · ${if(u.isActive) stringResource(R.string.active) else stringResource(R.string.inactive)}")
             AdminUserOverview(u)

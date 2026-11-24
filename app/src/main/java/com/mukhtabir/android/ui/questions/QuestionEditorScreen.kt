@@ -11,10 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +36,7 @@ import com.mukhtabir.android.data.remote.QuestionDto
 import com.mukhtabir.android.data.remote.QuestionService
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppCategoryField
 import com.mukhtabir.android.ui.components.AppConfirmationDialog
 import com.mukhtabir.android.ui.components.AppDangerOutlinedButton
 import com.mukhtabir.android.ui.components.AppDangerTextButton
@@ -121,7 +119,6 @@ fun QuestionEditorRoute(
         },enabled=enabled){Text(stringResource(R.string.confirm))}},
         dismissButton={AppTextButton({removeTranslation=null;alignTranslation=null},enabled=!s.loading){Text(stringResource(R.string.cancel))}},
     )
-    var categoryMenu by remember { mutableStateOf(false) }
     val validationMessage = s.validationError?.let {
         when (it) {
                 QuestionEditorValidationError.INVALID_ASSOCIATION -> stringResource(R.string.editor_association_invalid)
@@ -262,18 +259,7 @@ fun QuestionEditorRoute(
                         enabled = enabled, label = { Text(stringResource(label)) })
                 }
             }
-            ExposedDropdownMenuBox(categoryMenu, { if (enabled) categoryMenu = !categoryMenu }) {
-                AppTextField(s.categories.firstOrNull { it.id == s.category }?.name.orEmpty(), {},
-                    readOnly = true, enabled = enabled, label = { Text(stringResource(R.string.nav_categories)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(categoryMenu) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth())
-                ExposedDropdownMenu(categoryMenu && enabled, { categoryMenu = false }) {
-                    DropdownMenuItem({ Text(stringResource(R.string.none)) }, { vm.category(null); categoryMenu = false })
-                    s.categories.forEach { cat ->
-                        DropdownMenuItem({ Text(cat.name) }, { vm.category(cat.id); categoryMenu = false })
-                    }
-                }
-            }
+            AppCategoryField(s.categories, s.category, vm::category, enabled = enabled)
         }
         AppButton(vm::save, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.save)) }
     }

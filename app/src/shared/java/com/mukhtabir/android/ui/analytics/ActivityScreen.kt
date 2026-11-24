@@ -3,9 +3,13 @@ package com.mukhtabir.android.ui.analytics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
@@ -17,6 +21,7 @@ import com.mukhtabir.android.core.AppPreferences
 import com.mukhtabir.android.data.remote.LearnerAnalytics
 import com.mukhtabir.android.data.remote.StreakHistoryDto
 import com.mukhtabir.android.ui.components.AppActionRow
+import com.mukhtabir.android.ui.components.AppActivityDayDetail
 import com.mukhtabir.android.ui.components.AppActivityHeatmap
 import com.mukhtabir.android.ui.components.AppActivityWeek
 import com.mukhtabir.android.ui.components.AppActivityWeekdays
@@ -25,6 +30,7 @@ import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
 import com.mukhtabir.android.ui.components.AppOutlinedButton
 import com.mukhtabir.android.ui.components.AppPageHeading
+import com.mukhtabir.android.ui.components.EmptyState
 import com.mukhtabir.android.ui.components.ErrorState
 import com.mukhtabir.android.ui.components.RefreshOnResume
 import com.mukhtabir.android.ui.components.activityCalendarCells
@@ -38,7 +44,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private data class ActivityState(val busy: Boolean = false, val days: Int = 90, val data: StreakHistoryDto? = null, val error: Throwable? = null)
+private data class ActivityState(
+    val busy: Boolean = false,
+    val days: Int = 90,
+    val data: StreakHistoryDto? = null,
+    val displayedDays: Int? = null,
+    val error: Throwable? = null,
+)
+
 private class ActivityViewModel(private val service: LearnerAnalytics) : ViewModel() {
     private val _state = MutableStateFlow(ActivityState())
     val state = _state.asStateFlow()
@@ -46,9 +59,16 @@ private class ActivityViewModel(private val service: LearnerAnalytics) : ViewMod
         if (_state.value.busy || days !in setOf(30, 90, 365)) return
         _state.update { it.copy(busy = true, error = null, days = days) }
         viewModelScope.launch {
-            try { val data = service.streakHistory(days); ensureActive(); _state.update { it.copy(data = data, busy = false) } }
-            catch (cancel: CancellationException) { throw cancel }
-            catch (error: Exception) { ensureActive(); _state.update { it.copy(error = error, busy = false) } }
+            try {
+                val data = service.streakHistory(days)
+                ensureActive()
+                _state.update { it.copy(data = data, displayedDays = days, busy = false) }
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (error: Exception) {
+                ensureActive()
+                _state.update { it.copy(error = error, busy = false) }
+            }
         }
     }
     class Factory(private val service: LearnerAnalytics) : ViewModelProvider.Factory {
@@ -63,6 +83,7 @@ fun ActivityRoute(service: LearnerAnalytics, userId: Long, preferences: AppPrefe
     val vm: ActivityViewModel = viewModel(key = "activity-$userId", factory = ActivityViewModel.Factory(service))
     val s by vm.state.collectAsLifecycleState()
     val display by preferences.display.collectAsLifecycleState()
+    var showDailyValues by rememberSaveable(userId) { mutableStateOf(false) }
     RefreshOnResume { vm.load() }
     LazyColumn(Modifier.padding(AppLayoutTokens.pageInsets), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.section)) {
         item {
@@ -79,14 +100,27 @@ fun ActivityRoute(service: LearnerAnalytics, userId: Long, preferences: AppPrefe
             if (s.busy) AppLoadingIndicator()
             s.error?.let { ErrorState(throwable = it, onRetry = if (s.busy) null else ({ vm.load() })) }
             s.data?.let { data ->
+                s.displayedDays?.takeIf { it != s.days }?.let { days ->
+                    Text(stringResource(R.string.analytics_showing_period, formatNumber(days)))
+                }
                 Text(stringResource(R.string.activity_summary, formatNumber(data.currentStreak), formatNumber(data.longestStreak), formatNumber(data.activeDays), formatNumber(data.totalQuestions)))
                 Text(stringResource(if(display.activityHeatmap) R.string.activity_heatmap_legend else R.string.activity_legend))
             }
         }
         val days = s.data?.days.orEmpty()
         val cells = activityCalendarCells(days)
-        if (display.activityHeatmap && days.isNotEmpty()) item {
-            AppActivityHeatmap(cells)
+        if (s.data != null && days.isEmpty() && !s.busy && s.error == null) item {
+            EmptyState(stringResource(R.string.no_items))
+        }
+        if (display.activityHeatmap && days.isNotEmpty()) {
+            item {
+                AppFilterChip(showDailyValues, onClick = { showDailyValues = !showDailyValues },
+                    label = { Text(stringResource(R.string.analytics_daily_values)) })
+                AppActivityHeatmap(cells)
+            }
+            if (showDailyValues) items(cells.filterNotNull().asReversed()) { day ->
+                AppActivityDayDetail(day)
+            }
         }
         if (!display.activityHeatmap && days.isNotEmpty()) item {
             AppActivityWeekdays()

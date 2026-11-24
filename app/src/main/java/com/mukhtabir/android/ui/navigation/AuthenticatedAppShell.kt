@@ -61,7 +61,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -267,7 +266,7 @@ private fun AppNavigationBar(navController: NavHostController, user: UserDto, en
     if (ShellNavigation.isFocused(currentRoute)) return
     Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.surface) {
         Row(Modifier.fillMaxWidth().windowInsetsPadding(androidx.compose.material3.NavigationBarDefaults.windowInsets)
-            .selectableGroup().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
+            .selectableGroup().padding(horizontal = AppLayoutTokens.bottomNavigationHorizontalPadding), horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
             tabs.filter { item -> item.capability?.let(user::has) ?: true }.forEach { item ->
                 val selected = selectedTab == item.route
                 Box(Modifier.weight(1f)
@@ -277,7 +276,7 @@ private fun AppNavigationBar(navController: NavHostController, user: UserDto, en
                     .padding(vertical=AppLayoutTokens.secondaryFrameInset)) {
                     Column(Modifier.fillMaxWidth()
                         .heightIn(min=AppLayoutTokens.secondaryVisualHeight)
-                        .padding(horizontal=4.dp,vertical=1.dp),
+                        .padding(AppLayoutTokens.navigationItemInsets),
                         horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides
                             if(selected) androidx.compose.material3.MaterialTheme.colorScheme.primary

@@ -822,7 +822,7 @@
     <string name="activity_title">Study activity calendar</string>
     <string name="activity_days">%1$s days</string>
     <string name="activity_summary">Current streak: %1$s · Longest: %2$s · Active days: %3$s · Questions: %4$s</string>
-    <string name="activity_legend">Darker cells indicate more questions. The date list below each week gives exact session and question counts.</string>
+    <string name="activity_legend">The numbers show questions. Daily values list the sessions and questions for each date.</string>
     <string name="activity_day">%1$s — %2$s sessions · %3$s questions</string>
     <string name="content_policy_note">Published Mukhtabir privacy policy and contact details, reproduced from the frontend. Android stores preferences locally and uses temporary files for imports/exports; saved or shared files are controlled by the chosen document provider. Bundled fonts do not contact a font CDN.</string>
     <string name="content_manual_note">Full platform reference follows the native guide above. Browser menus, keyboard shortcuts and administrative tools described here refer to the web app; Android exposes the native workflows available to your permissions.</string>
@@ -1560,8 +1560,9 @@
     <string name="session_pause_recovery_required">Cancel this dialog and resolve the session recovery warning before pausing.</string>
     <string name="activity_numbered">Numbers</string>
     <string name="activity_heatmap">Heatmap</string>
-    <string name="activity_heatmap_legend">Darker squares indicate more questions. Scroll sideways to see other weeks.</string>
-    <string name="activity_less">Less activity</string>
+    <string name="activity_heatmap_legend">A dash means no activity. More bars indicate more questions. One bar can also mean a session with no answers. Scroll sideways to see other weeks.</string>
+    <string name="activity_none">No activity</string>
+    <string name="activity_no_recorded_day">%1$s — No activity</string>
     <string name="activity_more">More activity</string>
     <string name="theme_iris">Lavender</string>
     <string name="theme_blossom">Rose</string>
@@ -1804,6 +1805,7 @@
     <string name="launch_checking_session">Preparing your sign-in…</string>
     <string name="drawer_help_information">Help &amp; information</string>
     <string name="drawer_authoring">Create &amp; manage content</string>
+    <string name="analytics_chart_inspect">Tap the chart to inspect a day.</string>
     <string name="analytics_chart_summary">Latest: %1$s · Range: %2$s–%3$s</string>
     <string name="ui_or">or</string>
     <string name="ui_theme_live_preview">Choose a theme to preview it immediately.</string>

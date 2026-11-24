@@ -35,10 +35,17 @@ fun AppBackBar(title: String, enabled: Boolean, onMenu: (() -> Unit)? = null, on
 }
 
 @Composable
-fun AppTopBar(title: String, enabled: Boolean, onMenu: () -> Unit, onSettings: (() -> Unit)? = null) {
+fun AppTopBar(
+    title: String,
+    enabled: Boolean,
+    onMenu: () -> Unit,
+    onSettings: (() -> Unit)? = null,
+    menuLabel: String = stringResource(R.string.drawer_open),
+    actions: @Composable RowScope.() -> Unit = {},
+) {
     AppScreenBar(title, navigation = {
-        AppIconButton(onMenu, enabled = enabled, modifier = Modifier) {
-            Icon(Icons.Filled.Menu, stringResource(R.string.drawer_open))
+        AppIconButton(onMenu, enabled = enabled) {
+            Icon(Icons.Filled.Menu, menuLabel)
         }
     }, actions = {
         onSettings?.let { action ->
@@ -46,6 +53,7 @@ fun AppTopBar(title: String, enabled: Boolean, onMenu: () -> Unit, onSettings: (
                 Icon(Icons.Filled.Settings, stringResource(R.string.nav_settings))
             }
         }
+        actions()
     })
 }
 

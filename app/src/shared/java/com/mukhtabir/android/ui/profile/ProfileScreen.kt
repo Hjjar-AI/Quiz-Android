@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,6 +28,7 @@ import com.mukhtabir.android.shared.R
 import com.mukhtabir.android.core.has
 import com.mukhtabir.android.data.remote.UserDto
 import com.mukhtabir.android.ui.components.AppCard
+import com.mukhtabir.android.ui.components.AppDivider
 import com.mukhtabir.android.ui.components.AppIconButton
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppListRow
@@ -200,7 +200,7 @@ fun ProfileScreen(
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
                     actions.forEachIndexed { index, (label, action, destructive) ->
-                        if (index > 0) Divider()
+                        if (index > 0) AppDivider()
                         ProfileActionRow(stringResource(label), action, destructive)
                     }
                 }

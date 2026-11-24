@@ -1,17 +1,13 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-
 package com.mukhtabir.android.ui.masterexams
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import com.mukhtabir.android.R
 import com.mukhtabir.android.data.remote.CategoryDto
 import com.mukhtabir.android.data.remote.QuestionDto
@@ -91,7 +87,6 @@ internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolea
     categories: List<CategoryDto>, caseStemLocked: Boolean, onCaseKeyChange: (String) -> Unit,
     categoryEnabled: Boolean = enabled, revealError: Boolean = false, categoryStatus: @Composable () -> Unit = {},
     change: ((EmbeddedExamDraftForm) -> EmbeddedExamDraftForm) -> Unit, validation: DraftValidationUi = DraftValidationUi()) {
-    var menu by remember { mutableStateOf(false) }
     DraftValidatedField("choices", validation) { _, focus ->
         Text(stringResource(R.string.maximum_choices, com.mukhtabir.android.util.formatNumber(maxChoices.coerceAtLeast(2))), Modifier.focusRequester(focus).focusable())
         AppOutlinedButton({ change { if (it.choices.size < maxChoices.coerceAtLeast(2))
@@ -119,22 +114,17 @@ internal fun ExamDraftDetailsFields(form: EmbeddedExamDraftForm, enabled: Boolea
             }
         }
         categoryStatus()
-        DraftValidatedField("category", validation) { _, focus ->
-            Box {
-                AppOutlinedButton({ menu = true }, modifier = Modifier.focusRequester(focus), enabled = enabled && categoryEnabled) {
-                    Text(stringResource(R.string.nav_categories) + ": " + (categories.firstOrNull { it.id == form.category }?.name
-                        ?: form.category?.let(::formatNumber) ?: stringResource(R.string.none)))
-                }
-                DropdownMenu(menu && enabled && categoryEnabled, { menu = false },
-                    modifier = Modifier.heightIn(max = AppLayoutTokens.menuMaxHeight)) {
-                    DropdownMenuItem({ Text(stringResource(R.string.none)) }, { change { it.copy(category = null) }; menu = false },
-                        modifier = Modifier.semantics { selected = form.category == null })
-                    categories.forEach { row ->
-                        DropdownMenuItem({ Text(row.name) }, { change { it.copy(category = row.id) }; menu = false },
-                            modifier = Modifier.semantics { selected = form.category == row.id })
-                    }
-                }
-            }
+        DraftValidatedField("category", validation) { error, focus ->
+            AppCategoryField(
+                categories = categories,
+                selectedId = form.category,
+                onSelect = { id -> change { it.copy(category = id) } },
+                modifier = Modifier.focusRequester(focus),
+                enabled = enabled && categoryEnabled,
+                isError = error != null,
+                missingSelectionLabel = form.category?.let(::formatNumber).orEmpty(),
+                emptySelectionLabel = stringResource(R.string.none),
+            )
         }
     }
     AppSection(stringResource(R.string.section_case_context), revealError = validation.hasAny("caseKey", "caseStem", "caseOrder"), revealRequest = validation.attempt) {

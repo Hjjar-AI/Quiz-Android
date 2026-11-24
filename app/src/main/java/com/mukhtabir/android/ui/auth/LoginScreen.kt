@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +37,7 @@ import com.mukhtabir.android.R
 import com.mukhtabir.android.core.userMessage
 import com.mukhtabir.android.ui.components.AppActionRow
 import com.mukhtabir.android.ui.components.AppButton
+import com.mukhtabir.android.ui.components.AppDivider
 import com.mukhtabir.android.ui.components.AppLaunchLayout
 import com.mukhtabir.android.ui.components.AppLayoutTokens
 import com.mukhtabir.android.ui.components.AppLoadingIndicator
@@ -110,9 +110,9 @@ fun LoginScreen(
         if (onOffline != null) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(AppLayoutTokens.controlGap)) {
-                Divider(Modifier.weight(1f))
+                AppDivider(Modifier.weight(1f))
                 Text(stringResource(R.string.ui_or), style = MaterialTheme.typography.labelMedium)
-                Divider(Modifier.weight(1f))
+                AppDivider(Modifier.weight(1f))
             }
             AppTextButton(onOffline, Modifier.fillMaxWidth(), enabled = !state.isLoading) {
                 Text(stringResource(R.string.offline_open_cached))

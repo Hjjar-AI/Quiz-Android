@@ -821,7 +821,7 @@
     <string name="activity_title">تقويم نشاط الدراسة</string>
     <string name="activity_days">%1$s يوماً</string>
     <string name="activity_summary">السلسلة الحالية: %1$s · الأطول: %2$s · الأيام النشطة: %3$s · الأسئلة: %4$s</string>
-    <string name="activity_legend">تشير الخلايا الأغمق إلى أسئلة أكثر. تعرض قائمة التواريخ أسفل كل أسبوع أعداد الجلسات والأسئلة بدقة.</string>
+    <string name="activity_legend">توضح الأرقام عدد الأسئلة. وتعرض البيانات اليومية عدد الجلسات والأسئلة لكل تاريخ.</string>
     <string name="activity_day">%1$s — %2$s جلسة · %3$s سؤالاً</string>
     <string name="content_policy_note">سياسة خصوصية مختبر المنشورة وبيانات التواصل، منقولة من الواجهة الأمامية. يخزّن Android التفضيلات محلياً ويستخدم ملفات مؤقتة للاستيراد والتصدير؛ ويتحكم مزوّد المستندات المختار بالملفات المحفوظة أو المشتركة. لا تتصل الخطوط المضمّنة بشبكة خارجية.</string>
     <string name="content_manual_note">يلي الدليل الأصلي أعلاه المرجع الكامل للمنصة. تشير قوائم المتصفح واختصارات لوحة المفاتيح والأدوات الإدارية المذكورة هنا إلى تطبيق الويب؛ ويعرض Android سير العمل الأصلي المتاح وفق صلاحياتك.</string>
@@ -1559,8 +1559,9 @@
     <string name="session_pause_recovery_required">ألغِ هذا الحوار وعالج تنبيه استعادة الجلسة قبل إيقافها مؤقتًا.</string>
     <string name="activity_numbered">أرقام</string>
     <string name="activity_heatmap">خريطة النشاط</string>
-    <string name="activity_heatmap_legend">تشير المربعات الأغمق إلى أسئلة أكثر. مرّر أفقيًا لرؤية الأسابيع الأخرى.</string>
-    <string name="activity_less">نشاط أقل</string>
+    <string name="activity_heatmap_legend">تعني الشرطة عدم وجود نشاط، وتشير زيادة الخطوط إلى أسئلة أكثر. وقد يشير خط واحد أيضًا إلى جلسة بلا إجابات. مرّر أفقيًا لرؤية الأسابيع الأخرى.</string>
+    <string name="activity_none">بلا نشاط</string>
+    <string name="activity_no_recorded_day">%1$s — بلا نشاط</string>
     <string name="activity_more">نشاط أكثر</string>
     <string name="theme_iris">لافندر</string>
     <string name="theme_blossom">وردي</string>
@@ -1803,6 +1804,7 @@
     <string name="launch_checking_session">جارٍ تجهيز تسجيل الدخول…</string>
     <string name="drawer_help_information">المساعدة والمعلومات</string>
     <string name="drawer_authoring">إنشاء المحتوى وإدارته</string>
+    <string name="analytics_chart_inspect">اضغط على الرسم لعرض تفاصيل يوم.</string>
     <string name="analytics_chart_summary">الأحدث: %1$s · النطاق: %2$s–%3$s</string>
     <string name="ui_or">أو</string>
     <string name="ui_theme_live_preview">اختر سمة لمعاينتها فوراً.</string>
